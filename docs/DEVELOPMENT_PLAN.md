@@ -118,6 +118,7 @@ This document outlines the detailed development phases for the Echoes tactical g
 - [x] Collision event animations
 - [x] Shield activation/deactivation
 - [x] Projectile movement trails
+- [x] Shield block animations (green explosions at tile edges)
 
 #### 5.3 Replay Phase Management
 - [x] Automatic tick progression
@@ -279,6 +280,8 @@ This document outlines the detailed development phases for the Echoes tactical g
 3. **Simulation Termination**: Fixed replay stopping early due to incorrect action calculation
 4. **Echo Preview System**: Semi-transparent rendering of ally echoes during action assignment
 5. **Shield Deactivation**: Fixed shield mechanics to properly deactivate after blocking a projectile
+6. **Consecutive Shield Prevention**: Prevent shield action from appearing if last action was shield
+7. **Shield Block Animation**: Green explosion animation positioned at tile edge where projectile hit shield
 
 ### **Next Priority: Complete Echo Preview System** 🔧
 1. **Projectile trail visualization** for ally previews
@@ -293,8 +296,8 @@ This document outlines the detailed development phases for the Echoes tactical g
 ### **Game Balance & Mechanics Improvements** 🔧
 1. **Shield Mechanics Rebalancing** ✅:
    - Shield deactivates after blocking a projectile (not permanent) ✅
-   - Prevent shield action for 2 consecutive turns after using shield
-   - Shield action should not appear as option if last action was shield
+   - Prevent shield action for 2 consecutive turns after using shield ✅
+   - Shield action should not appear as option if last action was shield ✅
 2. **Action Point Balance**: Review costs and limits for better gameplay
 3. **Collision System**: Fine-tune destruction and interaction rules
 4. **Movement Balance**: Review walk/dash costs and effectiveness
@@ -304,11 +307,12 @@ This document outlines the detailed development phases for the Echoes tactical g
 - ✅ Echo placement and action assignment (new echoes and extend echoes)
 - ✅ All 5 action types with proper costs and validation
 - ✅ Basic replay system with collision detection
-- ✅ Shield mechanics and directional protection (needs rebalancing)
+- ✅ Shield mechanics and directional protection (fully balanced)
 - ✅ Turn-based gameplay with phase transitions
 - ✅ Extend Echo functionality with proper tick numbering
 - ✅ Entity destruction and lifecycle management (recently fixed)
 - ✅ Echo Preview System with semi-transparent ally rendering
+- ✅ Shield block animations with edge positioning and green particles
 - 🔄 Win conditions (not yet implemented)
 - 🔄 Scoring system (not yet implemented)
 

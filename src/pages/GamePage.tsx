@@ -97,8 +97,8 @@ function getProjectileOwner(echoes: Echo[], proj: { position: { row: number; col
 }
 
 // Simulate the replay phase, returning an array of { echoes, projectiles, mines, tick, destroyed: { echoId, by: PlayerId|null }[], collisions: { row, col }[] } for each tick
-function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: number } })[]): { echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[]; collisions: { row: number; col: number }[] }[] {
-  const states: { echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[]; collisions: { row: number; col: number }[] }[] = [];
+function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: number } })[]): { echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[]; collisions: { row: number; col: number }[]; shieldBlocks: { row: number; col: number; projectileDirection: Direction }[] }[] {
+  const states: { echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[]; collisions: { row: number; col: number }[]; shieldBlocks: { row: number; col: number; projectileDirection: Direction }[] }[] = [];
   
   let currentEchoes = echoes.map(e => ({
     ...deepCopyEcho(e),
@@ -119,6 +119,7 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
     tick: 0,
     destroyed: [],
     collisions: [],
+    shieldBlocks: [],
   });
 
   // Helper: which approach directions does a shield block?
@@ -152,6 +153,7 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
 
     let destroyedThisTick: { echoId: string; by: PlayerId|null }[] = [];
     let collisionsThisTick: { row: number; col: number }[] = [];
+    let shieldBlocksThisTick: { row: number; col: number; projectileDirection: Direction }[] = [];
     
     // 1. Move projectiles
     projectiles = projectiles
@@ -225,7 +227,6 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
       if (entities.length > 1) {
         // Record collision location
         const [row, col] = key.split(',').map(Number);
-        collisionsThisTick.push({ row, col });
         
         const echoEnt = entities.find(ent => ent.type === 'echo');
         const projectileEnts = entities.filter(ent => ent.type === 'projectile' || ent.type === 'mine');
@@ -246,6 +247,12 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
                 
                 if (blocked) {
                   proj.alive = false;
+                  // Record shield block for animation
+                  shieldBlocksThisTick.push({ 
+                    row, 
+                    col, 
+                    projectileDirection: { ...proj.direction } 
+                  });
                   // Deactivate shield after blocking a projectile
                   echo.isShielded = false;
                   echo.shieldDirection = undefined;
@@ -256,6 +263,8 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
                   // Award point to projectile owner
                   const owner = getProjectileOwner(echoes, proj);
                   destroyedThisTick.push({ echoId: echo.id, by: owner && owner !== echo.playerId ? owner : null });
+                  // Record regular collision
+                  collisionsThisTick.push({ row, col });
                 }
               } else {
                 // No shield or mine collision - echo is destroyed
@@ -266,6 +275,8 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
                   // Award point to projectile/mine owner
                   const owner = getProjectileOwner(echoes, proj);
                   destroyedThisTick.push({ echoId: echo.id, by: owner && owner !== echo.playerId ? owner : null });
+                  // Record regular collision
+                  collisionsThisTick.push({ row, col });
                 }
               }
             });
@@ -278,6 +289,8 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
                 // Remove echo immediately instead of just marking as dead
                 currentEchoes = currentEchoes.filter(e => e.id !== echo.id);
                 destroyedThisTick.push({ echoId: echo.id, by: null });
+                // Record regular collision
+                collisionsThisTick.push({ row, col });
               }
             } else {
               const proj = projectiles.find(p => p.id === ent.id);
@@ -296,6 +309,7 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
       tick,
       destroyed: destroyedThisTick,
       collisions: collisionsThisTick,
+      shieldBlocks: shieldBlocksThisTick,
     });
     projectiles = projectiles.filter(p => p.alive);
     mines = mines.filter(m => m.alive);
@@ -507,7 +521,7 @@ const GamePage: React.FC = () => {
   };
 
   // Replay phase logic
-  const [replayStates, setReplayStates] = useState<{ echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[]; collisions: { row: number; col: number }[] }[]>([]);
+  const [replayStates, setReplayStates] = useState<{ echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[]; collisions: { row: number; col: number }[]; shieldBlocks: { row: number; col: number; projectileDirection: Direction }[] }[]>([]);
   const [replayTick, setReplayTick] = useState(0);
   const replayTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const currentTickRef = useRef(0);
@@ -596,7 +610,7 @@ const GamePage: React.FC = () => {
   }, [replayStates.length]);
 
   if (state.phase === 'replay') {
-    const current = replayStates[replayTick] || { echoes: state.echoes, projectiles: [], tick: 0, destroyed: [], collisions: [] };
+    const current = replayStates[replayTick] || { echoes: state.echoes, projectiles: [], tick: 0, destroyed: [], collisions: [], shieldBlocks: [] };
     // Map SimProjectile to ProjectilePreview for Board
     const projectilePreviews = current.projectiles.map(p => ({ row: p.position.row, col: p.position.col, type: p.type, direction: p.direction }));
     return (
@@ -611,6 +625,7 @@ const GamePage: React.FC = () => {
           echoes={current.echoes} 
           projectiles={projectilePreviews} 
           collisions={current.collisions}
+          shieldBlocks={current.shieldBlocks}
         />
         <button onClick={handleReset}>Reset Game</button>
         <button onClick={handleReplay} style={{ marginLeft: 8 }}>Replay</button>
@@ -691,6 +706,19 @@ const GamePage: React.FC = () => {
                 {current.collisions.map((collision, index) => (
                   <div key={index} style={{ color: '#ffd93d', fontSize: '0.8rem' }}>
                     {getBoardPosition(collision.row, collision.col)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {current.shieldBlocks.length > 0 && (
+            <div style={{ marginBottom: '1rem' }}>
+              <strong>Shield Blocks ({current.shieldBlocks.length}):</strong>
+              <div style={{ marginLeft: '1rem' }}>
+                {current.shieldBlocks.map((shieldBlock, index) => (
+                  <div key={index} style={{ color: '#4CAF50', fontSize: '0.8rem' }}>
+                    {getBoardPosition(shieldBlock.row, shieldBlock.col)} → {getDirectionName(shieldBlock.projectileDirection)}
                   </div>
                 ))}
               </div>

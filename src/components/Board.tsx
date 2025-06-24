@@ -23,6 +23,7 @@ interface BoardProps {
   projectiles?: ProjectilePreview[];
   // For collision animations:
   collisions?: { row: number; col: number }[];
+  shieldBlocks?: { row: number; col: number; projectileDirection: Direction }[];
   // For ally previews:
   previewEchoes?: Echo[];
   previewProjectiles?: ProjectilePreview[];
@@ -32,8 +33,9 @@ const TILE_SIZE = 48; // px
 const TRAIL_LENGTH = 3;
 const BASE_OPACITY = 0.3;
 
-const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClick, origin, onDirectionSelect, projectiles = [], collisions = [], previewEchoes = [], previewProjectiles = [] }) => {
+const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClick, origin, onDirectionSelect, projectiles = [], collisions = [], shieldBlocks = [], previewEchoes = [], previewProjectiles = [] }) => {
   const [activeExplosions, setActiveExplosions] = React.useState<Set<string>>(new Set());
+  const [activeShieldBlocks, setActiveShieldBlocks] = React.useState<Map<string, Direction>>(new Map());
 
   // Helper to check if a tile is highlighted
   const isHighlighted = (row: number, col: number) =>
@@ -61,16 +63,7 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
   // Helper to get collision key
   const getCollisionKey = (row: number, col: number) => `${row},${col}`;
 
-  // Handle explosion completion
-  const handleExplosionComplete = (row: number, col: number) => {
-    setActiveExplosions(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(getCollisionKey(row, col));
-      return newSet;
-    });
-  };
-
-  // Start explosions for new collisions
+  // Trigger explosion animations for collisions
   React.useEffect(() => {
     collisions.forEach(collision => {
       const key = getCollisionKey(collision.row, collision.col);
@@ -78,7 +71,35 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
         setActiveExplosions(prev => new Set(prev).add(key));
       }
     });
-  }, [collisions, activeExplosions]);
+  }, [collisions]);
+
+  // Trigger shield block animations
+  React.useEffect(() => {
+    shieldBlocks.forEach(shieldBlock => {
+      const key = getCollisionKey(shieldBlock.row, shieldBlock.col);
+      if (!activeShieldBlocks.has(key)) {
+        setActiveShieldBlocks(prev => new Map(prev).set(key, shieldBlock.projectileDirection));
+      }
+    });
+  }, [shieldBlocks]);
+
+  const handleExplosionComplete = (row: number, col: number) => {
+    const key = getCollisionKey(row, col);
+    setActiveExplosions(prev => {
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+  };
+
+  const handleShieldBlockComplete = (row: number, col: number) => {
+    const key = getCollisionKey(row, col);
+    setActiveShieldBlocks(prev => {
+      const next = new Map(prev);
+      next.delete(key);
+      return next;
+    });
+  };
 
   return (
     <div style={{ display: 'inline-block', background: 'black', padding: 16, borderRadius: 12 }}>
@@ -252,11 +273,22 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
                   )}
                   
                   {/* Explosion animation */}
-                  {activeExplosions.has(getCollisionKey(rowIdx, colIdx)) && (
+                  {activeExplosions.has(getCollisionKey(rowIdx, colIdx)) && !activeShieldBlocks.has(getCollisionKey(rowIdx, colIdx)) && (
                     <ExplosionAnimation
                       row={rowIdx}
                       col={colIdx}
                       onComplete={() => handleExplosionComplete(rowIdx, colIdx)}
+                    />
+                  )}
+                  
+                  {/* Shield block animation */}
+                  {activeShieldBlocks.has(getCollisionKey(rowIdx, colIdx)) && (
+                    <ExplosionAnimation
+                      row={rowIdx}
+                      col={colIdx}
+                      onComplete={() => handleShieldBlockComplete(rowIdx, colIdx)}
+                      isShieldBlock={true}
+                      projectileDirection={activeShieldBlocks.get(getCollisionKey(rowIdx, colIdx))}
                     />
                   )}
                 </div>

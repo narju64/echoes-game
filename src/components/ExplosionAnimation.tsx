@@ -4,12 +4,36 @@ interface ExplosionAnimationProps {
   row: number;
   col: number;
   onComplete: () => void;
+  isShieldBlock?: boolean;
+  projectileDirection?: { x: number; y: number };
 }
 
-const ExplosionAnimation: React.FC<ExplosionAnimationProps> = ({ row, col, onComplete }) => {
+const ExplosionAnimation: React.FC<ExplosionAnimationProps> = ({ 
+  row, 
+  col, 
+  onComplete, 
+  isShieldBlock = false, 
+  projectileDirection 
+}) => {
   const [phase, setPhase] = useState<'start' | 'explode' | 'fade'>('start');
   const [scale, setScale] = useState(0);
   const [opacity, setOpacity] = useState(1);
+
+  // Calculate offset for shield block animation
+  const getShieldBlockOffset = () => {
+    if (!isShieldBlock || !projectileDirection) return { x: 0, y: 0 };
+    
+    // Calculate which edge the projectile hit based on its direction
+    // For horizontal: negate the direction (projectile going right = explosion on right edge)
+    // For vertical: use the direction directly (projectile going down = explosion on bottom edge)
+    const edgeDistance = 12; // Distance from center to edge
+    return {
+      x: -projectileDirection.x * edgeDistance,
+      y: projectileDirection.y * edgeDistance
+    };
+  };
+
+  const shieldOffset = getShieldBlockOffset();
 
   useEffect(() => {
     // Start animation
@@ -42,7 +66,7 @@ const ExplosionAnimation: React.FC<ExplosionAnimationProps> = ({ row, col, onCom
         position: 'absolute',
         top: '50%',
         left: '50%',
-        transform: `translate(-50%, -50%) scale(${scale})`,
+        transform: `translate(calc(-50% + ${shieldOffset.x}px), calc(-50% + ${shieldOffset.y}px)) scale(${scale})`,
         opacity: opacity,
         transition: 'transform 0.3s ease-out, opacity 0.4s ease-out',
         pointerEvents: 'none',
@@ -63,7 +87,7 @@ const ExplosionAnimation: React.FC<ExplosionAnimationProps> = ({ row, col, onCom
               position: 'absolute',
               width: 4,
               height: 4,
-              background: '#ff6b35',
+              background: isShieldBlock ? '#4CAF50' : '#ff6b35', // Green for shield blocks, orange for regular explosions
               borderRadius: '50%',
               transform: `translate(${x}px, ${y}px)`,
               animation: phase === 'explode' ? 'explode-particle 0.5s ease-out forwards' : 'none',
@@ -77,9 +101,11 @@ const ExplosionAnimation: React.FC<ExplosionAnimationProps> = ({ row, col, onCom
         style={{
           width: 16,
           height: 16,
-          background: 'radial-gradient(circle, #ff6b35 0%, #ff8c42 50%, transparent 100%)',
+          background: isShieldBlock 
+            ? 'radial-gradient(circle, #4CAF50 0%, #66BB6A 50%, transparent 100%)' 
+            : 'radial-gradient(circle, #ff6b35 0%, #ff8c42 50%, transparent 100%)',
           borderRadius: '50%',
-          boxShadow: '0 0 20px #ff6b35',
+          boxShadow: isShieldBlock ? '0 0 20px #4CAF50' : '0 0 20px #ff6b35',
           animation: phase === 'explode' ? 'explode-center 0.5s ease-out forwards' : 'none',
         }}
       />
@@ -123,4 +149,4 @@ const ExplosionAnimation: React.FC<ExplosionAnimationProps> = ({ row, col, onCom
   );
 };
 
-export default ExplosionAnimation; 
+export default ExplosionAnimation;

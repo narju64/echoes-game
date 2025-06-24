@@ -145,6 +145,20 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
   // Current tick for display (1-based)
   const displayTick = currentTick;
 
+  // Check if the last action was a shield (either in existing instructions or new actions)
+  const lastAction = actions.length > 0 ? actions[actions.length - 1] : 
+                    pendingEcho.instructionList.length > 0 ? pendingEcho.instructionList[pendingEcho.instructionList.length - 1] : null;
+  const lastActionWasShield = lastAction && lastAction.type === 'shield';
+
+  // Filter actions to prevent consecutive shield actions
+  const availableActions = ACTIONS.filter(a => {
+    // Filter by cost
+    if (a.cost > remainingPoints) return false;
+    // Filter out shield if last action was shield
+    if (a.type === 'shield' && lastActionWasShield) return false;
+    return true;
+  });
+
   // Handle action selection
   const handleActionSelect = (actionType: ActionType, cost: number) => {
     if (remainingPoints < cost) return;
@@ -291,7 +305,7 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
           />
           <p>Select an action:</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {ACTIONS.filter(a => a.cost <= remainingPoints).map(a => (
+            {availableActions.map(a => (
               <button key={a.type} onClick={() => handleActionSelect(a.type, a.cost)}>{a.label} ({a.cost})</button>
             ))}
           </div>
