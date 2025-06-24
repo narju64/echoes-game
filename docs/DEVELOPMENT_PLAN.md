@@ -115,7 +115,7 @@ This document outlines the detailed development phases for the Echoes tactical g
 
 #### 5.2 Animation System
 - [x] Smooth entity movement animations
-- [ ] Collision event animations
+- [x] Collision event animations
 - [x] Shield activation/deactivation
 - [x] Projectile movement trails
 
@@ -273,7 +273,6 @@ This document outlines the detailed development phases for the Echoes tactical g
 3. **Scoring System**: Point tracking and display not implemented
 4. **Echo Preview System**: Real-time preview of other echoes during action assignment
 5. **Back Button**: Ability to undo/change actions during assignment
-6. **Collision Event Animations**: Visual feedback for collisions
 
 ### **Next Priority: Fix Core Game Loop** 🔧
 1. **Fix entity destruction** in replay phase

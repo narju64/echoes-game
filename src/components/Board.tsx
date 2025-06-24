@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Echo, Direction } from '../types/gameTypes';
+import ExplosionAnimation from './ExplosionAnimation';
 
 const BOARD_SIZE = 8;
 const COL_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
@@ -20,13 +21,17 @@ interface BoardProps {
   origin?: { row: number; col: number };
   onDirectionSelect?: (dir: Direction) => void;
   projectiles?: ProjectilePreview[];
+  // For collision animations:
+  collisions?: { row: number; col: number }[];
 }
 
 const TILE_SIZE = 48; // px
 const TRAIL_LENGTH = 3;
 const BASE_OPACITY = 0.3;
 
-const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClick, origin, onDirectionSelect, projectiles = [] }) => {
+const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClick, origin, onDirectionSelect, projectiles = [], collisions = [] }) => {
+  const [activeExplosions, setActiveExplosions] = React.useState<Set<string>>(new Set());
+
   // Helper to check if a tile is highlighted
   const isHighlighted = (row: number, col: number) =>
     highlightedTiles.some(t => t.row === row && t.col === col);
@@ -45,6 +50,32 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
   // Helper to find projectile/mine at a tile
   const getProjectile = (row: number, col: number) =>
     projectiles.find(p => p.row === row && p.col === col);
+
+  // Helper to check if a tile has a collision
+  const hasCollision = (row: number, col: number) =>
+    collisions.some(c => c.row === row && c.col === col);
+
+  // Helper to get collision key
+  const getCollisionKey = (row: number, col: number) => `${row},${col}`;
+
+  // Handle explosion completion
+  const handleExplosionComplete = (row: number, col: number) => {
+    setActiveExplosions(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(getCollisionKey(row, col));
+      return newSet;
+    });
+  };
+
+  // Start explosions for new collisions
+  React.useEffect(() => {
+    collisions.forEach(collision => {
+      const key = getCollisionKey(collision.row, collision.col);
+      if (!activeExplosions.has(key)) {
+        setActiveExplosions(prev => new Set(prev).add(key));
+      }
+    });
+  }, [collisions, activeExplosions]);
 
   return (
     <div style={{ display: 'inline-block', background: 'black', padding: 16, borderRadius: 12 }}>
@@ -153,6 +184,15 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
                         transform: 'translate(-50%, -50%)',
                         boxShadow: projectile.type === 'projectile' ? '0 0 6px 2px #fff8' : undefined,
                       }}
+                    />
+                  )}
+                  
+                  {/* Explosion animation */}
+                  {activeExplosions.has(getCollisionKey(rowIdx, colIdx)) && (
+                    <ExplosionAnimation
+                      row={rowIdx}
+                      col={colIdx}
+                      onComplete={() => handleExplosionComplete(rowIdx, colIdx)}
                     />
                   )}
                 </div>

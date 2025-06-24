@@ -1,0 +1,126 @@
+import React, { useState, useEffect } from 'react';
+
+interface ExplosionAnimationProps {
+  row: number;
+  col: number;
+  onComplete: () => void;
+}
+
+const ExplosionAnimation: React.FC<ExplosionAnimationProps> = ({ row, col, onComplete }) => {
+  const [phase, setPhase] = useState<'start' | 'explode' | 'fade'>('start');
+  const [scale, setScale] = useState(0);
+  const [opacity, setOpacity] = useState(1);
+
+  useEffect(() => {
+    // Start animation
+    const startTimer = setTimeout(() => {
+      setPhase('explode');
+      setScale(1);
+    }, 100);
+
+    // Fade out
+    const fadeTimer = setTimeout(() => {
+      setPhase('fade');
+      setOpacity(0);
+    }, 600);
+
+    // Complete animation
+    const completeTimer = setTimeout(() => {
+      onComplete();
+    }, 1000);
+
+    return () => {
+      clearTimeout(startTimer);
+      clearTimeout(fadeTimer);
+      clearTimeout(completeTimer);
+    };
+  }, [onComplete]);
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: `translate(-50%, -50%) scale(${scale})`,
+        opacity: opacity,
+        transition: 'transform 0.3s ease-out, opacity 0.4s ease-out',
+        pointerEvents: 'none',
+        zIndex: 10,
+      }}
+    >
+      {/* Explosion particles */}
+      {Array.from({ length: 8 }).map((_, i) => {
+        const angle = (i * 45) * (Math.PI / 180);
+        const distance = 20;
+        const x = Math.cos(angle) * distance;
+        const y = Math.sin(angle) * distance;
+        
+        return (
+          <div
+            key={i}
+            style={{
+              position: 'absolute',
+              width: 4,
+              height: 4,
+              background: '#ff6b35',
+              borderRadius: '50%',
+              transform: `translate(${x}px, ${y}px)`,
+              animation: phase === 'explode' ? 'explode-particle 0.5s ease-out forwards' : 'none',
+            }}
+          />
+        );
+      })}
+      
+      {/* Center explosion */}
+      <div
+        style={{
+          width: 16,
+          height: 16,
+          background: 'radial-gradient(circle, #ff6b35 0%, #ff8c42 50%, transparent 100%)',
+          borderRadius: '50%',
+          boxShadow: '0 0 20px #ff6b35',
+          animation: phase === 'explode' ? 'explode-center 0.5s ease-out forwards' : 'none',
+        }}
+      />
+      
+      <style>
+        {`
+          @keyframes explode-particle {
+            0% {
+              transform: translate(0, 0) scale(1);
+              opacity: 1;
+            }
+            100% {
+              transform: translate(${Array.from({ length: 8 }).map((_, i) => {
+                const angle = (i * 45) * (Math.PI / 180);
+                const distance = 30;
+                const x = Math.cos(angle) * distance;
+                const y = Math.sin(angle) * distance;
+                return `${x}px, ${y}px`;
+              }).join('), translate(')}) scale(0);
+              opacity: 0;
+            }
+          }
+          
+          @keyframes explode-center {
+            0% {
+              transform: scale(0);
+              opacity: 1;
+            }
+            50% {
+              transform: scale(1.5);
+              opacity: 1;
+            }
+            100% {
+              transform: scale(0);
+              opacity: 0;
+            }
+          }
+        `}
+      </style>
+    </div>
+  );
+};
+
+export default ExplosionAnimation; 

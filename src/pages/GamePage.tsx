@@ -50,10 +50,10 @@ function getProjectileOwner(echoes: Echo[], proj: { position: { row: number; col
   return undefined;
 }
 
-// Simulate the replay phase, returning an array of { echoes, projectiles, mines, tick, destroyed: { echoId, by: PlayerId|null }[] } for each tick
-function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: number } })[]): { echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[] }[] {
+// Simulate the replay phase, returning an array of { echoes, projectiles, mines, tick, destroyed: { echoId, by: PlayerId|null }[], collisions: { row, col }[] } for each tick
+function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: number } })[]): { echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[]; collisions: { row: number; col: number }[] }[] {
   const maxTicks = Math.max(...echoes.map(e => e.instructionList.length), 0);
-  const states: { echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[] }[] = [];
+  const states: { echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[]; collisions: { row: number; col: number }[] }[] = [];
   let currentEchoes = echoes.map(e => ({
     ...deepCopyEcho(e),
     position: { ...e.startingPosition },
@@ -69,6 +69,7 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
     projectiles: [],
     tick: 0,
     destroyed: [],
+    collisions: [],
   });
 
   // Helper: which approach directions does a shield block?
@@ -85,6 +86,8 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
 
   for (let tick = 1; tick <= maxTicks; tick++) {
     let destroyedThisTick: { echoId: string; by: PlayerId|null }[] = [];
+    let collisionsThisTick: { row: number; col: number }[] = [];
+    
     // 1. Move projectiles
     projectiles = projectiles
       .filter(p => p.alive)
@@ -149,6 +152,10 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
     // For each tile with more than one entity, handle shield/projectile logic
     entityMap.forEach((entities, key) => {
       if (entities.length > 1) {
+        // Record collision location
+        const [row, col] = key.split(',').map(Number);
+        collisionsThisTick.push({ row, col });
+        
         const echoEnt = entities.find(ent => ent.type === 'echo');
         const projectileEnts = entities.filter(ent => ent.type === 'projectile' || ent.type === 'mine');
         if (echoEnt && projectileEnts.length > 0) {
@@ -217,6 +224,7 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
       projectiles: [...projectiles.filter(p => p.alive), ...mines.filter(m => m.alive)].map(p => ({ ...p })),
       tick,
       destroyed: destroyedThisTick,
+      collisions: collisionsThisTick,
     });
     projectiles = projectiles.filter(p => p.alive);
     mines = mines.filter(m => m.alive);
@@ -310,7 +318,7 @@ const GamePage: React.FC = () => {
   }, [state.currentPlayer, state.turnNumber]);
 
   // Replay phase logic
-  const [replayStates, setReplayStates] = useState<{ echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[] }[]>([]);
+  const [replayStates, setReplayStates] = useState<{ echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[]; collisions: { row: number; col: number }[] }[]>([]);
   const [replayTick, setReplayTick] = useState(0);
   const replayTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -344,7 +352,7 @@ const GamePage: React.FC = () => {
   };
 
   if (state.phase === 'replay') {
-    const current = replayStates[replayTick] || { echoes: state.echoes, projectiles: [], tick: 0, destroyed: [] };
+    const current = replayStates[replayTick] || { echoes: state.echoes, projectiles: [], tick: 0, destroyed: [], collisions: [] };
     // Map SimProjectile to ProjectilePreview for Board
     const projectilePreviews = current.projectiles.map(p => ({ row: p.position.row, col: p.position.col, type: p.type, direction: p.direction }));
     const handleReplay = () => {
@@ -370,7 +378,11 @@ const GamePage: React.FC = () => {
           <div>Player 2 (Blue): <b>{state.scores.player2}</b></div>
         </div>
         <h2>Tick: {current.tick}</h2>
-        <Board echoes={current.echoes} projectiles={projectilePreviews} />
+        <Board 
+          echoes={current.echoes} 
+          projectiles={projectilePreviews} 
+          collisions={current.collisions}
+        />
         <button onClick={handleReset}>Reset Game</button>
         <button onClick={handleReplay} style={{ marginLeft: 8 }}>Replay</button>
         <button onClick={handleNextTurn} style={{ marginLeft: 8 }}>Next Turn</button>
