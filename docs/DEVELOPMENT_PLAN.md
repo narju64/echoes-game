@@ -93,8 +93,8 @@ This document outlines the detailed development phases for the Echoes tactical g
 - [x] Back button functionality
 
 #### 4.3 Echo Preview System
-- [ ] Semi-transparent rendering of other echoes
-- [ ] Current board state display during input
+- [x] Semi-transparent rendering of other echoes
+- [x] Current board state display during input
 - [ ] Projectile trail visualization
 - [ ] Potential collision indicators
 
@@ -277,23 +277,39 @@ This document outlines the detailed development phases for the Echoes tactical g
 1. **Entity Destruction**: Destroyed echoes now properly removed from future phases
 2. **Action Misassignment**: Fixed bug where actions were incorrectly applied to wrong echoes after destruction
 3. **Simulation Termination**: Fixed replay stopping early due to incorrect action calculation
+4. **Echo Preview System**: Semi-transparent rendering of ally echoes during action assignment
+5. **Shield Deactivation**: Fixed shield mechanics to properly deactivate after blocking a projectile
 
-### **Next Priority: Implement Core Game Rules** 🔧
+### **Next Priority: Complete Echo Preview System** 🔧
+1. **Projectile trail visualization** for ally previews
+2. **Potential collision indicators** to show dangerous areas
+3. **Move restriction** to prevent selecting tiles that would cause ally collisions
+
+### **Future Priority: Implement Core Game Rules** 🔧
 1. **Implement win condition checking** and game end detection
 2. **Add scoring system** for destroyed echoes
-3. **Add echo preview system** during action assignment
-4. **Add back button functionality** for action editing
+3. **Add back button functionality** for action editing
+
+### **Game Balance & Mechanics Improvements** 🔧
+1. **Shield Mechanics Rebalancing** ✅:
+   - Shield deactivates after blocking a projectile (not permanent) ✅
+   - Prevent shield action for 2 consecutive turns after using shield
+   - Shield action should not appear as option if last action was shield
+2. **Action Point Balance**: Review costs and limits for better gameplay
+3. **Collision System**: Fine-tune destruction and interaction rules
+4. **Movement Balance**: Review walk/dash costs and effectiveness
 
 ### **Current Game Features** 🎮
 - ✅ 8x8 tactical board with proper labeling
 - ✅ Echo placement and action assignment (new echoes and extend echoes)
 - ✅ All 5 action types with proper costs and validation
 - ✅ Basic replay system with collision detection
-- ✅ Shield mechanics and directional protection
+- ✅ Shield mechanics and directional protection (needs rebalancing)
 - ✅ Turn-based gameplay with phase transitions
 - ✅ Extend Echo functionality with proper tick numbering
 - ✅ Entity destruction and lifecycle management (recently fixed)
+- ✅ Echo Preview System with semi-transparent ally rendering
 - 🔄 Win conditions (not yet implemented)
 - 🔄 Scoring system (not yet implemented)
 
-This plan provides a clear roadmap for building Echoes from concept to completion! The core mechanics and input system are now fully functional, with extend echo feature working correctly. Entity destruction and action assignment have been fixed. Next priority is implementing win conditions and scoring system. 
+This plan provides a clear roadmap for building Echoes from concept to completion! The core mechanics and input system are now fully functional, with extend echo feature working correctly. Entity destruction and action assignment have been fixed. Echo Preview System is implemented and working well. Next priorities are completing the Echo Preview System features and implementing game balance improvements, particularly shield mechanics rebalancing. 

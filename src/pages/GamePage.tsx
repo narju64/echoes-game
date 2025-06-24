@@ -99,6 +99,7 @@ function getProjectileOwner(echoes: Echo[], proj: { position: { row: number; col
 // Simulate the replay phase, returning an array of { echoes, projectiles, mines, tick, destroyed: { echoId, by: PlayerId|null }[], collisions: { row, col }[] } for each tick
 function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: number } })[]): { echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[]; collisions: { row: number; col: number }[] }[] {
   const states: { echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[]; collisions: { row: number; col: number }[] }[] = [];
+  
   let currentEchoes = echoes.map(e => ({
     ...deepCopyEcho(e),
     position: { ...e.startingPosition },
@@ -107,6 +108,9 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
   let projectiles: SimProjectile[] = [];
   let mines: SimProjectile[] = [];
   let nextProjectileId = 1;
+  
+  // Track shield state at the end of each tick
+  const shieldStateAtEndOfTick = new Map<string, { isShielded: boolean; shieldDirection?: Direction }>();
 
   // Tick 0: initial placement
   states.push({
@@ -162,9 +166,10 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
       const action = originalEcho.instructionList[tick - 1];
       // If no action for this tick:
       if (!action) {
-        const lastAction = originalEcho.instructionList[originalEcho.instructionList.length - 1];
-        if (lastAction && lastAction.type === 'shield') {
-          return { ...e, isShielded: true, shieldDirection: { ...lastAction.direction } };
+        // Check if shield was active at the end of the previous tick
+        const previousShieldState = shieldStateAtEndOfTick.get(e.id);
+        if (previousShieldState && previousShieldState.isShielded) {
+          return { ...e, isShielded: true, shieldDirection: { ...previousShieldState.shieldDirection! } };
         } else {
           return { ...deepCopyEcho(e), isShielded: false, shieldDirection: undefined };
         }
@@ -215,6 +220,7 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
       entityMap.get(key)!.push({ type: p.type, id: p.id });
     });
     // For each tile with more than one entity, handle shield/projectile logic
+    
     entityMap.forEach((entities, key) => {
       if (entities.length > 1) {
         // Record collision location
@@ -225,44 +231,37 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
         const projectileEnts = entities.filter(ent => ent.type === 'projectile' || ent.type === 'mine');
         if (echoEnt && projectileEnts.length > 0) {
           const echo = currentEchoes.find(e => e.id === echoEnt.id);
-          if (echo && echo.isShielded && echo.shieldDirection) {
+          if (echo) {
+            // Process each projectile individually, checking shield status for each one
             projectileEnts.forEach(projEnt => {
               const proj = projectiles.find(p => p.id === projEnt.id) || mines.find(m => m.id === projEnt.id);
               if (!proj) return;
-              if (proj.type === 'projectile') {
+              
+              // Check shield status for this specific projectile
+              if (echo.isShielded && echo.shieldDirection && proj.type === 'projectile') {
                 const approachDir = { x: -proj.direction.x, y: -proj.direction.y };
-                let blocked = false;
-                if (echo.shieldDirection) {
-                  const key = `${echo.shieldDirection.x},${echo.shieldDirection.y}`;
-                  const allowed = SHIELD_BLOCKS[key] || [];
-                  blocked = allowed.some(d => d.x === approachDir.x && d.y === approachDir.y);
-                }
+                const key = `${echo.shieldDirection.x},${echo.shieldDirection.y}`;
+                const allowed = SHIELD_BLOCKS[key] || [];
+                const blocked = allowed.some(d => d.x === approachDir.x && d.y === approachDir.y);
+                
                 if (blocked) {
                   proj.alive = false;
+                  // Deactivate shield after blocking a projectile
+                  echo.isShielded = false;
+                  echo.shieldDirection = undefined;
                 } else {
                   proj.alive = false;
-                  // Remove echo immediately instead of just marking as dead
+                  // Remove echo immediately
                   currentEchoes = currentEchoes.filter(e => e.id !== echo.id);
                   // Award point to projectile owner
                   const owner = getProjectileOwner(echoes, proj);
                   destroyedThisTick.push({ echoId: echo.id, by: owner && owner !== echo.playerId ? owner : null });
                 }
-              } else if (proj.type === 'mine') {
-                proj.alive = false;
-                // Remove echo immediately instead of just marking as dead
-                currentEchoes = currentEchoes.filter(e => e.id !== echo.id);
-                // Award point to mine owner
-                const owner = getProjectileOwner(echoes, proj);
-                destroyedThisTick.push({ echoId: echo.id, by: owner && owner !== echo.playerId ? owner : null });
-              }
-            });
-          } else {
-            projectileEnts.forEach(projEnt => {
-              const proj = projectiles.find(p => p.id === projEnt.id) || mines.find(m => m.id === projEnt.id);
-              if (proj) {
+              } else {
+                // No shield or mine collision - echo is destroyed
                 proj.alive = false;
                 if (echo) {
-                  // Remove echo immediately instead of just marking as dead
+                  // Remove echo immediately
                   currentEchoes = currentEchoes.filter(e => e.id !== echo.id);
                   // Award point to projectile/mine owner
                   const owner = getProjectileOwner(echoes, proj);
@@ -290,6 +289,7 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
         }
       }
     });
+    
     states.push({
       echoes: currentEchoes.map(deepCopyEcho),
       projectiles: [...projectiles.filter(p => p.alive), ...mines.filter(m => m.alive)].map(p => ({ ...p })),
@@ -299,17 +299,15 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
     });
     projectiles = projectiles.filter(p => p.alive);
     mines = mines.filter(m => m.alive);
-    currentEchoes = currentEchoes.map((e) => {
-      // Find the original echo by ID to get the correct action
-      const originalEcho = echoes.find(origEcho => origEcho.id === e.id);
-      if (!originalEcho) return e;
-      
-      const nextAction = originalEcho.instructionList[tick];
-      const lastAction = originalEcho.instructionList[originalEcho.instructionList.length - 1];
-      if (nextAction && nextAction.type === 'shield') return e;
-      if (!nextAction && lastAction && lastAction.type === 'shield') return e;
-      return { ...e, isShielded: false, shieldDirection: undefined };
+    
+    // Record shield state at the end of this tick for next tick's persistence check
+    currentEchoes.forEach(e => {
+      shieldStateAtEndOfTick.set(e.id, {
+        isShielded: e.isShielded,
+        shieldDirection: e.shieldDirection
+      });
     });
+    
     tick++;
   }
   return states;
@@ -334,6 +332,9 @@ function simulateAllyPreviewAtTick(
   let projectiles: SimProjectile[] = [];
   let mines: SimProjectile[] = [];
   let nextProjectileId = 1;
+  
+  // Track shield state at the end of each tick
+  const shieldStateAtEndOfTick = new Map<string, { isShielded: boolean; shieldDirection?: Direction }>();
 
   // Simulate up to the target tick
   for (let tick = 1; tick <= targetTick; tick++) {
@@ -349,9 +350,10 @@ function simulateAllyPreviewAtTick(
       
       const action = originalEcho.instructionList[tick - 1];
       if (!action) {
-        const lastAction = originalEcho.instructionList[originalEcho.instructionList.length - 1];
-        if (lastAction && lastAction.type === 'shield') {
-          return { ...e, isShielded: true, shieldDirection: { ...lastAction.direction } };
+        // Check if shield was active at the end of the previous tick
+        const previousShieldState = shieldStateAtEndOfTick.get(e.id);
+        if (previousShieldState && previousShieldState.isShielded) {
+          return { ...e, isShielded: true, shieldDirection: { ...previousShieldState.shieldDirection! } };
         } else {
           return { ...deepCopyEcho(e), isShielded: false, shieldDirection: undefined };
         }
@@ -385,6 +387,14 @@ function simulateAllyPreviewAtTick(
       } else {
         return { ...deepCopyEcho(e), isShielded: false, shieldDirection: undefined };
       }
+    });
+    
+    // Record shield state at the end of this tick for next tick's persistence check
+    currentEchoes.forEach(e => {
+      shieldStateAtEndOfTick.set(e.id, {
+        isShielded: e.isShielded,
+        shieldDirection: e.shieldDirection
+      });
     });
   }
 
