@@ -55,7 +55,7 @@ export interface TurnHistoryEntry {
 export interface GameState {
   board: (EntityType | null)[][]; // 8x8 grid, null for empty
   echoes: Echo[];
-  phase: 'input' | 'replay';
+  phase: 'input' | 'replay' | 'gameOver';
   currentTick: number;
   turnNumber: number;
   scores: Record<PlayerId, number>;

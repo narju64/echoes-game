@@ -124,7 +124,7 @@ This document outlines the detailed development phases for the Echoes tactical g
 - [x] Automatic tick progression
 - [x] Collision event handling
 - [x] Entity destruction
-- [ ] Win condition checking
+- [x] Win condition checking
 
 ### **Phase 6: Game Logic & Rules** 🔄
 **Goal**: Implement complete game rules and win conditions
@@ -136,15 +136,15 @@ This document outlines the detailed development phases for the Echoes tactical g
 - [x] Collision event handling
 
 #### 6.2 Win Condition System
-- [ ] 8 echoes win condition
-- [ ] All opponent echoes destroyed
-- [ ] 10 points win condition
-- [ ] Game end detection and handling
+- [x] 8 echoes win condition
+- [x] All opponent echoes destroyed
+- [x] 10 points win condition
+- [x] Game end detection and handling
 
 #### 6.3 Scoring System
-- [ ] Point tracking for destroyed echoes
-- [ ] Score display
-- [ ] Point history
+- [x] Point tracking for destroyed echoes
+- [x] Score display
+- [x] Point history
 
 ### **Phase 7: AI Implementation** ⏳
 **Goal**: Create AI opponent for single-player testing
@@ -245,7 +245,7 @@ This document outlines the detailed development phases for the Echoes tactical g
 
 ### **Phase 5-7**: Complete Game Loop 🔄
 - [x] Full replay system working
-- [ ] All win conditions implemented
+- [x] All win conditions implemented
 - [ ] AI opponent functional
 - [ ] Game balance validated
 
@@ -257,22 +257,18 @@ This document outlines the detailed development phases for the Echoes tactical g
 
 ## 🎯 Current Status & Next Steps
 
-### **Completed (Phases 1-4)** ✅
+### **Completed (Phases 1-6)** ✅
 - **Core Framework**: React TypeScript with Vite, proper project structure
 - **Game State**: Complete state management with reducer pattern
 - **Entity System**: Echoes, projectiles, mines, and shields fully implemented
 - **Action System**: All 5 actions (Walk, Dash, Fire, Mine, Shield) working
 - **Input System**: Full action assignment interface with New Echo and Extend Echo functionality
-
-### **Partially Complete (Phases 5-6)** 🔄
-- **Replay System**: Tick-by-tick execution works, entity destruction fixed, but win conditions need implementation
-- **Game Rules**: Collision detection works, but scoring and win conditions not yet implemented
+- **Replay System**: Tick-by-tick execution, entity destruction, and win condition checking
+- **Game Rules**: Collision detection, scoring, and win conditions fully implemented
 
 ### **Critical Issues to Fix** 🚨
-1. **Win Conditions**: 8 echoes and 10 points win conditions not implemented
-2. **Scoring System**: Point tracking and display not implemented
-3. **Echo Preview System**: Real-time preview of other echoes during action assignment
-4. **Back Button**: Ability to undo/change actions during assignment
+1. **Echo Preview System**: Real-time preview of other echoes during action assignment
+2. **Back Button**: Ability to undo/change actions during assignment
 
 ### **Recently Fixed** ✅
 1. **Entity Destruction**: Destroyed echoes now properly removed from future phases
@@ -282,25 +278,8 @@ This document outlines the detailed development phases for the Echoes tactical g
 5. **Shield Deactivation**: Fixed shield mechanics to properly deactivate after blocking a projectile
 6. **Consecutive Shield Prevention**: Prevent shield action from appearing if last action was shield
 7. **Shield Block Animation**: Green explosion animation positioned at tile edge where projectile hit shield
-
-### **Next Priority: Complete Echo Preview System** 🔧
-1. **Projectile trail visualization** for ally previews
-2. **Potential collision indicators** to show dangerous areas
-3. **Move restriction** to prevent selecting tiles that would cause ally collisions
-
-### **Future Priority: Implement Core Game Rules** 🔧
-1. **Implement win condition checking** and game end detection
-2. **Add scoring system** for destroyed echoes
-3. **Add back button functionality** for action editing
-
-### **Game Balance & Mechanics Improvements** 🔧
-1. **Shield Mechanics Rebalancing** ✅:
-   - Shield deactivates after blocking a projectile (not permanent) ✅
-   - Prevent shield action for 2 consecutive turns after using shield ✅
-   - Shield action should not appear as option if last action was shield ✅
-2. **Action Point Balance**: Review costs and limits for better gameplay
-3. **Collision System**: Fine-tune destruction and interaction rules
-4. **Movement Balance**: Review walk/dash costs and effectiveness
+8. **Win conditions and scoring system fully implemented and tested**
+9. **Projectile/mine collision animations restored**
 
 ### **Current Game Features** 🎮
 - ✅ 8x8 tactical board with proper labeling
@@ -313,7 +292,12 @@ This document outlines the detailed development phases for the Echoes tactical g
 - ✅ Entity destruction and lifecycle management (recently fixed)
 - ✅ Echo Preview System with semi-transparent ally rendering
 - ✅ Shield block animations with edge positioning and green particles
-- 🔄 Win conditions (not yet implemented)
-- 🔄 Scoring system (not yet implemented)
+- ✅ Win conditions (all types) implemented
+- ✅ Scoring system (fully implemented)
+
+### **Next Priority: Complete Echo Preview System** 🔧
+1. **Projectile trail visualization** for ally previews
+2. **Potential collision indicators** to show dangerous areas
+3. **Move restriction** to prevent selecting tiles that would cause ally collisions
 
 This plan provides a clear roadmap for building Echoes from concept to completion! The core mechanics and input system are now fully functional, with extend echo feature working correctly. Entity destruction and action assignment have been fixed. Echo Preview System is implemented and working well. Next priorities are completing the Echo Preview System features and implementing game balance improvements, particularly shield mechanics rebalancing. 

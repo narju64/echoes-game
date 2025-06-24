@@ -16,6 +16,44 @@ export const initialGameState: GameState = {
   turnHistory: [],
 };
 
+// Helper functions for win condition checking
+function checkWinConditions(echoes: Echo[], scores: Record<PlayerId, number>): PlayerId | null {
+  // Restore original win conditions
+  const SCORE_TO_WIN = 10;
+  const COLUMNS_TO_WIN = 8;
+
+  const player1Echoes = echoes.filter(e => e.playerId === 'player1' && e.alive);
+  const player2Echoes = echoes.filter(e => e.playerId === 'player2' && e.alive);
+
+  const player1Columns = new Set(player1Echoes.map(e => e.position.col));
+  const player2Columns = new Set(player2Echoes.map(e => e.position.col));
+
+  // Echoes in columns win condition
+  const p1HasEchoWin = player1Columns.size >= COLUMNS_TO_WIN;
+  const p2HasEchoWin = player2Columns.size >= COLUMNS_TO_WIN;
+  if (p1HasEchoWin && !p2HasEchoWin) return 'player1';
+  if (p2HasEchoWin && !p1HasEchoWin) return 'player2';
+  // If both have enough, do not end the game
+
+  // Opponent destruction win condition
+  if (player1Echoes.length === 0 && player2Echoes.length > 0) {
+    return 'player2';
+  }
+  if (player2Echoes.length === 0 && player1Echoes.length > 0) {
+    return 'player1';
+  }
+  // If both have zero, do not end the game
+
+  // Points win condition
+  const p1HasScoreWin = scores.player1 >= SCORE_TO_WIN;
+  const p2HasScoreWin = scores.player2 >= SCORE_TO_WIN;
+  if (p1HasScoreWin && !p2HasScoreWin) return 'player1';
+  if (p2HasScoreWin && !p1HasScoreWin) return 'player2';
+  // If both have enough points, do not end the game
+
+  return null;
+}
+
 // Actions for the reducer
 export type GameAction =
   | { type: 'RESET_GAME' }
@@ -24,7 +62,9 @@ export type GameAction =
   | { type: 'SUBMIT_TURN'; player: PlayerId }
   | { type: 'NEXT_TURN' }
   | { type: 'REMOVE_ECHO'; echoId: string }
-  | { type: 'RECORD_TURN_HISTORY'; entry: import('../types/gameTypes').TurnHistoryEntry };
+  | { type: 'RECORD_TURN_HISTORY'; entry: import('../types/gameTypes').TurnHistoryEntry }
+  | { type: 'UPDATE_SCORES'; destroyedEchoes: { echoId: string; by: PlayerId | null }[] }
+  | { type: 'CHECK_WIN_CONDITIONS' };
 
 function switchPlayer(player: PlayerId): PlayerId {
   return player === 'player1' ? 'player2' : 'player1';
@@ -94,6 +134,29 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         turnHistory: [...state.turnHistory, action.entry],
+      };
+    }
+    case 'UPDATE_SCORES': {
+      const destroyedEchoes = action.destroyedEchoes;
+      const newScores = { ...state.scores };
+      
+      destroyedEchoes.forEach(({ echoId, by }) => {
+        if (by) {
+          newScores[by] += 1;
+        }
+      });
+      
+      return {
+        ...state,
+        scores: newScores,
+      };
+    }
+    case 'CHECK_WIN_CONDITIONS': {
+      const winner = checkWinConditions(state.echoes, state.scores);
+      return {
+        ...state,
+        winner: winner || undefined,
+        phase: winner ? 'gameOver' : state.phase,
       };
     }
     default:

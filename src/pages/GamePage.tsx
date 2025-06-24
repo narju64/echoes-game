@@ -69,31 +69,9 @@ function deepCopyEcho(e: Echo): Echo {
   return {
     ...e,
     position: { ...e.position },
-    instructionList: e.instructionList.map(a => ({ ...a, direction: { ...a.direction } })),
+    instructionList: [...e.instructionList],
+    shieldDirection: e.shieldDirection ? { ...e.shieldDirection } : undefined,
   };
-}
-
-// Helper to get the owner of a projectile or mine
-function getProjectileOwner(echoes: Echo[], proj: { position: { row: number; col: number }; direction: Direction; type: string }) {
-  // Find the echo that fired or placed this projectile/mine
-  // For projectiles: look for an echo whose action list includes a fire at this position/direction
-  // For mines: look for an echo whose action list includes a mine at this position/direction
-  for (const e of echoes) {
-    for (const a of e.instructionList) {
-      if (
-        a.type === proj.type &&
-        e.alive &&
-        e.position &&
-        e.position.row + a.direction.y === proj.position.row &&
-        e.position.col + a.direction.x === proj.position.col &&
-        a.direction.x === proj.direction.x &&
-        a.direction.y === proj.direction.y
-      ) {
-        return e.playerId;
-      }
-    }
-  }
-  return undefined;
 }
 
 // Simulate the replay phase, returning an array of { echoes, projectiles, mines, tick, destroyed: { echoId, by: PlayerId|null }[], collisions: { row, col }[] } for each tick
@@ -260,9 +238,9 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
                   proj.alive = false;
                   // Remove echo immediately
                   currentEchoes = currentEchoes.filter(e => e.id !== echo.id);
-                  // Award point to projectile owner
-                  const owner = getProjectileOwner(echoes, proj);
-                  destroyedThisTick.push({ echoId: echo.id, by: owner && owner !== echo.playerId ? owner : null });
+                  // Award point to opponent
+                  const opponent = echo.playerId === 'player1' ? 'player2' : 'player1';
+                  destroyedThisTick.push({ echoId: echo.id, by: opponent });
                   // Record regular collision
                   collisionsThisTick.push({ row, col });
                 }
@@ -272,9 +250,9 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
                 if (echo) {
                   // Remove echo immediately
                   currentEchoes = currentEchoes.filter(e => e.id !== echo.id);
-                  // Award point to projectile/mine owner
-                  const owner = getProjectileOwner(echoes, proj);
-                  destroyedThisTick.push({ echoId: echo.id, by: owner && owner !== echo.playerId ? owner : null });
+                  // Award point to opponent
+                  const opponent = echo.playerId === 'player1' ? 'player2' : 'player1';
+                  destroyedThisTick.push({ echoId: echo.id, by: opponent });
                   // Record regular collision
                   collisionsThisTick.push({ row, col });
                 }
@@ -288,7 +266,9 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
               if (echo) {
                 // Remove echo immediately instead of just marking as dead
                 currentEchoes = currentEchoes.filter(e => e.id !== echo.id);
-                destroyedThisTick.push({ echoId: echo.id, by: null });
+                // Award point to opponent
+                const opponent = echo.playerId === 'player1' ? 'player2' : 'player1';
+                destroyedThisTick.push({ echoId: echo.id, by: opponent });
                 // Record regular collision
                 collisionsThisTick.push({ row, col });
               }
@@ -299,6 +279,11 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
               if (mine) mine.alive = false;
             }
           });
+          // If there are 2+ projectiles/mines and no echo, record a collision for animation
+          const onlyProjectilesOrMines = entities.every(ent => ent.type === 'projectile' || ent.type === 'mine');
+          if (onlyProjectilesOrMines && entities.length > 1) {
+            collisionsThisTick.push({ row, col });
+          }
         }
       }
     });
@@ -581,6 +566,11 @@ const GamePage: React.FC = () => {
       
       dispatch({ type: 'RECORD_TURN_HISTORY', entry: turnHistoryEntry });
       
+      // Update scores based on destroyed echoes
+      if (allDestroyed.length > 0) {
+        dispatch({ type: 'UPDATE_SCORES', destroyedEchoes: allDestroyed });
+      }
+      
       // Remove each destroyed echo from the game state
       destroyedEchoIds.forEach(echoId => {
         dispatch({ type: 'REMOVE_ECHO', echoId });
@@ -588,6 +578,8 @@ const GamePage: React.FC = () => {
     }
     
     dispatch({ type: 'NEXT_TURN' });
+    // Always check win conditions after all state updates
+    dispatch({ type: 'CHECK_WIN_CONDITIONS' });
   };
 
   const handleReplay = useCallback(() => {
@@ -745,6 +737,140 @@ const GamePage: React.FC = () => {
               </div>
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  // Game Over Phase
+  if (state.phase === 'gameOver') {
+    const winner = state.winner;
+    const finalScores = state.scores;
+    const player1Echoes = state.echoes.filter(e => e.playerId === 'player1' && e.alive);
+    const player2Echoes = state.echoes.filter(e => e.playerId === 'player2' && e.alive);
+    
+    return (
+      <div style={{ color: 'white', background: '#1a1a1a', minHeight: '100vh', padding: '2rem' }}>
+        <div style={{ textAlign: 'center', maxWidth: '600px', margin: '0 auto' }}>
+          <h1 style={{ fontSize: '3rem', marginBottom: '2rem', color: winner === 'player1' ? '#ff6b6b' : '#4ecdc4' }}>
+            🏆 Game Over! 🏆
+          </h1>
+          
+          <div style={{ 
+            background: '#333', 
+            padding: '2rem', 
+            borderRadius: '12px', 
+            marginBottom: '2rem',
+            border: `3px solid ${winner === 'player1' ? '#ff6b6b' : '#4ecdc4'}`
+          }}>
+            <h2 style={{ 
+              fontSize: '2rem', 
+              marginBottom: '1rem',
+              color: winner === 'player1' ? '#ff6b6b' : '#4ecdc4'
+            }}>
+              {winner === 'player1' ? 'Player 1 (Red)' : 'Player 2 (Blue)'} Wins!
+            </h2>
+            
+            <div style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>
+              Final Scores:
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginBottom: '2rem' }}>
+              <div style={{ 
+                padding: '1rem', 
+                background: winner === 'player1' ? '#ff6b6b' : '#666',
+                borderRadius: '8px',
+                minWidth: '120px'
+              }}>
+                <div style={{ fontWeight: 'bold' }}>Player 1 (Red)</div>
+                <div style={{ fontSize: '1.5rem' }}>{finalScores.player1}</div>
+              </div>
+              <div style={{ 
+                padding: '1rem', 
+                background: winner === 'player2' ? '#4ecdc4' : '#666',
+                borderRadius: '8px',
+                minWidth: '120px'
+              }}>
+                <div style={{ fontWeight: 'bold' }}>Player 2 (Blue)</div>
+                <div style={{ fontSize: '1.5rem' }}>{finalScores.player2}</div>
+              </div>
+            </div>
+            
+            <div style={{ fontSize: '1rem', marginBottom: '1rem' }}>
+              Final Echo Count:
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem' }}>
+              <div>Player 1: {player1Echoes.length} echoes</div>
+              <div>Player 2: {player2Echoes.length} echoes</div>
+            </div>
+          </div>
+          
+          <div style={{ marginBottom: '2rem' }}>
+            <Board 
+              echoes={state.echoes} 
+              projectiles={[]}
+              collisions={[]}
+              shieldBlocks={[]}
+            />
+          </div>
+          
+          <button 
+            onClick={handleReset}
+            style={{
+              padding: '1rem 2rem',
+              fontSize: '1.2rem',
+              background: '#4CAF50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            Play Again
+          </button>
+          
+          {/* Final Game Stats */}
+          <div style={{ 
+            background: '#222', 
+            color: '#eee', 
+            padding: '1rem', 
+            marginTop: '2rem', 
+            borderRadius: '8px', 
+            fontSize: '0.9rem',
+            textAlign: 'left'
+          }}>
+            <h3 style={{ margin: '0 0 1rem 0', color: '#4CAF50', textAlign: 'center' }}>Final Game Stats</h3>
+            
+            <div style={{ marginBottom: '1rem' }}>
+              <strong>Total Turns:</strong> {state.turnNumber}
+            </div>
+            
+            <div style={{ marginBottom: '1rem' }}>
+              <strong>Win Condition:</strong> {
+                finalScores.player1 >= 10 || finalScores.player2 >= 10 ? 'Points Victory (10+ points)' :
+                player1Echoes.length === 0 || player2Echoes.length === 0 ? 'Opponent Destruction' :
+                'Echo Count Victory (8 columns)'
+              }
+            </div>
+            
+            {state.turnHistory.length > 0 && (
+              <div>
+                <strong>Turn History ({state.turnHistory.length} turns):</strong>
+                <div style={{ marginLeft: '1rem', maxHeight: '200px', overflowY: 'auto' }}>
+                  {state.turnHistory.slice().reverse().map((entry, index) => (
+                    <div key={entry.turnNumber} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: '#333', borderRadius: '4px', fontSize: '0.8rem' }}>
+                      <div style={{ fontWeight: 'bold', color: '#4CAF50' }}>Turn {entry.turnNumber}</div>
+                      <div><strong>Scores:</strong> P1: {entry.scores.player1} | P2: {entry.scores.player2}</div>
+                      <div><strong>Echoes:</strong> P1: {entry.player1Echoes.length} | P2: {entry.player2Echoes.length}</div>
+                      {entry.destroyedEchoes.length > 0 && (
+                        <div><strong>Destroyed:</strong> {entry.destroyedEchoes.length} echoes</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
