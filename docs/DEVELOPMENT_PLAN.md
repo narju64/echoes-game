@@ -122,7 +122,7 @@ This document outlines the detailed development phases for the Echoes tactical g
 #### 5.3 Replay Phase Management
 - [x] Automatic tick progression
 - [x] Collision event handling
-- [ ] Entity destruction
+- [x] Entity destruction
 - [ ] Win condition checking
 
 ### **Phase 6: Game Logic & Rules** 🔄
@@ -264,22 +264,25 @@ This document outlines the detailed development phases for the Echoes tactical g
 - **Input System**: Full action assignment interface with New Echo and Extend Echo functionality
 
 ### **Partially Complete (Phases 5-6)** 🔄
-- **Replay System**: Tick-by-tick execution works, but entity destruction and win conditions need fixing
-- **Game Rules**: Collision detection works, but scoring and win conditions not fully implemented
+- **Replay System**: Tick-by-tick execution works, entity destruction fixed, but win conditions need implementation
+- **Game Rules**: Collision detection works, but scoring and win conditions not yet implemented
 
 ### **Critical Issues to Fix** 🚨
-1. **Entity Destruction**: Destroyed echoes not being removed from future phases
-2. **Win Conditions**: 8 echoes and 10 points win conditions not working
-3. **Scoring System**: Point tracking and display not implemented
-4. **Echo Preview System**: Real-time preview of other echoes during action assignment
-5. **Back Button**: Ability to undo/change actions during assignment
+1. **Win Conditions**: 8 echoes and 10 points win conditions not implemented
+2. **Scoring System**: Point tracking and display not implemented
+3. **Echo Preview System**: Real-time preview of other echoes during action assignment
+4. **Back Button**: Ability to undo/change actions during assignment
 
-### **Next Priority: Fix Core Game Loop** 🔧
-1. **Fix entity destruction** in replay phase
-2. **Implement win condition checking** and game end detection
-3. **Add scoring system** for destroyed echoes
-4. **Add echo preview system** during action assignment
-5. **Add back button functionality** for action editing
+### **Recently Fixed** ✅
+1. **Entity Destruction**: Destroyed echoes now properly removed from future phases
+2. **Action Misassignment**: Fixed bug where actions were incorrectly applied to wrong echoes after destruction
+3. **Simulation Termination**: Fixed replay stopping early due to incorrect action calculation
+
+### **Next Priority: Implement Core Game Rules** 🔧
+1. **Implement win condition checking** and game end detection
+2. **Add scoring system** for destroyed echoes
+3. **Add echo preview system** during action assignment
+4. **Add back button functionality** for action editing
 
 ### **Current Game Features** 🎮
 - ✅ 8x8 tactical board with proper labeling
@@ -289,8 +292,8 @@ This document outlines the detailed development phases for the Echoes tactical g
 - ✅ Shield mechanics and directional protection
 - ✅ Turn-based gameplay with phase transitions
 - ✅ Extend Echo functionality with proper tick numbering
-- 🔄 Win conditions (partially implemented)
-- 🔄 Scoring system (needs implementation)
-- 🔄 Entity lifecycle management (needs fixing)
+- ✅ Entity destruction and lifecycle management (recently fixed)
+- 🔄 Win conditions (not yet implemented)
+- 🔄 Scoring system (not yet implemented)
 
-This plan provides a clear roadmap for building Echoes from concept to completion! The core mechanics and input system are now fully functional, with extend echo feature working correctly. Next priority is fixing the core game loop issues. 
+This plan provides a clear roadmap for building Echoes from concept to completion! The core mechanics and input system are now fully functional, with extend echo feature working correctly. Entity destruction and action assignment have been fixed. Next priority is implementing win conditions and scoring system. 

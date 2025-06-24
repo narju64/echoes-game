@@ -21,7 +21,8 @@ export type GameAction =
   | { type: 'ADD_ECHO'; echo: Echo }
   | { type: 'FINALIZE_ECHO'; echo: Echo }
   | { type: 'SUBMIT_TURN'; player: PlayerId }
-  | { type: 'NEXT_TURN' };
+  | { type: 'NEXT_TURN' }
+  | { type: 'REMOVE_ECHO'; echoId: string };
 
 function switchPlayer(player: PlayerId): PlayerId {
   return player === 'player1' ? 'player2' : 'player1';
@@ -79,6 +80,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         submittedPlayers: [],
         pendingEcho: null,
         echoes: state.echoes.filter(e => e.alive),
+      };
+    }
+    case 'REMOVE_ECHO': {
+      return {
+        ...state,
+        echoes: state.echoes.filter(e => e.id !== action.echoId),
       };
     }
     default:

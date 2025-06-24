@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useState, useRef } from 'react';
+import React, { useReducer, useEffect, useState, useRef, useCallback } from 'react';
 import { initialGameState, gameReducer } from '../game/gameState';
 import type { Echo, PlayerId, Direction } from '../types/gameTypes';
 import Board from '../components/Board';
@@ -9,6 +9,31 @@ const getHomeRow = (playerId: PlayerId) => (playerId === 'player1' ? 0 : 7);
 
 // Add selection mode type
 type SelectionMode = 'choosing' | 'new-echo' | 'extend-echo';
+
+// Function to get column letter from column number
+const getColumnLetter = (col: number): string => {
+  return String.fromCharCode(65 + col); // A=0, B=1, C=2, etc.
+};
+
+// Function to generate echo names based on creation order and starting column
+const generateEchoNames = (echoes: Echo[]): Map<string, string> => {
+  const nameMap = new Map<string, string>();
+  let newEchoCount = 0;
+  
+  echoes.forEach(echo => {
+    const startPos = (echo as any).startingPosition || echo.position;
+    const columnLetter = getColumnLetter(startPos.col);
+    
+    // Check if this is a new echo (not an extension)
+    const isNewEcho = !nameMap.has(echo.id);
+    if (isNewEcho) {
+      newEchoCount++;
+      nameMap.set(echo.id, `Echo ${newEchoCount}${columnLetter}`);
+    }
+  });
+  
+  return nameMap;
+};
 
 interface SimProjectile {
   id: string;
@@ -52,7 +77,6 @@ function getProjectileOwner(echoes: Echo[], proj: { position: { row: number; col
 
 // Simulate the replay phase, returning an array of { echoes, projectiles, mines, tick, destroyed: { echoId, by: PlayerId|null }[], collisions: { row, col }[] } for each tick
 function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: number } })[]): { echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[]; collisions: { row: number; col: number }[] }[] {
-  const maxTicks = Math.max(...echoes.map(e => e.instructionList.length), 0);
   const states: { echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[]; collisions: { row: number; col: number }[] }[] = [];
   let currentEchoes = echoes.map(e => ({
     ...deepCopyEcho(e),
@@ -84,7 +108,23 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
     '-1,1':  [ {x:-1, y:1}, {x:0, y:1}, {x:-1, y:0} ],   // NW
   };
 
-  for (let tick = 1; tick <= maxTicks; tick++) {
+  let tick = 1;
+  while (true) {
+    // Calculate maximum remaining actions among alive echoes
+    const maxRemainingActions = Math.max(...currentEchoes.map((e) => {
+      if (!e.alive) return 0;
+      const originalEcho = echoes.find(origEcho => origEcho.id === e.id);
+      if (!originalEcho) return 0;
+      const actionsUsed = tick - 1; // Actions used so far
+      const remainingActions = Math.max(0, originalEcho.instructionList.length - actionsUsed);
+      return remainingActions;
+    }), 0);
+
+    // If no alive echoes have actions remaining, stop the replay
+    if (maxRemainingActions === 0) {
+      break;
+    }
+
     let destroyedThisTick: { echoId: string; by: PlayerId|null }[] = [];
     let collisionsThisTick: { row: number; col: number }[] = [];
     
@@ -93,11 +133,15 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
       .filter(p => p.alive)
       .map(p => ({ ...p, position: { row: p.position.row + p.direction.y, col: p.position.col + p.direction.x } }));
     // 2. Move echoes and spawn new projectiles/mines
-    currentEchoes = currentEchoes.map((e, idx) => {
-      const action = echoes[idx].instructionList[tick - 1];
+    currentEchoes = currentEchoes.map((e) => {
+      // Find the original echo by ID to get the correct action
+      const originalEcho = echoes.find(origEcho => origEcho.id === e.id);
+      if (!originalEcho) return deepCopyEcho(e);
+      
+      const action = originalEcho.instructionList[tick - 1];
       // If no action for this tick:
       if (!action) {
-        const lastAction = echoes[idx].instructionList[echoes[idx].instructionList.length - 1];
+        const lastAction = originalEcho.instructionList[originalEcho.instructionList.length - 1];
         if (lastAction && lastAction.type === 'shield') {
           return { ...e, isShielded: true, shieldDirection: { ...lastAction.direction } };
         } else {
@@ -176,14 +220,16 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
                   proj.alive = false;
                 } else {
                   proj.alive = false;
-                  echo.alive = false;
+                  // Remove echo immediately instead of just marking as dead
+                  currentEchoes = currentEchoes.filter(e => e.id !== echo.id);
                   // Award point to projectile owner
                   const owner = getProjectileOwner(echoes, proj);
                   destroyedThisTick.push({ echoId: echo.id, by: owner && owner !== echo.playerId ? owner : null });
                 }
               } else if (proj.type === 'mine') {
                 proj.alive = false;
-                echo.alive = false;
+                // Remove echo immediately instead of just marking as dead
+                currentEchoes = currentEchoes.filter(e => e.id !== echo.id);
                 // Award point to mine owner
                 const owner = getProjectileOwner(echoes, proj);
                 destroyedThisTick.push({ echoId: echo.id, by: owner && owner !== echo.playerId ? owner : null });
@@ -194,10 +240,13 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
               const proj = projectiles.find(p => p.id === projEnt.id) || mines.find(m => m.id === projEnt.id);
               if (proj) {
                 proj.alive = false;
-                if (echo) echo.alive = false;
-                // Award point to projectile/mine owner
-                const owner = getProjectileOwner(echoes, proj);
-                if (echo) destroyedThisTick.push({ echoId: echo.id, by: owner && owner !== echo.playerId ? owner : null });
+                if (echo) {
+                  // Remove echo immediately instead of just marking as dead
+                  currentEchoes = currentEchoes.filter(e => e.id !== echo.id);
+                  // Award point to projectile/mine owner
+                  const owner = getProjectileOwner(echoes, proj);
+                  destroyedThisTick.push({ echoId: echo.id, by: owner && owner !== echo.playerId ? owner : null });
+                }
               }
             });
           }
@@ -206,7 +255,8 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
             if (ent.type === 'echo') {
               const echo = currentEchoes.find(e => e.id === ent.id);
               if (echo) {
-                echo.alive = false;
+                // Remove echo immediately instead of just marking as dead
+                currentEchoes = currentEchoes.filter(e => e.id !== echo.id);
                 destroyedThisTick.push({ echoId: echo.id, by: null });
               }
             } else {
@@ -228,13 +278,18 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
     });
     projectiles = projectiles.filter(p => p.alive);
     mines = mines.filter(m => m.alive);
-    currentEchoes = currentEchoes.map((e, idx) => {
-      const nextAction = echoes[idx].instructionList[tick];
-      const lastAction = echoes[idx].instructionList[echoes[idx].instructionList.length - 1];
+    currentEchoes = currentEchoes.map((e) => {
+      // Find the original echo by ID to get the correct action
+      const originalEcho = echoes.find(origEcho => origEcho.id === e.id);
+      if (!originalEcho) return e;
+      
+      const nextAction = originalEcho.instructionList[tick];
+      const lastAction = originalEcho.instructionList[originalEcho.instructionList.length - 1];
       if (nextAction && nextAction.type === 'shield') return e;
       if (!nextAction && lastAction && lastAction.type === 'shield') return e;
       return { ...e, isShielded: false, shieldDirection: undefined };
     });
+    tick++;
   }
   return states;
 }
@@ -248,7 +303,10 @@ const GamePage: React.FC = () => {
   // Find unoccupied home row tiles
   const highlightedTiles = Array.from({ length: 8 })
     .map((_, col) => ({ row: homeRow, col }))
-    .filter(tile => !state.echoes.some(e => e.position.row === tile.row && e.position.col === tile.col && e.alive));
+    .filter(tile => !state.echoes.some(e => {
+      const startPos = (e as any).startingPosition || e.position;
+      return startPos.row === tile.row && startPos.col === tile.col && e.alive;
+    }));
 
   // Find existing player echoes for extend mode
   const playerEchoes = state.echoes.filter(e => e.playerId === currentPlayer && e.alive);
@@ -333,55 +391,76 @@ const GamePage: React.FC = () => {
   const [replayStates, setReplayStates] = useState<{ echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[]; collisions: { row: number; col: number }[] }[]>([]);
   const [replayTick, setReplayTick] = useState(0);
   const replayTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const currentTickRef = useRef(0);
 
   useEffect(() => {
     if (state.phase === 'replay') {
       const sim = simulateReplay(state.echoes.map(e => ({ ...e, startingPosition: { row: e.position.row, col: e.position.col } }) as Echo & { startingPosition: { row: number; col: number } }));
       setReplayStates(sim);
       setReplayTick(0);
+      currentTickRef.current = 0; // Reset the ref
       if (replayTimer.current) clearInterval(replayTimer.current);
       if (sim.length > 0) {
         replayTimer.current = setInterval(() => {
-          setReplayTick(tick => {
-            if (tick + 1 >= sim.length) {
-              if (replayTimer.current) clearInterval(replayTimer.current);
-              return tick;
-            }
-            return tick + 1;
-          });
+          currentTickRef.current += 1;
+          const newTick = currentTickRef.current;
+          setReplayTick(newTick);
+          if (newTick >= sim.length - 1) {
+            if (replayTimer.current) clearInterval(replayTimer.current);
+          }
         }, 3000);
       }
     } else {
       setReplayStates([]);
       setReplayTick(0);
+      currentTickRef.current = 0; // Reset the ref
       if (replayTimer.current) clearInterval(replayTimer.current);
     }
     return () => { if (replayTimer.current) clearInterval(replayTimer.current); };
   }, [state.phase, state.echoes]);
 
   const handleNextTurn = () => {
+    // Remove destroyed echoes before moving to next turn
+    if (replayStates.length > 0) {
+      const destroyedEchoIds = new Set<string>();
+      replayStates.forEach(state => {
+        state.destroyed.forEach(destroyed => {
+          destroyedEchoIds.add(destroyed.echoId);
+        });
+      });
+      
+      // Remove each destroyed echo from the game state
+      destroyedEchoIds.forEach(echoId => {
+        dispatch({ type: 'REMOVE_ECHO', echoId });
+      });
+    }
+    
     dispatch({ type: 'NEXT_TURN' });
   };
+
+  const handleReplay = useCallback(() => {
+    setReplayTick(0);
+    currentTickRef.current = 0; // Reset the ref
+    if (replayTimer.current) {
+      clearInterval(replayTimer.current);
+    }
+    replayTimer.current = null;
+    
+    replayTimer.current = setInterval(() => {
+      currentTickRef.current += 1;
+      const newTick = currentTickRef.current;
+      setReplayTick(newTick);
+      
+      if (newTick >= replayStates.length - 1) {
+        if (replayTimer.current) clearInterval(replayTimer.current);
+      }
+    }, 3000);
+  }, [replayStates.length]);
 
   if (state.phase === 'replay') {
     const current = replayStates[replayTick] || { echoes: state.echoes, projectiles: [], tick: 0, destroyed: [], collisions: [] };
     // Map SimProjectile to ProjectilePreview for Board
     const projectilePreviews = current.projectiles.map(p => ({ row: p.position.row, col: p.position.col, type: p.type, direction: p.direction }));
-    const handleReplay = () => {
-      setReplayTick(0);
-      if (replayTimer.current) clearInterval(replayTimer.current);
-      if (replayStates.length > 0) {
-        replayTimer.current = setInterval(() => {
-          setReplayTick(tick => {
-            if (tick + 1 >= replayStates.length) {
-              if (replayTimer.current) clearInterval(replayTimer.current);
-              return tick;
-            }
-            return tick + 1;
-          });
-        }, 3000);
-      }
-    };
     return (
       <div style={{ color: 'white', background: '#1a1a1a', minHeight: '100vh', padding: '2rem' }}>
         <h1>Replay Phase</h1>
@@ -398,9 +477,88 @@ const GamePage: React.FC = () => {
         <button onClick={handleReset}>Reset Game</button>
         <button onClick={handleReplay} style={{ marginLeft: 8 }}>Replay</button>
         <button onClick={handleNextTurn} style={{ marginLeft: 8 }}>Next Turn</button>
-        <pre style={{ background: '#222', color: '#eee', padding: '1rem', marginTop: '2rem', borderRadius: '8px', fontSize: '0.9rem' }}>
-          {JSON.stringify(state, null, 2)}
-        </pre>
+        
+        {/* Clean Debug Output for Replay Phase */}
+        <div style={{ background: '#222', color: '#eee', padding: '1rem', marginTop: '2rem', borderRadius: '8px', fontSize: '0.9rem' }}>
+          <h3 style={{ margin: '0 0 1rem 0', color: '#4CAF50' }}>Debug Info - Turn {state.turnNumber} (Replay)</h3>
+          
+          <div style={{ marginBottom: '1rem' }}>
+            <strong>Phase:</strong> {state.phase} | <strong>Replay Tick:</strong> {current.tick} | <strong>Total Ticks:</strong> {replayStates.length}
+          </div>
+          
+          <div style={{ marginBottom: '1rem' }}>
+            <strong>Scores:</strong> Player 1: {state.scores.player1} | Player 2: {state.scores.player2}
+          </div>
+          
+          <div style={{ marginBottom: '1rem' }}>
+            <strong>Current Echoes ({current.echoes.length}):</strong>
+            {current.echoes.length === 0 ? (
+              <div style={{ color: '#888', fontStyle: 'italic' }}>No echoes</div>
+            ) : (
+              <div style={{ marginLeft: '1rem' }}>
+                {(() => {
+                  const echoNames = generateEchoNames(current.echoes);
+                  return current.echoes.map((echo, index) => (
+                    <div key={echo.id} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: '#333', borderRadius: '4px' }}>
+                      <div style={{ color: echo.playerId === 'player1' ? '#ff6b6b' : '#4ecdc4', fontWeight: 'bold' }}>
+                        {echoNames.get(echo.id) || `Echo ${index + 1}`} ({echo.playerId === 'player1' ? 'Player 1' : 'Player 2'})
+                      </div>
+                      <div><strong>Position:</strong> ({echo.position.row}, {echo.position.col}) | <strong>Alive:</strong> {echo.alive ? 'Yes' : 'No'}</div>
+                      <div><strong>Shielded:</strong> {echo.isShielded ? 'Yes' : 'No'}</div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            )}
+          </div>
+          
+          <div style={{ marginBottom: '1rem' }}>
+            <strong>Projectiles ({current.projectiles.length}):</strong>
+            {current.projectiles.length === 0 ? (
+              <div style={{ color: '#888', fontStyle: 'italic' }}>No projectiles</div>
+            ) : (
+              <div style={{ marginLeft: '1rem' }}>
+                {current.projectiles.map((proj, index) => (
+                  <div key={index} style={{ color: '#ccc', fontSize: '0.8rem' }}>
+                    {proj.type}: ({proj.position.row}, {proj.position.col}) → ({proj.direction.x}, {proj.direction.y})
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          {current.destroyed.length > 0 && (
+            <div style={{ marginBottom: '1rem' }}>
+              <strong>Destroyed This Tick ({current.destroyed.length}):</strong>
+              <div style={{ marginLeft: '1rem' }}>
+                {(() => {
+                  const echoNames = generateEchoNames(current.echoes);
+                  return current.destroyed.map((destroyed, index) => {
+                    const echoName = echoNames.get(destroyed.echoId) || `Echo ${destroyed.echoId.slice(0, 8)}`;
+                    return (
+                      <div key={index} style={{ color: '#ff6b6b', fontSize: '0.8rem' }}>
+                        {echoName} by {destroyed.by || 'collision'}
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          )}
+          
+          {current.collisions.length > 0 && (
+            <div style={{ marginBottom: '1rem' }}>
+              <strong>Collisions ({current.collisions.length}):</strong>
+              <div style={{ marginLeft: '1rem' }}>
+                {current.collisions.map((collision, index) => (
+                  <div key={index} style={{ color: '#ffd93d', fontSize: '0.8rem' }}>
+                    ({collision.row}, {collision.col})
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -454,9 +612,65 @@ const GamePage: React.FC = () => {
       <p>Turn: {state.turnNumber}</p>
       <p>Number of Echoes: {state.echoes.length}</p>
       <button onClick={handleReset}>Reset Game</button>
-      <pre style={{ background: '#222', color: '#eee', padding: '1rem', marginTop: '2rem', borderRadius: '8px', fontSize: '0.9rem' }}>
-        {JSON.stringify(state, null, 2)}
-      </pre>
+      
+      {/* Clean Debug Output */}
+      <div style={{ background: '#222', color: '#eee', padding: '1rem', marginTop: '2rem', borderRadius: '8px', fontSize: '0.9rem' }}>
+        <h3 style={{ margin: '0 0 1rem 0', color: '#4CAF50' }}>Debug Info - Turn {state.turnNumber}</h3>
+        
+        <div style={{ marginBottom: '1rem' }}>
+          <strong>Phase:</strong> {state.phase} | <strong>Current Player:</strong> {state.currentPlayer === 'player1' ? 'Player 1 (Red)' : 'Player 2 (Blue)'}
+        </div>
+        
+        <div style={{ marginBottom: '1rem' }}>
+          <strong>Scores:</strong> Player 1: {state.scores.player1} | Player 2: {state.scores.player2}
+        </div>
+        
+        <div style={{ marginBottom: '1rem' }}>
+          <strong>Echoes ({state.echoes.length}):</strong>
+          {state.echoes.length === 0 ? (
+            <div style={{ color: '#888', fontStyle: 'italic' }}>No echoes</div>
+          ) : (
+            <div style={{ marginLeft: '1rem' }}>
+              {(() => {
+                const echoNames = generateEchoNames(state.echoes);
+                return state.echoes.map((echo, index) => (
+                  <div key={echo.id} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: '#333', borderRadius: '4px' }}>
+                    <div style={{ color: echo.playerId === 'player1' ? '#ff6b6b' : '#4ecdc4', fontWeight: 'bold' }}>
+                      {echoNames.get(echo.id) || `Echo ${index + 1}`} ({echo.playerId === 'player1' ? 'Player 1' : 'Player 2'})
+                    </div>
+                    <div><strong>Position:</strong> ({echo.position.row}, {echo.position.col}) | <strong>Alive:</strong> {echo.alive ? 'Yes' : 'No'}</div>
+                    <div><strong>Actions ({echo.instructionList.length}):</strong></div>
+                    <div style={{ marginLeft: '1rem', fontSize: '0.8rem' }}>
+                      {echo.instructionList.map((action, actionIndex) => (
+                        <div key={actionIndex} style={{ color: '#ccc' }}>
+                          Tick {action.tick}: {action.type.toUpperCase()} ({action.direction.x}, {action.direction.y}) [Cost: {action.cost}]
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+          )}
+        </div>
+        
+        {state.pendingEcho && (
+          <div style={{ marginBottom: '1rem' }}>
+            <strong>Pending Echo:</strong>
+            <div style={{ marginLeft: '1rem', padding: '0.5rem', background: '#333', borderRadius: '4px' }}>
+              <div style={{ color: state.pendingEcho.playerId === 'player1' ? '#ff6b6b' : '#4ecdc4', fontWeight: 'bold' }}>
+                {state.pendingEcho.playerId === 'player1' ? 'Player 1' : 'Player 2'} - {state.pendingEcho.actionPoints} Action Points
+              </div>
+              <div><strong>Position:</strong> ({state.pendingEcho.position.row}, {state.pendingEcho.position.col})</div>
+              <div><strong>Actions:</strong> {state.pendingEcho.instructionList.length}</div>
+            </div>
+          </div>
+        )}
+        
+        <div style={{ fontSize: '0.8rem', color: '#888' }}>
+          <strong>Submitted Players:</strong> {state.submittedPlayers.join(', ') || 'None'}
+        </div>
+      </div>
     </div>
   );
 };
