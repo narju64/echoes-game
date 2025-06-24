@@ -27,13 +27,15 @@ interface BoardProps {
   // For ally previews:
   previewEchoes?: Echo[];
   previewProjectiles?: ProjectilePreview[];
+  fullWidth?: boolean;
 }
 
-const TILE_SIZE = 48; // px
+const TILE_SIZE = 80; // px
 const TRAIL_LENGTH = 3;
 const BASE_OPACITY = 0.3;
+const ROW_LABEL_WIDTH = 32;
 
-const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClick, origin, onDirectionSelect, projectiles = [], collisions = [], shieldBlocks = [], previewEchoes = [], previewProjectiles = [] }) => {
+const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClick, origin, onDirectionSelect, projectiles = [], collisions = [], shieldBlocks = [], previewEchoes = [], previewProjectiles = [], fullWidth = false }) => {
   const [activeExplosions, setActiveExplosions] = React.useState<Set<string>>(new Set());
   const [activeShieldBlocks, setActiveShieldBlocks] = React.useState<Map<string, Direction>>(new Map());
 
@@ -102,201 +104,278 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
   };
 
   return (
-    <div style={{ display: 'inline-block', background: 'black', padding: 16, borderRadius: 12 }}>
-      {/* Column labels */}
-      <div style={{ display: 'flex', marginLeft: TILE_SIZE, marginBottom: 4 }}>
-        {COL_LABELS.map((label) => (
-          <div key={label} style={{ width: TILE_SIZE, textAlign: 'center', color: 'white', fontWeight: 'bold' }}>{label}</div>
-        ))}
-      </div>
-      {/* Board grid (rows from bottom to top) */}
-      {Array.from({ length: BOARD_SIZE }).map((_, displayRowIdx) => {
-        const rowIdx = BOARD_SIZE - 1 - displayRowIdx;
-        return (
-          <div key={rowIdx} style={{ display: 'flex', alignItems: 'center' }}>
-            {/* Row label */}
-            <div style={{ width: TILE_SIZE, textAlign: 'center', color: 'white', fontWeight: 'bold' }}>{ROW_LABELS[rowIdx]}</div>
-            {/* Tiles */}
-            {Array.from({ length: BOARD_SIZE }).map((_, colIdx) => {
-              const echo = echoes.find(e => e.position.row === rowIdx && e.position.col === colIdx && e.alive);
-              const previewEcho = previewEchoes.find(e => e.position.row === rowIdx && e.position.col === colIdx && e.alive);
-              const highlighted = isHighlighted(rowIdx, colIdx);
-              const originHere = isOrigin(rowIdx, colIdx);
-              const projectile = getProjectile(rowIdx, colIdx);
-              const previewProjectile = previewProjectiles.find(p => p.row === rowIdx && p.col === colIdx);
-              return (
-                <div
-                  key={colIdx}
-                  style={{
-                    width: TILE_SIZE,
-                    height: TILE_SIZE,
-                    border: '1px solid white',
-                    boxSizing: 'border-box',
-                    position: 'relative',
-                    background: highlighted ? '#333d' : 'black',
-                    cursor: highlighted ? 'pointer' : 'default',
-                    transition: 'background 0.2s',
-                    outline: originHere ? '2px solid #61dafb' : undefined,
-                  }}
-                  onClick={() => {
-                    if (highlighted) {
-                      if (onDirectionSelect && origin) {
-                        const dir = getDirection(origin, { row: rowIdx, col: colIdx });
-                        onDirectionSelect(dir);
-                      } else if (onTileClick) {
-                        onTileClick(rowIdx, colIdx);
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: fullWidth ? '95vw' : 'auto', paddingTop: 10 }}>
+      <div style={{ display: 'inline-block', background: 'black', padding: 16, borderRadius: 12 }}>
+        {/* Column labels */}
+        <div style={{ display: 'flex', marginBottom: 4 }}>
+          <div style={{ width: ROW_LABEL_WIDTH }} /> {/* Empty cell for row label alignment */}
+          {COL_LABELS.map((label) => (
+            <div key={label} style={{ width: TILE_SIZE, textAlign: 'center', color: 'blue', fontWeight: 'bold', textShadow: '0 0 2px #fff', fontSize: 28 }}>{label}</div>
+          ))}
+        </div>
+        {/* Board grid (rows from bottom to top) */}
+        {Array.from({ length: BOARD_SIZE }).map((_, displayRowIdx) => {
+          const rowIdx = BOARD_SIZE - 1 - displayRowIdx;
+          return (
+            <div key={rowIdx} style={{ display: 'flex', alignItems: 'center' }}>
+              {/* Row label */}
+              <div style={{ width: ROW_LABEL_WIDTH, textAlign: 'left', color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 2px #fff', fontSize: 28 }}>{ROW_LABELS[rowIdx]}</div>
+              {/* Tiles */}
+              {Array.from({ length: BOARD_SIZE }).map((_, colIdx) => {
+                const echo = echoes.find(e => e.position.row === rowIdx && e.position.col === colIdx && e.alive);
+                const previewEcho = previewEchoes.find(e => e.position.row === rowIdx && e.position.col === colIdx && e.alive);
+                const highlighted = isHighlighted(rowIdx, colIdx);
+                const originHere = isOrigin(rowIdx, colIdx);
+                const projectile = getProjectile(rowIdx, colIdx);
+                const previewProjectile = previewProjectiles.find(p => p.row === rowIdx && p.col === colIdx);
+                return (
+                  <div
+                    key={colIdx}
+                    className="board-tile-glow"
+                    style={{
+                      width: TILE_SIZE,
+                      height: TILE_SIZE,
+                      border: '1px solid',
+                      boxSizing: 'border-box',
+                      position: 'relative',
+                      background: highlighted ? '#333d' : 'black',
+                      cursor: highlighted ? 'pointer' : 'default',
+                      transition: 'background 0.2s',
+                      outline: originHere ? '2px solid #61dafb' : undefined,
+                    }}
+                    onClick={() => {
+                      if (highlighted) {
+                        if (onDirectionSelect && origin) {
+                          const dir = getDirection(origin, { row: rowIdx, col: colIdx });
+                          onDirectionSelect(dir);
+                        } else if (onTileClick) {
+                          onTileClick(rowIdx, colIdx);
+                        }
                       }
-                    }
-                  }}
-                >
-                  {/* Projectile trail rendering (for projectiles only) */}
-                  {projectile && projectile.type === 'projectile' && (
-                    <ProjectileTrail
-                      row={projectile.row}
-                      col={projectile.col}
-                      direction={projectile.direction}
-                    />
-                  )}
-                  {echo && (
-                    <>
+                    }}
+                  >
+                    {/* Projectile trail rendering (for projectiles only) */}
+                    {projectile && projectile.type === 'projectile' && (
+                      <ProjectileTrail
+                        row={projectile.row}
+                        col={projectile.col}
+                        direction={projectile.direction}
+                      />
+                    )}
+                    {echo && (
+                      <>
+                        {/* 3D, glowing, pulsing echo */}
+                        <div
+                          className={`echo-3d-pulse echo-${echo.playerId}`}
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: '50%',
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            zIndex: 2,
+                          }}
+                        />
+                        <style>
+                          {`
+                            .echo-3d-pulse {
+                              box-shadow:
+                                0 0 8px 3px var(--echo-glow-color, #fff5),
+                                0 2px 8px 0 rgba(0,0,0,0.4),
+                                0 0 0 3px rgba(255,255,255,0.05) inset;
+                              background: radial-gradient(circle at 60% 30%, #fff6 0%, transparent 60%),
+                                          radial-gradient(circle at 40% 70%, #fff2 0%, transparent 70%);
+                              animation: echo-pulse 2.4s infinite cubic-bezier(0.4,0,0.2,1);
+                            }
+                            .echo-player1 {
+                              --echo-glow-color: #ffd580;
+                              background-color: #a65c00;
+                              background-image:
+                                radial-gradient(circle, #ffb347 0%, #ff9800 40%,rgb(117, 65, 0) 80%, #000000 100%),
+                                linear-gradient(145deg, #ffb347 0%, #ff9800 60%, #a65c00 100%);
+                            }
+                            .echo-player2 {
+                              --echo-glow-color: #90caf9;
+                              background-color: #0d326d;
+                              background-image:
+                                radial-gradient(circle, #6ec6ff 0%, #2196f3 40%,rgb(44, 82, 143) 80%,rgb(38, 70, 100) 100%),
+                                linear-gradient(145deg, #6ec6ff 0%, #2196f3 60%, #0d326d 100%);
+                            }
+                            .board-tile-glow {
+                              border-color: #fff;
+                              position: relative;
+                              z-index: 1;
+                              animation: board-tile-glow-pulse 6s infinite linear;
+                            }
+                            .board-tile-glow::before {
+                              content: '';
+                              position: absolute;
+                              top: -2px; left: -2px; right: -2px; bottom: -2px;
+                              border-radius: 6px;
+                              pointer-events: none;
+                              z-index: 0;
+                              box-shadow: 0 0 0 0 rgba(255,152,0,0.10), 0 0 0 0 rgba(33,150,243,0.10);
+                              transition: box-shadow 0.3s;
+                              animation: board-tile-glow-radial 6s infinite linear;
+                            }
+                            @keyframes board-tile-glow-pulse {
+                              0%   { border-color: #fff; }
+                              20%  { border-color:rgb(252, 205, 148); }
+                              50%  { border-color: #fff; }
+                              70%  { border-color:rgb(169, 216, 255); }
+                              100% { border-color: #fff; }
+                            }
+                            @keyframes echo-pulse {
+                              0% { box-shadow: 0 0 8px 3px var(--echo-glow-color, #fff5), 0 2px 8px 0 rgba(0,0,0,0.4), 0 0 0 3px rgba(255,255,255,0.05) inset; }
+                              50% { box-shadow: 0 0 12px 5px var(--echo-glow-color, #fff3), 0 3px 10px 0 rgba(0,0,0,0.45), 0 0 0 4px rgba(255,255,255,0.06) inset; }
+                              100% { box-shadow: 0 0 8px 3px var(--echo-glow-color, #fff5), 0 2px 8px 0 rgba(0,0,0,0.4), 0 0 0 3px rgba(255,255,255,0.05) inset; }
+                            }
+                            @keyframes board-tile-glow-radial {
+                              0%   { box-shadow: 0 0 0 0 rgba(235,188,118,0.04), 0 0 0 0 rgba(100,181,246,0.04); }
+                              20%  { box-shadow: 0 0 32px 12px rgba(235,188,118,0.09); }
+                              50%  { box-shadow: 0 0 0 0 rgba(235,188,118,0.04), 0 0 0 0 rgba(100,181,246,0.04); }
+                              70%  { box-shadow: 0 0 32px 12px rgba(100,181,246,0.09); }
+                              100% { box-shadow: 0 0 0 0 rgba(235,188,118,0.04), 0 0 0 0 rgba(100,181,246,0.04); }
+                            }
+                          `}
+                        </style>
+                        {/* Shield rendering */}
+                        {echo.isShielded && echo.shieldDirection && (
+                          <svg
+                            width={32}
+                            height={32}
+                            viewBox="0 0 32 32"
+                            style={{
+                              position: 'absolute',
+                              top: '50%',
+                              left: '50%',
+                              transform: `translate(-50%, -50%) rotate(${getShieldRotation(echo.shieldDirection)}deg)`,
+                              pointerEvents: 'none',
+                            }}
+                          >
+                            <path
+                              d="M16,16 m-16,0 a16,16 0 0,1 32,0"
+                              fill="none"
+                              stroke="white"
+                              strokeWidth="4"
+                            />
+                          </svg>
+                        )}
+                      </>
+                    )}
+                    {projectile && (
                       <div
                         style={{
-                          width: 32,
-                          height: 32,
+                          width: 16,
+                          height: 16,
                           borderRadius: '50%',
-                          background: echo.playerId === 'player1' ? 'red' : 'blue',
+                          background: projectile.type === 'projectile' ? 'white' : 'transparent',
+                          border: projectile.type === 'mine' ? '2px solid white' : undefined,
                           position: 'absolute',
                           top: '50%',
                           left: '50%',
                           transform: 'translate(-50%, -50%)',
-                          boxShadow: '0 0 8px 2px rgba(255,255,255,0.3)',
+                          boxShadow: projectile.type === 'projectile' ? '0 0 6px 2px #fff8' : undefined,
                         }}
                       />
-                      {/* Shield rendering */}
-                      {echo.isShielded && echo.shieldDirection && (
-                        <svg
-                          width={32}
-                          height={32}
-                          viewBox="0 0 32 32"
+                    )}
+                    
+                    {/* Preview echo rendering (semi-transparent grey) */}
+                    {previewEcho && !echo && (
+                      <>
+                        <div
                           style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: '50%',
+                            background: 'rgba(128, 128, 128, 0.6)',
                             position: 'absolute',
                             top: '50%',
                             left: '50%',
-                            transform: `translate(-50%, -50%) rotate(${getShieldRotation(echo.shieldDirection)}deg)`,
-                            pointerEvents: 'none',
+                            transform: 'translate(-50%, -50%)',
+                            boxShadow: '0 0 8px 2px rgba(128, 128, 128, 0.3)',
                           }}
-                        >
-                          <path
-                            d="M16,16 m-16,0 a16,16 0 0,1 32,0"
-                            fill="none"
-                            stroke="white"
-                            strokeWidth="4"
+                        />
+                        {/* Preview shield rendering */}
+                        {previewEcho.isShielded && previewEcho.shieldDirection && (
+                          <svg
+                            width={32}
+                            height={32}
+                            viewBox="0 0 32 32"
+                            style={{
+                              position: 'absolute',
+                              top: '50%',
+                              left: '50%',
+                              transform: `translate(-50%, -50%) rotate(${getShieldRotation(previewEcho.shieldDirection)}deg)`,
+                              pointerEvents: 'none',
+                            }}
+                          >
+                            <path
+                              d="M16,16 m-16,0 a16,16 0 0,1 32,0"
+                              fill="none"
+                              stroke="rgba(128, 128, 128, 0.6)"
+                              strokeWidth="4"
+                            />
+                          </svg>
+                        )}
+                      </>
+                    )}
+                    
+                    {/* Preview projectile rendering */}
+                    {previewProjectile && (
+                      <>
+                        {previewProjectile.type === 'projectile' && (
+                          <ProjectileTrail
+                            row={previewProjectile.row}
+                            col={previewProjectile.col}
+                            direction={previewProjectile.direction}
                           />
-                        </svg>
-                      )}
-                    </>
-                  )}
-                  {projectile && (
-                    <div
-                      style={{
-                        width: 16,
-                        height: 16,
-                        borderRadius: '50%',
-                        background: projectile.type === 'projectile' ? 'white' : 'transparent',
-                        border: projectile.type === 'mine' ? '2px solid white' : undefined,
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        boxShadow: projectile.type === 'projectile' ? '0 0 6px 2px #fff8' : undefined,
-                      }}
-                    />
-                  )}
-                  
-                  {/* Preview echo rendering (semi-transparent grey) */}
-                  {previewEcho && !echo && (
-                    <>
-                      <div
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: '50%',
-                          background: 'rgba(128, 128, 128, 0.6)',
-                          position: 'absolute',
-                          top: '50%',
-                          left: '50%',
-                          transform: 'translate(-50%, -50%)',
-                          boxShadow: '0 0 8px 2px rgba(128, 128, 128, 0.3)',
-                        }}
-                      />
-                      {/* Preview shield rendering */}
-                      {previewEcho.isShielded && previewEcho.shieldDirection && (
-                        <svg
-                          width={32}
-                          height={32}
-                          viewBox="0 0 32 32"
+                        )}
+                        <div
                           style={{
+                            width: 16,
+                            height: 16,
+                            borderRadius: '50%',
+                            background: previewProjectile.type === 'projectile' ? 'rgba(128, 128, 128, 0.6)' : 'transparent',
+                            border: previewProjectile.type === 'mine' ? '2px solid rgba(128, 128, 128, 0.6)' : undefined,
                             position: 'absolute',
                             top: '50%',
                             left: '50%',
-                            transform: `translate(-50%, -50%) rotate(${getShieldRotation(previewEcho.shieldDirection)}deg)`,
-                            pointerEvents: 'none',
+                            transform: 'translate(-50%, -50%)',
+                            boxShadow: previewProjectile.type === 'projectile' ? '0 0 6px 2px rgba(128, 128, 128, 0.3)' : undefined,
                           }}
-                        >
-                          <path
-                            d="M16,16 m-16,0 a16,16 0 0,1 32,0"
-                            fill="none"
-                            stroke="rgba(128, 128, 128, 0.6)"
-                            strokeWidth="4"
-                          />
-                        </svg>
-                      )}
-                    </>
-                  )}
-                  
-                  {/* Preview projectile rendering */}
-                  {previewProjectile && !projectile && (
-                    <div
-                      style={{
-                        width: 16,
-                        height: 16,
-                        borderRadius: '50%',
-                        background: previewProjectile.type === 'projectile' ? 'rgba(128, 128, 128, 0.6)' : 'transparent',
-                        border: previewProjectile.type === 'mine' ? '2px solid rgba(128, 128, 128, 0.6)' : undefined,
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        boxShadow: previewProjectile.type === 'projectile' ? '0 0 6px 2px rgba(128, 128, 128, 0.3)' : undefined,
-                      }}
-                    />
-                  )}
-                  
-                  {/* Explosion animation */}
-                  {activeExplosions.has(getCollisionKey(rowIdx, colIdx)) && !activeShieldBlocks.has(getCollisionKey(rowIdx, colIdx)) && (
-                    <ExplosionAnimation
-                      row={rowIdx}
-                      col={colIdx}
-                      onComplete={() => handleExplosionComplete(rowIdx, colIdx)}
-                    />
-                  )}
-                  
-                  {/* Shield block animation */}
-                  {activeShieldBlocks.has(getCollisionKey(rowIdx, colIdx)) && (
-                    <ExplosionAnimation
-                      row={rowIdx}
-                      col={colIdx}
-                      onComplete={() => handleShieldBlockComplete(rowIdx, colIdx)}
-                      isShieldBlock={true}
-                      projectileDirection={activeShieldBlocks.get(getCollisionKey(rowIdx, colIdx))}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        );
-      })}
+                        />
+                      </>
+                    )}
+                    
+                    {/* Explosion animation */}
+                    {activeExplosions.has(getCollisionKey(rowIdx, colIdx)) && !activeShieldBlocks.has(getCollisionKey(rowIdx, colIdx)) && (
+                      <ExplosionAnimation
+                        row={rowIdx}
+                        col={colIdx}
+                        onComplete={() => handleExplosionComplete(rowIdx, colIdx)}
+                      />
+                    )}
+                    
+                    {/* Shield block animation */}
+                    {activeShieldBlocks.has(getCollisionKey(rowIdx, colIdx)) && (
+                      <ExplosionAnimation
+                        row={rowIdx}
+                        col={colIdx}
+                        onComplete={() => handleShieldBlockComplete(rowIdx, colIdx)}
+                        isShieldBlock={true}
+                        projectileDirection={activeShieldBlocks.get(getCollisionKey(rowIdx, colIdx))}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
