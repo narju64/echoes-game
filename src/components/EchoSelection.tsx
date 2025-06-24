@@ -20,54 +20,106 @@ const EchoSelection: React.FC<EchoSelectionProps> = ({
   );
 
   const hasExistingEchoes = playerEchoes.length > 0;
+  const canCreateNewEcho = playerEchoes.length < 8;
 
   return (
     <div style={{ 
       color: 'white', 
       background: '#222', 
-      padding: '2rem', 
+      padding: '1rem', 
       borderRadius: 12, 
+      width: '400px', 
+      height: '640px', 
+      minWidth: 240, 
       maxWidth: 400, 
-      margin: '2rem auto',
-      textAlign: 'center'
+      overflowY: 'auto', 
+      marginLeft: '60px', 
+      marginTop: '36px' 
     }}>
       <h2>Choose Echo Action</h2>
-      <p style={{ marginBottom: '2rem' }}>
-        {currentPlayer === 'player1' ? 'Player 1 (Red)' : 'Player 2 (Blue)'}'s Turn
+      <p style={{
+        marginBottom: '2rem',
+        color: currentPlayer === 'player1' ? '#ff9800' : 'blue',
+        fontWeight: 'bold',
+        textShadow: '0 0 1px #fff'
+      }}>
+        {currentPlayer === 'player1' ? 'Player 1 (Orange)' : 'Player 2 (Blue)'}'s Turn
       </p>
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <button
-          onClick={onNewEcho}
-          style={{
-            padding: '1rem 2rem',
-            fontSize: '1.2rem',
-            background: '#4CAF50',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: 'bold'
-          }}
-        >
-          Create New Echo (5 Action Points)
-        </button>
+        {canCreateNewEcho && (
+          <button
+            onClick={onNewEcho}
+            style={{
+              position: 'relative',
+              background: 'linear-gradient(145deg, #4CAF5020, #4CAF5040)',
+              color: 'white',
+              border: '2px solid #4CAF50',
+              padding: '1rem 2rem',
+              fontSize: '1.2rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontFamily: 'Orbitron, monospace',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: '0 0 8px #4CAF5040, inset 0 1px 0 #4CAF5060',
+              textShadow: '0 0 4px #4CAF50',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+              e.currentTarget.style.boxShadow = '0 4px 16px #4CAF5060, inset 0 1px 0 #4CAF5080';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
+              e.currentTarget.style.boxShadow = '0 0 8px #4CAF5040, inset 0 1px 0 #4CAF5060';
+            }}
+          >
+            <span style={{ fontSize: '1.4rem' }}>✨</span>
+            <span>Create New Echo (5 Action Points)</span>
+          </button>
+        )}
         
         {hasExistingEchoes && (
           <button
             onClick={onExtendEcho}
             style={{
+              position: 'relative',
+              background: 'linear-gradient(145deg, #2196F320, #2196F340)',
+              color: 'white',
+              border: '2px solid #2196F3',
               padding: '1rem 2rem',
               fontSize: '1.2rem',
-              background: '#2196F3',
-              color: 'white',
-              border: 'none',
               borderRadius: '8px',
               cursor: 'pointer',
-              fontWeight: 'bold'
+              fontWeight: 'bold',
+              fontFamily: 'Orbitron, monospace',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: '0 0 8px #2196F340, inset 0 1px 0 #2196F360',
+              textShadow: '0 0 4px #2196F3',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+              e.currentTarget.style.boxShadow = '0 4px 16px #2196F360, inset 0 1px 0 #2196F380';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
+              e.currentTarget.style.boxShadow = '0 0 8px #2196F340, inset 0 1px 0 #2196F360';
             }}
           >
-            Extend Existing Echo (3 Action Points)
+            <span style={{ fontSize: '1.4rem' }}>⚡</span>
+            <span>Extend Existing Echo (3 Action Points)</span>
           </button>
         )}
       </div>

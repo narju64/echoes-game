@@ -95,8 +95,7 @@ This document outlines the detailed development phases for the Echoes tactical g
 #### 4.3 Echo Preview System
 - [x] Semi-transparent rendering of other echoes
 - [x] Current board state display during input
-- [ ] Projectile trail visualization
-- [ ] Potential collision indicators
+- [x] Projectile trail visualization
 
 #### 4.4 Turn Management
 - [x] Input phase progression
@@ -146,73 +145,109 @@ This document outlines the detailed development phases for the Echoes tactical g
 - [x] Score display
 - [x] Point history
 
-### **Phase 7: AI Implementation** ⏳
+### **Phase 7: UI/UX & Polish** ⏳
+**Goal:** Enhance user experience and presentation
+
+- [ ] Add an intro screen before the title screen
+- [ ] Implement a detailed rulebook in the Rules page
+- [ ] Add sound effects for actions, events, and UI feedback
+
+### **Phase 8: Multiplayer Foundation** ⏳
+**Goal:** Bring Echoes online with peer-to-peer multiplayer, private game rooms, in-game chat, and basic user accounts/leaderboard. Host on narju.net.
+
+#### 8.1 Server & Hosting Setup
+- [ ] Set up a Node.js/Express backend server (for signaling, user accounts, and leaderboard)
+- [ ] Integrate WebSocket (e.g., socket.io) for real-time communication and game state sync
+- [ ] Prepare deployment pipeline for both frontend and backend
+- [ ] Configure DNS and SSL for narju.net
+
+#### 8.2 Peer-to-Peer Multiplayer
+- [ ] Implement signaling server for peer-to-peer connection setup (WebRTC or similar)
+- [ ] Allow users to create and join private game rooms (room code or invite link)
+- [ ] Ensure game state is synchronized between peers (authoritative state can be agreed upon or one peer can be host)
+- [ ] Handle reconnections and dropped peers gracefully
+
+#### 8.3 In-Game Chat
+- [ ] Add real-time chat to each game room (WebSocket or WebRTC data channel)
+- [ ] Display chat messages in the game UI
+- [ ] Basic moderation (profanity filter, message rate limit)
+
+#### 8.4 User Accounts
+- [ ] Implement simple registration and login (username + password, or email)
+- [ ] Store user records (wins/losses) in backend database
+- [ ] Session management (JWT or cookie-based)
+
+#### 8.5 Leaderboard
+- [ ] Create a leaderboard page listing users ranked by win/loss record
+- [ ] Update leaderboard in real-time or on game end
+- [ ] Display user's own rank and stats
+
+#### 8.6 Deployment
+- [ ] Deploy frontend (React/Vite) to narju.net (Vercel, Netlify, or custom VPS)
+- [ ] Deploy backend (Node.js/Express) to same domain or subdomain (e.g., api.narju.net)
+- [ ] Set up HTTPS for secure connections
+- [ ] Monitor uptime and errors
+
+#### 8.7 Stretch Goals (Optional for Later)
+- [ ] Add support for spectators
+- [ ] Implement friend system or persistent lobbies
+- [ ] Add more advanced leaderboard features (ELO, match history)
+
+### **Phase 9: AI Implementation** ⏳
 **Goal**: Create AI opponent for single-player testing
 
-#### 7.1 Basic AI Framework
+#### 9.1 Basic AI Framework
 - [ ] AI decision making system
 - [ ] Action selection algorithms
 - [ ] Strategic positioning
 - [ ] Defensive behavior
 
-#### 7.2 AI Difficulty Levels
+#### 9.2 AI Difficulty Levels
 - [ ] Easy: Basic movement and simple attacks
 - [ ] Medium: Strategic positioning and defense
 - [ ] Hard: Advanced tactics and prediction
 
-#### 7.3 AI Testing
+#### 9.3 AI Testing
 - [ ] AI vs AI testing
 - [ ] Performance optimization
 - [ ] Behavior validation
 
-### **Phase 8: Local Testing & Polish** ⏳
+### **Phase 10: Local Testing & Polish** ⏳
 **Goal**: Create polished local game experience
 
-#### 8.1 Local Game Mode
+#### 10.1 Local Game Mode
 - [ ] Single player vs AI
 - [ ] Hotseat mode (2 players, same device)
 - [ ] Game state persistence
 - [ ] Local game history
 
-#### 8.2 UI/UX Polish
+#### 10.2 UI/UX Polish
 - [ ] Responsive design
 - [ ] Visual feedback improvements
 - [ ] Error handling
 - [ ] Loading states
 
-#### 8.3 Performance Optimization
+#### 10.3 Performance Optimization
 - [ ] Rendering optimization
 - [ ] State management efficiency
 - [ ] Memory management
 - [ ] Animation performance
 
-### **Phase 9: Multiplayer Foundation** ⏳
-**Goal**: Add multiplayer capabilities
+### **Phase 11: Advanced Features & Future Work** ⏳
+**Goal:** Expand multiplayer and competitive features
 
-#### 9.1 Server Setup
-- [ ] Node.js/Express server
-- [ ] WebSocket implementation
-- [ ] Room management system
-- [ ] Player connection handling
+#### 11.1 Spectator Support
+- [ ] Allow users to watch live games
 
-#### 9.2 Multiplayer Game Logic
-- [ ] State synchronization
-- [ ] Turn management
-- [ ] Player disconnection handling
-- [ ] Game room management
-
-### **Phase 10: Authentication & Leaderboard** ⏳
-**Goal**: Add user system and competitive features
-
-#### 10.1 User System
-- [ ] Registration and login
-- [ ] User profiles
+#### 11.2 Advanced Leaderboard & Matchmaking
+- [ ] ELO or rating calculation
+- [ ] Matchmaking system
 - [ ] Game history tracking
 
-#### 10.2 ELO System
-- [ ] Rating calculation
-- [ ] Matchmaking
-- [ ] Leaderboard implementation
+#### 11.3 Social & Community Features
+- [ ] Friend system
+- [ ] Persistent lobbies
+- [ ] In-game emotes or reactions
 
 ## 🚀 Development Approach
 
@@ -222,7 +257,11 @@ This document outlines the detailed development phases for the Echoes tactical g
 3. **Phase 3** (Action System) - Game mechanics ✅
 4. **Phase 4** (Input System) - Playable game 🔄
 5. **Phase 5-6** (Replay & Rules) - Complete game loop 🔄
-6. **Phase 7** (AI) - Single player testing ⏳
+6. **Phase 7** (UI/UX & Polish) - Intro, rulebook, sound effects ⏳
+7. **Phase 8** (Multiplayer Foundation) - Online play ⏳
+8. **Phase 9** (AI) - Single player testing ⏳
+9. **Phase 10** (Local Testing & Polish) ⏳
+10. **Phase 11** (Advanced Features & Future Work) ⏳
 
 ### **Parallel Development**
 - UI components can be developed alongside game logic
@@ -243,17 +282,22 @@ This document outlines the detailed development phases for the Echoes tactical g
 - [x] Visual feedback for all interactions
 - [x] Turn structure functioning
 
-### **Phase 5-7**: Complete Game Loop 🔄
+### **Phase 5-6**: Complete Game Loop 🔄
 - [x] Full replay system working
 - [x] All win conditions implemented
 - [ ] AI opponent functional
 - [ ] Game balance validated
 
-### **Phase 8-10**: Polish & Multiplayer ⏳
+### **Phase 7-9**: Polish & Multiplayer ⏳
 - [ ] Smooth user experience
 - [ ] Multiplayer functionality
 - [ ] User authentication
 - [ ] Leaderboard system
+
+### **Phase 10-11**: Advanced Features & Future Work ⏳
+- [ ] Spectator support
+- [ ] Advanced leaderboard and matchmaking
+- [ ] Social and community features
 
 ## 🎯 Current Status & Next Steps
 
@@ -265,10 +309,6 @@ This document outlines the detailed development phases for the Echoes tactical g
 - **Input System**: Full action assignment interface with New Echo and Extend Echo functionality
 - **Replay System**: Tick-by-tick execution, entity destruction, and win condition checking
 - **Game Rules**: Collision detection, scoring, and win conditions fully implemented
-
-### **Critical Issues to Fix** 🚨
-1. **Echo Preview System**: Real-time preview of other echoes during action assignment
-2. **Back Button**: Ability to undo/change actions during assignment
 
 ### **Recently Fixed** ✅
 1. **Entity Destruction**: Destroyed echoes now properly removed from future phases
@@ -296,8 +336,12 @@ This document outlines the detailed development phases for the Echoes tactical g
 - ✅ Scoring system (fully implemented)
 
 ### **Next Priority: Complete Echo Preview System** 🔧
-1. **Projectile trail visualization** for ally previews
+1. **Projectile trail visualization** for ally previews ✅
 2. **Potential collision indicators** to show dangerous areas
-3. **Move restriction** to prevent selecting tiles that would cause ally collisions
+
+---
+
+**Note:**
+Movement is not restricted in the input phase based on previews, because the preview is only a prediction and may not reflect the actual board state (e.g., a projectile may be destroyed before a move). This allows for more strategic and flexible play.
 
 This plan provides a clear roadmap for building Echoes from concept to completion! The core mechanics and input system are now fully functional, with extend echo feature working correctly. Entity destruction and action assignment have been fixed. Echo Preview System is implemented and working well. Next priorities are completing the Echo Preview System features and implementing game balance improvements, particularly shield mechanics rebalancing. 

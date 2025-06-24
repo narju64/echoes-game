@@ -11,6 +11,127 @@ const ACTIONS: { type: ActionType; label: string; cost: number; needsDirection: 
   { type: 'shield', label: 'Shield', cost: 1, needsDirection: true },
 ];
 
+// Action Button Component with futuristic styling
+interface ActionButtonProps {
+  action: { type: ActionType; label: string; cost: number; needsDirection: boolean };
+  onClick: () => void;
+  disabled?: boolean;
+  selected?: boolean;
+}
+
+const ActionButton: React.FC<ActionButtonProps> = ({ action, onClick, disabled = false, selected = false }) => {
+  const getActionColor = (type: ActionType) => {
+    switch (type) {
+      case 'walk': return '#4CAF50'; // Green
+      case 'dash': return '#FF9800'; // Orange
+      case 'fire': return '#F44336'; // Red
+      case 'mine': return '#9C27B0'; // Purple
+      case 'shield': return '#2196F3'; // Blue
+      default: return '#666';
+    }
+  };
+
+  const getActionIcon = (type: ActionType) => {
+    switch (type) {
+      case 'walk': return '👣';
+      case 'dash': return '⚡';
+      case 'fire': return '🔥';
+      case 'mine': return '💣';
+      case 'shield': return '🛡️';
+      default: return '❓';
+    }
+  };
+
+  const color = getActionColor(action.type);
+  const icon = getActionIcon(action.type);
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        position: 'relative',
+        background: disabled ? '#333' : selected ? `linear-gradient(145deg, ${color}40, ${color}60)` : `linear-gradient(145deg, ${color}20, ${color}40)`,
+        color: disabled ? '#666' : 'white',
+        border: `2px solid ${disabled ? '#444' : selected ? `${color}80` : color}`,
+        padding: '8px 10px',
+        borderRadius: '8px',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        fontSize: '0.7rem',
+        fontWeight: 'bold',
+        fontFamily: 'Orbitron, monospace',
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px',
+        minWidth: '50px',
+        width: '76px',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: disabled ? 'none' : selected ? `0 0 16px ${color}80, inset 0 1px 0 ${color}90` : `0 0 8px ${color}40, inset 0 1px 0 ${color}60`,
+        textShadow: disabled ? 'none' : selected ? `0 0 8px ${color}` : `0 0 4px ${color}`,
+        overflow: 'hidden',
+        transform: selected ? 'scale(1.05)' : 'scale(1)',
+      }}
+      onMouseEnter={(e) => {
+        if (!disabled) {
+          e.currentTarget.style.transform = selected ? 'scale(1.05) translateY(-2px)' : 'translateY(-2px) scale(1.02)';
+          e.currentTarget.style.boxShadow = selected ? `0 4px 20px ${color}90, inset 0 1px 0 ${color}90` : `0 4px 16px ${color}60, inset 0 1px 0 ${color}80`;
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!disabled) {
+          e.currentTarget.style.transform = selected ? 'scale(1.05)' : 'translateY(0) scale(1)';
+          e.currentTarget.style.boxShadow = selected ? `0 0 16px ${color}80, inset 0 1px 0 ${color}90` : `0 0 8px ${color}40, inset 0 1px 0 ${color}60`;
+        }
+      }}
+    >
+      {/* Glowing background effect */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: disabled ? 'none' : `radial-gradient(circle at 50% 50%, ${color}20 0%, transparent 70%)`,
+          opacity: 0,
+          transition: 'opacity 0.3s',
+          pointerEvents: 'none',
+        }}
+        className="action-button-glow"
+      />
+      
+      {/* Content */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+        <span style={{ fontSize: '1.2rem' }}>{icon}</span>
+        <span>{action.label}</span>
+        <span style={{ 
+          fontSize: '0.8rem', 
+          opacity: 0.8,
+          background: disabled ? '#444' : `${color}40`,
+          padding: '2px 6px',
+          borderRadius: '4px',
+          border: `1px solid ${disabled ? '#555' : color}`
+        }}>
+          {action.cost} AP
+        </span>
+      </div>
+
+      {/* CSS for glow animation */}
+      <style>
+        {`
+          @keyframes action-button-pulse {
+            0% { opacity: 0; }
+            50% { opacity: 0.3; }
+            100% { opacity: 0; }
+          }
+          .action-button-glow {
+            animation: action-button-pulse 2s infinite;
+          }
+        `}
+      </style>
+    </button>
+  );
+};
+
 const ORTHOGONAL_DIRS: Direction[] = [
   { x: 0, y: 1 }, // N
   { x: 1, y: 0 }, // E
@@ -27,6 +148,19 @@ const ALL_DIRS: Direction[] = [
   { x: -1, y: 0 }, // W
   { x: -1, y: 1 }, // NW
 ];
+
+// Helper functions for board position formatting
+const getColumnLetter = (col: number): string => {
+  return String.fromCharCode(65 + col); // A, B, C, etc.
+};
+
+const getRowNumber = (row: number): string => {
+  return String(8 - row); // 8, 7, 6, etc. (board is displayed bottom-to-top)
+};
+
+const getBoardPosition = (row: number, col: number): string => {
+  return `${getColumnLetter(col)}${getRowNumber(row)}`;
+};
 
 function getValidDirectionTiles(pos: { row: number; col: number }, dirs: Direction[], dash: boolean = false) {
   const tiles = [];
@@ -136,7 +270,8 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
   }));
 
   // Calculate ally previews at current tick
-  const allyPreview = simulateAllyPreviewAtTick(allEchoes, pendingEcho.playerId, currentTick);
+  const otherAllies = allEchoes.filter(e => e.playerId === pendingEcho.playerId && e.id !== pendingEcho.id && e.alive);
+  const allyPreview = simulateAllyPreviewAtTick(otherAllies, pendingEcho.playerId, currentTick);
 
   // Calculate remaining action points
   const usedPoints = actions.reduce((sum, a) => sum + a.cost, 0);
@@ -150,12 +285,17 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
                     pendingEcho.instructionList.length > 0 ? pendingEcho.instructionList[pendingEcho.instructionList.length - 1] : null;
   const lastActionWasShield = lastAction && lastAction.type === 'shield';
 
-  // Filter actions to prevent consecutive shield actions
+  // Check if a mine action has already been assigned in this turn
+  const mineAlreadyUsed = actions.some(a => a.type === 'mine') || pendingEcho.instructionList.some(a => a.type === 'mine');
+
+  // Filter actions to prevent consecutive shield actions and only one mine per turn
   const availableActions = ACTIONS.filter(a => {
     // Filter by cost
     if (a.cost > remainingPoints) return false;
     // Filter out shield if last action was shield
     if (a.type === 'shield' && lastActionWasShield) return false;
+    // Filter out mine if already used
+    if (a.type === 'mine' && mineAlreadyUsed) return false;
     return true;
   });
 
@@ -229,88 +369,164 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
     : [];
 
   return (
-    <div style={{ color: 'white', background: '#222', padding: '2rem', borderRadius: 12, maxWidth: 400, margin: '2rem auto' }}>
-      <h2>Assign Actions to Echo</h2>
-      <p style={{ color: isNewEcho ? '#4CAF50' : '#2196F3', fontWeight: 'bold' }}>
-        {isNewEcho ? 'New Echo' : 'Extended Echo'} ({maxActionPoints} Action Points)
-      </p>
-      <p>Current Tick: {displayTick}</p>
-      <p>Remaining Action Points: {remainingPoints}</p>
-      
-      {/* Undo button */}
-      {(actions.length > 0 || selectingDirection) && (
-        <div style={{ marginBottom: '1rem' }}>
-          <button 
-            onClick={handleUndoLastAction}
-            style={{
-              background: '#ff5722',
-              color: 'white',
-              border: 'none',
-              padding: '8px 16px',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '0.9rem'
-            }}
-          >
-            ↩ Undo Last Action
-          </button>
-        </div>
-      )}
-      
-      {/* Show existing instructions for extended echoes */}
-      {!isNewEcho && pendingEcho.instructionList.length > 0 && (
-        <div style={{ marginBottom: '1rem' }}>
-          <p style={{ fontWeight: 'bold', color: '#ccc' }}>Existing Instructions:</p>
-          <ol style={{ color: '#ccc', fontSize: '0.9rem' }}>
-            {pendingEcho.instructionList.map((a, i) => (
-              <li key={i}>{a.type.toUpperCase()} ({a.direction.x},{a.direction.y}) [Tick: {a.tick}]</li>
-            ))}
-          </ol>
-        </div>
-      )}
-      
-      {/* Show new actions being assigned */}
-      {actions.length > 0 && (
-        <div style={{ marginBottom: '1rem' }}>
-          <p style={{ fontWeight: 'bold', color: '#4CAF50' }}>New Actions:</p>
-          <ol style={{ color: '#4CAF50' }}>
-            {actions.map((a, i) => (
-              <li key={i}>{a.type.toUpperCase()} ({a.direction.x},{a.direction.y}) [Tick: {a.tick}, Cost: {a.cost}]</li>
-            ))}
-          </ol>
-        </div>
-      )}
-      
-      {selectingDirection ? (
-        <div>
-          <p>Select direction by clicking a highlighted adjacent tile:</p>
-          <Board
-            echoes={dirEchoes}
-            highlightedTiles={highlightedTiles}
-            origin={simForDirection.simPos}
-            onDirectionSelect={handleDirectionSelect}
-            projectiles={dirProjectiles}
-            previewEchoes={allyPreview.echoes}
-            previewProjectiles={allyPreview.projectiles}
-          />
-        </div>
-      ) : (
-        <div>
-          <Board
-            echoes={previewEchoes}
-            highlightedTiles={[]}
-            projectiles={previewProjectiles}
-            previewEchoes={allyPreview.echoes}
-            previewProjectiles={allyPreview.projectiles}
-          />
-          <p>Select an action:</p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {availableActions.map(a => (
-              <button key={a.type} onClick={() => handleActionSelect(a.type, a.cost)}>{a.label} ({a.cost})</button>
-            ))}
+    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+      <div style={{ color: 'white', background: '#222', padding: '1rem', borderRadius: 12, width: '400px', height: '640px', minWidth: 240, maxWidth: 400, overflowY: 'auto', marginLeft: '60px', marginTop: '36px' }}>
+        <h2 style={{ margin: '0 0 0.5rem 0' }}>Assign Actions to Echo</h2>
+        <p style={{ color: isNewEcho ? '#4CAF50' : '#2196F3', fontWeight: 'bold', margin: '0 0 0.5rem 0' }}>
+          {isNewEcho ? 'New Echo' : 'Extended Echo'} ({maxActionPoints} Action Points)
+        </p>
+        <p style={{ margin: '0 0 0.5rem 0' }}>Current Tick: {displayTick}</p>
+        <p style={{ margin: '0 0 0.5rem 0' }}>Remaining Action Points: {remainingPoints}</p>
+        {/* Undo button */}
+        {(actions.length > 0 || selectingDirection) && (
+          <div style={{ marginBottom: '0.5rem' }}>
+            <button 
+              onClick={handleUndoLastAction}
+              style={{
+                position: 'relative',
+                background: 'linear-gradient(145deg, #ff572220, #ff572240)',
+                color: 'white',
+                border: '2px solid #ff5722',
+                padding: '10px 16px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: 'bold',
+                fontFamily: 'Orbitron, monospace',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: '0 0 8px #ff572240, inset 0 1px 0 #ff572260',
+                textShadow: '0 0 4px #ff5722',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                e.currentTarget.style.boxShadow = '0 4px 16px #ff572260, inset 0 1px 0 #ff572280';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                e.currentTarget.style.boxShadow = '0 0 8px #ff572240, inset 0 1px 0 #ff572260';
+              }}
+            >
+              <span style={{ fontSize: '1.1rem' }}>↩</span>
+              <span>Undo Last Action</span>
+            </button>
           </div>
+        )}
+        {/* Show existing instructions for extended echoes */}
+        {!isNewEcho && pendingEcho.instructionList.length > 0 && (
+          <div style={{ marginBottom: '0.5rem' }}>
+            <p style={{ fontWeight: 'bold', color: '#ccc' }}>Existing Instructions:</p>
+            <ol style={{ color: '#ccc', fontSize: '0.9rem' }}>
+              {pendingEcho.instructionList.map((a, i) => (
+                <li key={i}>{a.type.toUpperCase()} ({a.direction.x},{a.direction.y}) [Tick: {a.tick}]</li>
+              ))}
+            </ol>
+          </div>
+        )}
+        {/* Show new actions being assigned */}
+        {actions.length > 0 && (
+          <div style={{ marginBottom: '0.5rem' }}>
+            <p style={{ fontWeight: 'bold', color: '#4CAF50' }}>New Actions:</p>
+            <div style={{ color: '#4CAF50', fontFamily: 'monospace', fontSize: '0.9rem' }}>
+              {/* Show tick 0 (spawned) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '15px 10px 1fr', gap: '8px', alignItems: 'center' }}>
+                <span>0.</span>
+                <span>{getBoardPosition(pendingEcho.position.row, pendingEcho.position.col)}</span>
+                <span>: SPAWNED</span>
+              </div>
+              {/* Show each action with position and cardinal direction */}
+              {actions.map((a, i) => {
+                // Calculate position for this tick
+                let currentPos = { ...pendingEcho.position };
+                for (let j = 0; j <= i; j++) {
+                  const action = actions[j];
+                  if (action.type === 'walk') {
+                    currentPos = { 
+                      row: currentPos.row + action.direction.y, 
+                      col: currentPos.col + action.direction.x 
+                    };
+                  } else if (action.type === 'dash') {
+                    currentPos = { 
+                      row: currentPos.row + action.direction.y * 2, 
+                      col: currentPos.col + action.direction.x * 2 
+                    };
+                  }
+                }
+                
+                // Convert direction to cardinal format
+                const getCardinalDirection = (dir: Direction) => {
+                  if (dir.x === 0 && dir.y === 1) return '↑'; // N
+                  if (dir.x === 1 && dir.y === 1) return '↗'; // NE
+                  if (dir.x === 1 && dir.y === 0) return '→'; // E
+                  if (dir.x === 1 && dir.y === -1) return '↘'; // SE
+                  if (dir.x === 0 && dir.y === -1) return '↓'; // S
+                  if (dir.x === -1 && dir.y === -1) return '↙'; // SW
+                  if (dir.x === -1 && dir.y === 0) return '←'; // W
+                  if (dir.x === -1 && dir.y === 1) return '↖'; // NW
+                  return '?';
+                };
+                
+                return (
+                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '15px 10px 70px 30px 15px 50px', gap: '8px', alignItems: 'center' }}>
+                    <span>{a.tick}.</span>
+                    <span>{getBoardPosition(currentPos.row, currentPos.col)}</span>
+                    <span>: {a.type.toUpperCase()}</span>
+                    <span>({getCardinalDirection(a.direction)})</span>
+                    <span>-</span>
+                    <span>{a.cost} AP</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        <p>Select an action:</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+          {availableActions.map(a => (
+            <ActionButton 
+              key={a.type} 
+              action={a} 
+              onClick={() => handleActionSelect(a.type, a.cost)}
+              disabled={a.cost > remainingPoints}
+              selected={a.type === selectedActionType}
+            />
+          ))}
         </div>
-      )}
+        {selectingDirection && (
+          <p style={{ marginTop: '1rem', color: '#ff9800', fontWeight: 'bold' }}>
+            Select direction by clicking a highlighted adjacent tile:
+          </p>
+        )}
+      </div>
+      <div style={{ marginLeft: '60px' }}>
+        {selectingDirection ? (
+          <div>
+            <Board
+              echoes={dirEchoes}
+              highlightedTiles={highlightedTiles}
+              origin={simForDirection.simPos}
+              onDirectionSelect={handleDirectionSelect}
+              projectiles={dirProjectiles}
+              previewEchoes={allyPreview.echoes}
+              previewProjectiles={allyPreview.projectiles}
+            />
+          </div>
+        ) : (
+          <div>
+            <Board
+              echoes={previewEchoes}
+              highlightedTiles={[]}
+              projectiles={previewProjectiles}
+              previewEchoes={allyPreview.echoes}
+              previewProjectiles={allyPreview.projectiles}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };

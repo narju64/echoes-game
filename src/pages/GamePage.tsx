@@ -638,9 +638,100 @@ const GamePage: React.FC = () => {
         <div style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold', fontSize: 20, margin: '12px 0' }}>
           Tick: {current.tick}
         </div>
-        <button onClick={handleReset}>Reset Game</button>
-        <button onClick={handleReplay} style={{ marginLeft: 8 }}>Replay</button>
-        <button onClick={handleNextTurn} style={{ marginLeft: 8 }}>Next Turn</button>
+        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+          <button 
+            onClick={handleReset}
+            style={{
+              position: 'relative',
+              background: 'linear-gradient(145deg, #f4433620, #f4433640)',
+              color: 'white',
+              border: '2px solid #f44336',
+              padding: '10px 20px',
+              fontSize: '1rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontFamily: 'Orbitron, monospace',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: '0 0 8px #f4433640, inset 0 1px 0 #f4433660',
+              textShadow: '0 0 4px #f44336',
+              marginRight: '8px'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+              e.currentTarget.style.boxShadow = '0 4px 16px #f4433660, inset 0 1px 0 #f4433680';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
+              e.currentTarget.style.boxShadow = '0 0 8px #f4433640, inset 0 1px 0 #f4433660';
+            }}
+          >
+            🔄 Reset Game
+          </button>
+          <button 
+            onClick={handleReplay}
+            style={{
+              position: 'relative',
+              background: 'linear-gradient(145deg, #2196F320, #2196F340)',
+              color: 'white',
+              border: '2px solid #2196F3',
+              padding: '10px 20px',
+              fontSize: '1rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontFamily: 'Orbitron, monospace',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: '0 0 8px #2196F340, inset 0 1px 0 #2196F360',
+              textShadow: '0 0 4px #2196F3',
+              marginRight: '8px'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+              e.currentTarget.style.boxShadow = '0 4px 16px #2196F360, inset 0 1px 0 #2196F380';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
+              e.currentTarget.style.boxShadow = '0 0 8px #2196F340, inset 0 1px 0 #2196F360';
+            }}
+          >
+            ▶️ Replay
+          </button>
+          <button 
+            onClick={handleNextTurn}
+            style={{
+              position: 'relative',
+              background: 'linear-gradient(145deg, #4CAF5020, #4CAF5040)',
+              color: 'white',
+              border: '2px solid #4CAF50',
+              padding: '10px 20px',
+              fontSize: '1rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontFamily: 'Orbitron, monospace',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: '0 0 8px #4CAF5040, inset 0 1px 0 #4CAF5060',
+              textShadow: '0 0 4px #4CAF50'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+              e.currentTarget.style.boxShadow = '0 4px 16px #4CAF5060, inset 0 1px 0 #4CAF5080';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
+              e.currentTarget.style.boxShadow = '0 0 8px #4CAF5040, inset 0 1px 0 #4CAF5060';
+            }}
+          >
+            ⏭️ Next Turn
+          </button>
+        </div>
         
         {/* Clean Debug Output for Replay Phase */}
         <div style={{ background: '#222', color: '#eee', padding: '1rem', marginTop: '2rem', borderRadius: '8px', fontSize: '0.9rem' }}>
@@ -944,13 +1035,29 @@ const GamePage: React.FC = () => {
               <button
                 onClick={handleBackFromTileSelection}
                 style={{
-                  padding: '0.5rem 1rem',
-                  fontSize: '0.9rem',
-                  background: '#666',
+                  position: 'relative',
+                  background: 'linear-gradient(145deg, #66620, #66640)',
                   color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
+                  border: '2px solid #666',
+                  padding: '10px 20px',
+                  fontSize: '1rem',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontFamily: 'Orbitron, monospace',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 0 8px #66640, inset 0 1px 0 #66660',
+                  textShadow: '0 0 4px #666'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px #66660, inset 0 1px 0 #66680';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                  e.currentTarget.style.boxShadow = '0 0 8px #66640, inset 0 1px 0 #66660';
                 }}
               >
                 ← Back to Choose Echo Action
@@ -962,7 +1069,38 @@ const GamePage: React.FC = () => {
       
       <p>Turn: {state.turnNumber}</p>
       <p>Number of Echoes: {state.echoes.length}</p>
-      <button onClick={handleReset}>Reset Game</button>
+      <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+        <button 
+          onClick={handleReset}
+          style={{
+            position: 'relative',
+            background: 'linear-gradient(145deg, #f4433620, #f4433640)',
+            color: 'white',
+            border: '2px solid #f44336',
+            padding: '10px 20px',
+            fontSize: '1rem',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            fontFamily: 'Orbitron, monospace',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            boxShadow: '0 0 8px #f4433640, inset 0 1px 0 #f4433660',
+            textShadow: '0 0 4px #f44336'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+            e.currentTarget.style.boxShadow = '0 4px 16px #f4433660, inset 0 1px 0 #f4433680';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0) scale(1)';
+            e.currentTarget.style.boxShadow = '0 0 8px #f4433640, inset 0 1px 0 #f4433660';
+          }}
+        >
+          🔄 Reset Game
+        </button>
+      </div>
       
       {/* Clean Debug Output */}
       <div style={{ background: '#222', color: '#eee', padding: '1rem', marginTop: '2rem', borderRadius: '8px', fontSize: '0.9rem' }}>
