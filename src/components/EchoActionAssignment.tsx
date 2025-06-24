@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Echo, Action, ActionType, Direction, PlayerId } from '../types/gameTypes';
 import Board from './Board';
+import { simulateAllyPreviewAtTick } from '../pages/GamePage';
 
 const ACTIONS: { type: ActionType; label: string; cost: number; needsDirection: boolean }[] = [
   { type: 'walk', label: 'Walk', cost: 1, needsDirection: true },
@@ -133,6 +134,9 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
     type: p.type,
     direction: p.direction,
   }));
+
+  // Calculate ally previews at current tick
+  const allyPreview = simulateAllyPreviewAtTick(allEchoes, pendingEcho.playerId, currentTick);
 
   // Calculate remaining action points
   const usedPoints = actions.reduce((sum, a) => sum + a.cost, 0);
@@ -272,6 +276,8 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
             origin={simForDirection.simPos}
             onDirectionSelect={handleDirectionSelect}
             projectiles={dirProjectiles}
+            previewEchoes={allyPreview.echoes}
+            previewProjectiles={allyPreview.projectiles}
           />
         </div>
       ) : (
@@ -280,6 +286,8 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
             echoes={previewEchoes}
             highlightedTiles={[]}
             projectiles={previewProjectiles}
+            previewEchoes={allyPreview.echoes}
+            previewProjectiles={allyPreview.projectiles}
           />
           <p>Select an action:</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>

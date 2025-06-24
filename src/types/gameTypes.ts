@@ -41,6 +41,16 @@ export interface Echo {
   alive: boolean;
 }
 
+// Turn history entry
+export interface TurnHistoryEntry {
+  turnNumber: number;
+  player1Echoes: Echo[];
+  player2Echoes: Echo[];
+  scores: Record<PlayerId, number>;
+  destroyedEchoes: { echoId: string; by: PlayerId | null }[];
+  collisions: { row: number; col: number }[];
+}
+
 // The overall game state
 export interface GameState {
   board: (EntityType | null)[][]; // 8x8 grid, null for empty
@@ -53,4 +63,5 @@ export interface GameState {
   currentPlayer: PlayerId;
   pendingEcho: Echo | null;
   submittedPlayers: PlayerId[];
+  turnHistory: TurnHistoryEntry[];
 } 

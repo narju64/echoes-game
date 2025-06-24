@@ -13,6 +13,7 @@ export const initialGameState: GameState = {
   currentPlayer: 'player1',
   pendingEcho: null,
   submittedPlayers: [],
+  turnHistory: [],
 };
 
 // Actions for the reducer
@@ -22,7 +23,8 @@ export type GameAction =
   | { type: 'FINALIZE_ECHO'; echo: Echo }
   | { type: 'SUBMIT_TURN'; player: PlayerId }
   | { type: 'NEXT_TURN' }
-  | { type: 'REMOVE_ECHO'; echoId: string };
+  | { type: 'REMOVE_ECHO'; echoId: string }
+  | { type: 'RECORD_TURN_HISTORY'; entry: import('../types/gameTypes').TurnHistoryEntry };
 
 function switchPlayer(player: PlayerId): PlayerId {
   return player === 'player1' ? 'player2' : 'player1';
@@ -86,6 +88,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         echoes: state.echoes.filter(e => e.id !== action.echoId),
+      };
+    }
+    case 'RECORD_TURN_HISTORY': {
+      return {
+        ...state,
+        turnHistory: [...state.turnHistory, action.entry],
       };
     }
     default:

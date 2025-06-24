@@ -23,13 +23,16 @@ interface BoardProps {
   projectiles?: ProjectilePreview[];
   // For collision animations:
   collisions?: { row: number; col: number }[];
+  // For ally previews:
+  previewEchoes?: Echo[];
+  previewProjectiles?: ProjectilePreview[];
 }
 
 const TILE_SIZE = 48; // px
 const TRAIL_LENGTH = 3;
 const BASE_OPACITY = 0.3;
 
-const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClick, origin, onDirectionSelect, projectiles = [], collisions = [] }) => {
+const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClick, origin, onDirectionSelect, projectiles = [], collisions = [], previewEchoes = [], previewProjectiles = [] }) => {
   const [activeExplosions, setActiveExplosions] = React.useState<Set<string>>(new Set());
 
   // Helper to check if a tile is highlighted
@@ -95,9 +98,11 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
             {/* Tiles */}
             {Array.from({ length: BOARD_SIZE }).map((_, colIdx) => {
               const echo = echoes.find(e => e.position.row === rowIdx && e.position.col === colIdx && e.alive);
+              const previewEcho = previewEchoes.find(e => e.position.row === rowIdx && e.position.col === colIdx && e.alive);
               const highlighted = isHighlighted(rowIdx, colIdx);
               const originHere = isOrigin(rowIdx, colIdx);
               const projectile = getProjectile(rowIdx, colIdx);
+              const previewProjectile = previewProjectiles.find(p => p.row === rowIdx && p.col === colIdx);
               return (
                 <div
                   key={colIdx}
@@ -183,6 +188,65 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
                         left: '50%',
                         transform: 'translate(-50%, -50%)',
                         boxShadow: projectile.type === 'projectile' ? '0 0 6px 2px #fff8' : undefined,
+                      }}
+                    />
+                  )}
+                  
+                  {/* Preview echo rendering (semi-transparent grey) */}
+                  {previewEcho && !echo && (
+                    <>
+                      <div
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
+                          background: 'rgba(128, 128, 128, 0.6)',
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          boxShadow: '0 0 8px 2px rgba(128, 128, 128, 0.3)',
+                        }}
+                      />
+                      {/* Preview shield rendering */}
+                      {previewEcho.isShielded && previewEcho.shieldDirection && (
+                        <svg
+                          width={32}
+                          height={32}
+                          viewBox="0 0 32 32"
+                          style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: `translate(-50%, -50%) rotate(${getShieldRotation(previewEcho.shieldDirection)}deg)`,
+                            pointerEvents: 'none',
+                          }}
+                        >
+                          <path
+                            d="M16,16 m-16,0 a16,16 0 0,1 32,0"
+                            fill="none"
+                            stroke="rgba(128, 128, 128, 0.6)"
+                            strokeWidth="4"
+                          />
+                        </svg>
+                      )}
+                    </>
+                  )}
+                  
+                  {/* Preview projectile rendering */}
+                  {previewProjectile && !projectile && (
+                    <div
+                      style={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50%',
+                        background: previewProjectile.type === 'projectile' ? 'rgba(128, 128, 128, 0.6)' : 'transparent',
+                        border: previewProjectile.type === 'mine' ? '2px solid rgba(128, 128, 128, 0.6)' : undefined,
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        boxShadow: previewProjectile.type === 'projectile' ? '0 0 6px 2px rgba(128, 128, 128, 0.3)' : undefined,
                       }}
                     />
                   )}

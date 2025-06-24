@@ -12,7 +12,28 @@ type SelectionMode = 'choosing' | 'new-echo' | 'extend-echo';
 
 // Function to get column letter from column number
 const getColumnLetter = (col: number): string => {
-  return String.fromCharCode(65 + col); // A=0, B=1, C=2, etc.
+  return String.fromCharCode(65 + col); // A, B, C, etc.
+};
+
+const getRowNumber = (row: number): string => {
+  return (8 - row).toString(); // 8, 7, 6, etc. (top to bottom)
+};
+
+const getBoardPosition = (row: number, col: number): string => {
+  return `${getColumnLetter(col)}${getRowNumber(row)}`;
+};
+
+const getDirectionName = (direction: { x: number; y: number }): string => {
+  const { x, y } = direction;
+  if (x === 0 && y === 1) return 'N';
+  if (x === 1 && y === 1) return 'NE';
+  if (x === 1 && y === 0) return 'E';
+  if (x === 1 && y === -1) return 'SE';
+  if (x === 0 && y === -1) return 'S';
+  if (x === -1 && y === -1) return 'SW';
+  if (x === -1 && y === 0) return 'W';
+  if (x === -1 && y === 1) return 'NW';
+  return `(${x}, ${y})`; // fallback for unexpected directions
 };
 
 // Function to generate echo names based on creation order and starting column
@@ -294,6 +315,94 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
   return states;
 }
 
+// Simulate ally preview at a specific tick (for input phase)
+function simulateAllyPreviewAtTick(
+  allEchoes: Echo[], 
+  currentPlayer: PlayerId, 
+  targetTick: number
+): { echoes: Echo[], projectiles: { row: number; col: number; type: 'projectile' | 'mine'; direction: Direction }[] } {
+  // Filter for ally echoes only
+  const allyEchoes = allEchoes
+    .filter(e => e.playerId === currentPlayer && e.alive)
+    .map(e => ({
+      ...deepCopyEcho(e),
+      position: { ...e.position },
+      alive: true,
+    }));
+
+  let currentEchoes = allyEchoes;
+  let projectiles: SimProjectile[] = [];
+  let mines: SimProjectile[] = [];
+  let nextProjectileId = 1;
+
+  // Simulate up to the target tick
+  for (let tick = 1; tick <= targetTick; tick++) {
+    // 1. Move projectiles
+    projectiles = projectiles
+      .filter(p => p.alive)
+      .map(p => ({ ...p, position: { row: p.position.row + p.direction.y, col: p.position.col + p.direction.x } }));
+    
+    // 2. Move echoes and spawn new projectiles/mines
+    currentEchoes = currentEchoes.map((e) => {
+      const originalEcho = allEchoes.find(origEcho => origEcho.id === e.id);
+      if (!originalEcho) return deepCopyEcho(e);
+      
+      const action = originalEcho.instructionList[tick - 1];
+      if (!action) {
+        const lastAction = originalEcho.instructionList[originalEcho.instructionList.length - 1];
+        if (lastAction && lastAction.type === 'shield') {
+          return { ...e, isShielded: true, shieldDirection: { ...lastAction.direction } };
+        } else {
+          return { ...deepCopyEcho(e), isShielded: false, shieldDirection: undefined };
+        }
+      }
+      if (!e.alive) return deepCopyEcho(e);
+      
+      if (action.type === 'walk') {
+        return { ...e, position: { row: e.position.row + action.direction.y, col: e.position.col + action.direction.x }, isShielded: false, shieldDirection: undefined };
+      } else if (action.type === 'dash') {
+        return { ...e, position: { row: e.position.row + action.direction.y * 2, col: e.position.col + action.direction.x * 2 }, isShielded: false, shieldDirection: undefined };
+      } else if (action.type === 'fire') {
+        projectiles.push({
+          id: `p${nextProjectileId++}`,
+          position: { row: e.position.row + action.direction.y, col: e.position.col + action.direction.x },
+          direction: { ...action.direction },
+          type: 'projectile',
+          alive: true,
+        });
+        return { ...deepCopyEcho(e), isShielded: false, shieldDirection: undefined };
+      } else if (action.type === 'mine') {
+        mines.push({
+          id: `m${nextProjectileId++}`,
+          position: { row: e.position.row + action.direction.y, col: e.position.col + action.direction.x },
+          direction: { ...action.direction },
+          type: 'mine',
+          alive: true,
+        });
+        return { ...deepCopyEcho(e), isShielded: false, shieldDirection: undefined };
+      } else if (action.type === 'shield') {
+        return { ...e, isShielded: true, shieldDirection: { ...action.direction } };
+      } else {
+        return { ...deepCopyEcho(e), isShielded: false, shieldDirection: undefined };
+      }
+    });
+  }
+
+  // Return current state at target tick
+  return {
+    echoes: currentEchoes.map(deepCopyEcho),
+    projectiles: [...projectiles.filter(p => p.alive), ...mines.filter(m => m.alive)].map(p => ({
+      row: p.position.row,
+      col: p.position.col,
+      type: p.type,
+      direction: p.direction,
+    })),
+  };
+}
+
+// Export the preview simulation function for use in other components
+export { simulateAllyPreviewAtTick };
+
 const GamePage: React.FC = () => {
   const [state, dispatch] = useReducer(gameReducer, initialGameState);
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('choosing');
@@ -420,14 +529,33 @@ const GamePage: React.FC = () => {
   }, [state.phase, state.echoes]);
 
   const handleNextTurn = () => {
-    // Remove destroyed echoes before moving to next turn
+    // Record turn history before moving to next turn
     if (replayStates.length > 0) {
       const destroyedEchoIds = new Set<string>();
+      const allDestroyed: { echoId: string; by: PlayerId | null }[] = [];
+      const allCollisions: { row: number; col: number }[] = [];
+      
       replayStates.forEach(state => {
         state.destroyed.forEach(destroyed => {
           destroyedEchoIds.add(destroyed.echoId);
+          allDestroyed.push(destroyed);
+        });
+        state.collisions.forEach(collision => {
+          allCollisions.push(collision);
         });
       });
+      
+      // Create turn history entry
+      const turnHistoryEntry = {
+        turnNumber: state.turnNumber,
+        player1Echoes: state.echoes.filter(e => e.playerId === 'player1').map(deepCopyEcho),
+        player2Echoes: state.echoes.filter(e => e.playerId === 'player2').map(deepCopyEcho),
+        scores: { ...state.scores },
+        destroyedEchoes: allDestroyed,
+        collisions: allCollisions,
+      };
+      
+      dispatch({ type: 'RECORD_TURN_HISTORY', entry: turnHistoryEntry });
       
       // Remove each destroyed echo from the game state
       destroyedEchoIds.forEach(echoId => {
@@ -503,7 +631,7 @@ const GamePage: React.FC = () => {
                       <div style={{ color: echo.playerId === 'player1' ? '#ff6b6b' : '#4ecdc4', fontWeight: 'bold' }}>
                         {echoNames.get(echo.id) || `Echo ${index + 1}`} ({echo.playerId === 'player1' ? 'Player 1' : 'Player 2'})
                       </div>
-                      <div><strong>Position:</strong> ({echo.position.row}, {echo.position.col}) | <strong>Alive:</strong> {echo.alive ? 'Yes' : 'No'}</div>
+                      <div><strong>Position:</strong> {getBoardPosition(echo.position.row, echo.position.col)} | <strong>Alive:</strong> {echo.alive ? 'Yes' : 'No'}</div>
                       <div><strong>Shielded:</strong> {echo.isShielded ? 'Yes' : 'No'}</div>
                     </div>
                   ));
@@ -520,7 +648,7 @@ const GamePage: React.FC = () => {
               <div style={{ marginLeft: '1rem' }}>
                 {current.projectiles.map((proj, index) => (
                   <div key={index} style={{ color: '#ccc', fontSize: '0.8rem' }}>
-                    {proj.type}: ({proj.position.row}, {proj.position.col}) → ({proj.direction.x}, {proj.direction.y})
+                    {proj.type}: {getBoardPosition(proj.position.row, proj.position.col)} → {getDirectionName(proj.direction)}
                   </div>
                 ))}
               </div>
@@ -552,7 +680,28 @@ const GamePage: React.FC = () => {
               <div style={{ marginLeft: '1rem' }}>
                 {current.collisions.map((collision, index) => (
                   <div key={index} style={{ color: '#ffd93d', fontSize: '0.8rem' }}>
-                    ({collision.row}, {collision.col})
+                    {getBoardPosition(collision.row, collision.col)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {state.turnHistory.length > 0 && (
+            <div style={{ marginBottom: '1rem' }}>
+              <strong>Turn History ({state.turnHistory.length} turns):</strong>
+              <div style={{ marginLeft: '1rem', maxHeight: '300px', overflowY: 'auto' }}>
+                {state.turnHistory.slice().reverse().map((entry, index) => (
+                  <div key={entry.turnNumber} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: '#333', borderRadius: '4px', fontSize: '0.8rem' }}>
+                    <div style={{ fontWeight: 'bold', color: '#4CAF50' }}>Turn {entry.turnNumber}</div>
+                    <div><strong>Scores:</strong> P1: {entry.scores.player1} | P2: {entry.scores.player2}</div>
+                    <div><strong>Echoes:</strong> P1: {entry.player1Echoes.length} | P2: {entry.player2Echoes.length}</div>
+                    {entry.destroyedEchoes.length > 0 && (
+                      <div><strong>Destroyed:</strong> {entry.destroyedEchoes.length} echoes</div>
+                    )}
+                    {entry.collisions.length > 0 && (
+                      <div><strong>Collisions:</strong> {entry.collisions.length} events</div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -638,14 +787,38 @@ const GamePage: React.FC = () => {
                     <div style={{ color: echo.playerId === 'player1' ? '#ff6b6b' : '#4ecdc4', fontWeight: 'bold' }}>
                       {echoNames.get(echo.id) || `Echo ${index + 1}`} ({echo.playerId === 'player1' ? 'Player 1' : 'Player 2'})
                     </div>
-                    <div><strong>Position:</strong> ({echo.position.row}, {echo.position.col}) | <strong>Alive:</strong> {echo.alive ? 'Yes' : 'No'}</div>
+                    <div><strong>Position:</strong> {getBoardPosition(echo.position.row, echo.position.col)} | <strong>Alive:</strong> {echo.alive ? 'Yes' : 'No'}</div>
                     <div><strong>Actions ({echo.instructionList.length}):</strong></div>
                     <div style={{ marginLeft: '1rem', fontSize: '0.8rem' }}>
-                      {echo.instructionList.map((action, actionIndex) => (
-                        <div key={actionIndex} style={{ color: '#ccc' }}>
-                          Tick {action.tick}: {action.type.toUpperCase()} ({action.direction.x}, {action.direction.y}) [Cost: {action.cost}]
-                        </div>
-                      ))}
+                      {(() => {
+                        let currentPos = { ...echo.position };
+                        return echo.instructionList.map((action, actionIndex) => {
+                          // Calculate position for this tick
+                          let tickPosition = currentPos;
+                          if (action.type === 'walk') {
+                            tickPosition = { 
+                              row: currentPos.row + action.direction.y, 
+                              col: currentPos.col + action.direction.x 
+                            };
+                          } else if (action.type === 'dash') {
+                            tickPosition = { 
+                              row: currentPos.row + action.direction.y * 2, 
+                              col: currentPos.col + action.direction.x * 2 
+                            };
+                          }
+                          
+                          // Update current position for next iteration
+                          if (action.type === 'walk' || action.type === 'dash') {
+                            currentPos = tickPosition;
+                          }
+                          
+                          return (
+                            <div key={actionIndex} style={{ color: '#ccc' }}>
+                              Tick {action.tick}: {action.type.toUpperCase()} ({getDirectionName(action.direction)}) [Cost: {action.cost}] at {getBoardPosition(tickPosition.row, tickPosition.col)}
+                            </div>
+                          );
+                        });
+                      })()}
                     </div>
                   </div>
                 ));
@@ -661,7 +834,7 @@ const GamePage: React.FC = () => {
               <div style={{ color: state.pendingEcho.playerId === 'player1' ? '#ff6b6b' : '#4ecdc4', fontWeight: 'bold' }}>
                 {state.pendingEcho.playerId === 'player1' ? 'Player 1' : 'Player 2'} - {state.pendingEcho.actionPoints} Action Points
               </div>
-              <div><strong>Position:</strong> ({state.pendingEcho.position.row}, {state.pendingEcho.position.col})</div>
+              <div><strong>Position:</strong> {getBoardPosition(state.pendingEcho.position.row, state.pendingEcho.position.col)}</div>
               <div><strong>Actions:</strong> {state.pendingEcho.instructionList.length}</div>
             </div>
           </div>
@@ -670,6 +843,27 @@ const GamePage: React.FC = () => {
         <div style={{ fontSize: '0.8rem', color: '#888' }}>
           <strong>Submitted Players:</strong> {state.submittedPlayers.join(', ') || 'None'}
         </div>
+        
+        {state.turnHistory.length > 0 && (
+          <div style={{ marginTop: '1rem' }}>
+            <strong>Turn History ({state.turnHistory.length} turns):</strong>
+            <div style={{ marginLeft: '1rem', maxHeight: '300px', overflowY: 'auto' }}>
+              {state.turnHistory.slice().reverse().map((entry, index) => (
+                <div key={entry.turnNumber} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: '#333', borderRadius: '4px', fontSize: '0.8rem' }}>
+                  <div style={{ fontWeight: 'bold', color: '#4CAF50' }}>Turn {entry.turnNumber}</div>
+                  <div><strong>Scores:</strong> P1: {entry.scores.player1} | P2: {entry.scores.player2}</div>
+                  <div><strong>Echoes:</strong> P1: {entry.player1Echoes.length} | P2: {entry.player2Echoes.length}</div>
+                  {entry.destroyedEchoes.length > 0 && (
+                    <div><strong>Destroyed:</strong> {entry.destroyedEchoes.length} echoes</div>
+                  )}
+                  {entry.collisions.length > 0 && (
+                    <div><strong>Collisions:</strong> {entry.collisions.length} events</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
