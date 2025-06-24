@@ -264,6 +264,23 @@ const GamePage: React.FC = () => {
     setSelectionMode('extend-echo');
   };
 
+  // Handle going back from tile selection
+  const handleBackFromTileSelection = () => {
+    setSelectionMode('choosing');
+  };
+
+  // Reset selection mode when turn changes
+  useEffect(() => {
+    setSelectionMode('choosing');
+  }, [state.currentPlayer, state.turnNumber]);
+
+  // Auto-set to new echo if no existing echoes
+  useEffect(() => {
+    if (selectionMode === 'choosing' && playerEchoes.length === 0) {
+      setSelectionMode('new-echo');
+    }
+  }, [selectionMode, playerEchoes.length]);
+
   // Handle tile click for new echo
   const handleNewEchoTileClick = (row: number, col: number) => {
     if (!highlightedTiles.some(t => t.row === row && t.col === col)) return;
@@ -311,11 +328,6 @@ const GamePage: React.FC = () => {
     dispatch({ type: 'RESET_GAME' });
     setSelectionMode('choosing');
   };
-
-  // Reset selection mode when turn changes
-  useEffect(() => {
-    setSelectionMode('choosing');
-  }, [state.currentPlayer, state.turnNumber]);
 
   // Replay phase logic
   const [replayStates, setReplayStates] = useState<{ echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[]; collisions: { row: number; col: number }[] }[]>([]);
@@ -404,7 +416,7 @@ const GamePage: React.FC = () => {
       
       {state.pendingEcho ? (
         <EchoActionAssignment pendingEcho={state.pendingEcho} onComplete={handleFinalizeEcho} allEchoes={state.echoes} />
-      ) : selectionMode === 'choosing' ? (
+      ) : (selectionMode === 'choosing' && playerEchoes.length > 0) ? (
         <EchoSelection 
           currentPlayer={currentPlayer}
           existingEchoes={state.echoes}
@@ -412,11 +424,31 @@ const GamePage: React.FC = () => {
           onExtendEcho={handleExtendEcho}
         />
       ) : (
-        <Board 
-          echoes={state.echoes} 
-          highlightedTiles={selectionMode === 'new-echo' ? highlightedTiles : existingEchoTiles} 
-          onTileClick={selectionMode === 'new-echo' ? handleNewEchoTileClick : handleExtendEchoTileClick} 
-        />
+        <div>
+          <Board 
+            echoes={state.echoes} 
+            highlightedTiles={selectionMode === 'new-echo' ? highlightedTiles : existingEchoTiles} 
+            onTileClick={selectionMode === 'new-echo' ? handleNewEchoTileClick : handleExtendEchoTileClick} 
+          />
+          <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+            {playerEchoes.length > 0 && (
+              <button
+                onClick={handleBackFromTileSelection}
+                style={{
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.9rem',
+                  background: '#666',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                ← Back to Choose Echo Action
+              </button>
+            )}
+          </div>
+        </div>
       )}
       
       <p>Turn: {state.turnNumber}</p>

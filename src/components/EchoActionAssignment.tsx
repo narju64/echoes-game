@@ -162,6 +162,25 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
     setSelectedActionType(null);
   };
 
+  // Handle undoing the last action
+  const handleUndoLastAction = () => {
+    // If currently selecting direction, just cancel that selection
+    if (selectingDirection) {
+      setSelectingDirection(null);
+      setSelectedActionType(null);
+      return;
+    }
+    
+    // Otherwise, undo the last completed action
+    if (actions.length === 0) return;
+    
+    const newActions = actions.slice(0, -1);
+    setActions(newActions);
+    setCurrentTick(currentTick - 1);
+    setSelectingDirection(null);
+    setSelectedActionType(null);
+  };
+
   // When all points are spent, finalize
   React.useEffect(() => {
     if (remainingPoints === 0) {
@@ -199,6 +218,26 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
       </p>
       <p>Current Tick: {displayTick}</p>
       <p>Remaining Action Points: {remainingPoints}</p>
+      
+      {/* Undo button */}
+      {(actions.length > 0 || selectingDirection) && (
+        <div style={{ marginBottom: '1rem' }}>
+          <button 
+            onClick={handleUndoLastAction}
+            style={{
+              background: '#ff5722',
+              color: 'white',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '0.9rem'
+            }}
+          >
+            ↩ Undo Last Action
+          </button>
+        </div>
+      )}
       
       {/* Show existing instructions for extended echoes */}
       {!isNewEcho && pendingEcho.instructionList.length > 0 && (

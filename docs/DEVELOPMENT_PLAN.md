@@ -90,7 +90,7 @@ This document outlines the detailed development phases for the Echoes tactical g
 - [x] 5 action buttons (Walk, Shield, Dash, Fire, Mine)
 - [x] Action point display and tracking
 - [x] Valid direction highlighting
-- [ ] Back button functionality
+- [x] Back button functionality
 
 #### 4.3 Echo Preview System
 - [ ] Semi-transparent rendering of other echoes
