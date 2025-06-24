@@ -1,6 +1,6 @@
 import React, { useReducer, useEffect, useState, useRef, useCallback } from 'react';
-import { initialGameState, gameReducer } from '../game/gameState';
-import type { Echo, PlayerId, Direction } from '../types/gameTypes';
+import { initialGameState, gameReducer, type GameAction } from '../game/gameState';
+import type { Echo, PlayerId, Direction, GameState } from '../types/gameTypes';
 import Board from '../components/Board';
 import EchoActionAssignment from '../components/EchoActionAssignment';
 import EchoSelection from '../components/EchoSelection';
@@ -412,8 +412,10 @@ function simulateAllyPreviewAtTick(
 // Export the preview simulation function for use in other components
 export { simulateAllyPreviewAtTick };
 
+const BOARD_WIDTH = 32 + 80 * 8; // ROW_LABEL_WIDTH + TILE_SIZE * 8
+
 const GamePage: React.FC = () => {
-  const [state, dispatch] = useReducer(gameReducer, initialGameState);
+  const [state, dispatch] = useReducer(gameReducer, initialGameState) as [GameState, React.Dispatch<GameAction>];
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('choosing');
   const currentPlayer: PlayerId = state.currentPlayer;
   const homeRow = getHomeRow(currentPlayer);
@@ -601,24 +603,41 @@ const GamePage: React.FC = () => {
     }, 3000);
   }, [replayStates.length]);
 
+  // Determine highlightedTiles and onTileClick based on selectionMode
+  let boardHighlightedTiles: { row: number; col: number }[] = [];
+  let boardOnTileClick: ((row: number, col: number) => void) | undefined = undefined;
+  if (selectionMode === 'new-echo') {
+    boardHighlightedTiles = highlightedTiles;
+    boardOnTileClick = handleNewEchoTileClick;
+  } else if (selectionMode === 'extend-echo') {
+    boardHighlightedTiles = existingEchoTiles;
+    boardOnTileClick = handleExtendEchoTileClick;
+  }
+
   if (state.phase === 'replay') {
     const current = replayStates[replayTick] || { echoes: state.echoes, projectiles: [], tick: 0, destroyed: [], collisions: [], shieldBlocks: [] };
     // Map SimProjectile to ProjectilePreview for Board
     const projectilePreviews = current.projectiles.map(p => ({ row: p.position.row, col: p.position.col, type: p.type, direction: p.direction }));
     return (
       <div style={{ color: 'white', background: '#1a1a1a', minHeight: '100vh', padding: '2rem' }}>
-        <h1>Replay Phase</h1>
-        <div style={{ display: 'flex', gap: 32, marginBottom: 16 }}>
-          <div>Player 1 (Red): <b>{state.scores.player1}</b></div>
-          <div>Player 2 (Blue): <b>{state.scores.player2}</b></div>
+        <div style={{ width: BOARD_WIDTH, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <div style={{ color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'left', fontSize: 22 }}>Player 1 (Orange): <b>{state.scores.player1}</b></div>
+          <div style={{ color: 'blue', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'right', fontSize: 22 }}>Player 2 (Blue): <b>{state.scores.player2}</b></div>
         </div>
-        <h2>Tick: {current.tick}</h2>
+        <div style={{ width: BOARD_WIDTH, margin: '0 auto', textAlign: 'center', marginBottom: 0 }}>
+          <h2 style={{ color: currentPlayer === 'player1' ? '#ff9800' : 'blue', textShadow: '0 0 1px #fff', margin: 0, fontSize: 28, textDecoration: 'underline' }}>
+            Current Turn: {currentPlayer === 'player1' ? 'Player 1 (Orange)' : 'Player 2 (Blue)'}
+          </h2>
+        </div>
         <Board 
           echoes={current.echoes} 
           projectiles={projectilePreviews} 
           collisions={current.collisions}
           shieldBlocks={current.shieldBlocks}
         />
+        <div style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold', fontSize: 20, margin: '12px 0' }}>
+          Tick: {current.tick}
+        </div>
         <button onClick={handleReset}>Reset Game</button>
         <button onClick={handleReplay} style={{ marginLeft: 8 }}>Replay</button>
         <button onClick={handleNextTurn} style={{ marginLeft: 8 }}>Next Turn</button>
@@ -645,7 +664,7 @@ const GamePage: React.FC = () => {
                   const echoNames = generateEchoNames(current.echoes);
                   return current.echoes.map((echo, index) => (
                     <div key={echo.id} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: '#333', borderRadius: '4px' }}>
-                      <div style={{ color: echo.playerId === 'player1' ? '#ff6b6b' : '#4ecdc4', fontWeight: 'bold' }}>
+                      <div style={{ color: echo.playerId === 'player1' ? 'orange' : '#4ecdc4', fontWeight: 'bold' }}>
                         {echoNames.get(echo.id) || `Echo ${index + 1}`} ({echo.playerId === 'player1' ? 'Player 1' : 'Player 2'})
                       </div>
                       <div><strong>Position:</strong> {getBoardPosition(echo.position.row, echo.position.col)} | <strong>Alive:</strong> {echo.alive ? 'Yes' : 'No'}</div>
@@ -681,7 +700,7 @@ const GamePage: React.FC = () => {
                   return current.destroyed.map((destroyed, index) => {
                     const echoName = echoNames.get(destroyed.echoId) || `Echo ${destroyed.echoId.slice(0, 8)}`;
                     return (
-                      <div key={index} style={{ color: '#ff6b6b', fontSize: '0.8rem' }}>
+                      <div key={index} style={{ color: 'orange', fontSize: '0.8rem' }}>
                         {echoName} by {destroyed.by || 'collision'}
                       </div>
                     );
@@ -752,7 +771,7 @@ const GamePage: React.FC = () => {
     return (
       <div style={{ color: 'white', background: '#1a1a1a', minHeight: '100vh', padding: '2rem' }}>
         <div style={{ textAlign: 'center', maxWidth: '600px', margin: '0 auto' }}>
-          <h1 style={{ fontSize: '3rem', marginBottom: '2rem', color: winner === 'player1' ? '#ff6b6b' : '#4ecdc4' }}>
+          <h1 style={{ fontSize: '3rem', marginBottom: '2rem', color: winner === 'player1' ? 'orange' : '#4ecdc4' }}>
             🏆 Game Over! 🏆
           </h1>
           
@@ -761,14 +780,14 @@ const GamePage: React.FC = () => {
             padding: '2rem', 
             borderRadius: '12px', 
             marginBottom: '2rem',
-            border: `3px solid ${winner === 'player1' ? '#ff6b6b' : '#4ecdc4'}`
+            border: `3px solid ${winner === 'player1' ? 'orange' : '#4ecdc4'}`
           }}>
             <h2 style={{ 
               fontSize: '2rem', 
               marginBottom: '1rem',
-              color: winner === 'player1' ? '#ff6b6b' : '#4ecdc4'
+              color: winner === 'player1' ? 'orange' : '#4ecdc4'
             }}>
-              {winner === 'player1' ? 'Player 1 (Red)' : 'Player 2 (Blue)'} Wins!
+              {winner === 'player1' ? 'Player 1 (Orange)' : 'Player 2 (Blue)'} Wins!
             </h2>
             
             <div style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>
@@ -777,11 +796,11 @@ const GamePage: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginBottom: '2rem' }}>
               <div style={{ 
                 padding: '1rem', 
-                background: winner === 'player1' ? '#ff6b6b' : '#666',
+                background: winner === 'player1' ? 'orange' : '#666',
                 borderRadius: '8px',
                 minWidth: '120px'
               }}>
-                <div style={{ fontWeight: 'bold' }}>Player 1 (Red)</div>
+                <div style={{ fontWeight: 'bold' }}>Player 1 (Orange)</div>
                 <div style={{ fontSize: '1.5rem' }}>{finalScores.player1}</div>
               </div>
               <div style={{ 
@@ -878,29 +897,48 @@ const GamePage: React.FC = () => {
 
   return (
     <div style={{ color: 'white', background: '#1a1a1a', minHeight: '100vh', padding: '2rem' }}>
-      <h1>Game Board</h1>
-      <div style={{ display: 'flex', gap: 32, marginBottom: 16 }}>
-        <div>Player 1 (Red): <b>{state.scores.player1}</b></div>
-        <div>Player 2 (Blue): <b>{state.scores.player2}</b></div>
+      <div style={{ width: BOARD_WIDTH, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <div style={{ color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'left', fontSize: 22 }}>Player 1 (Orange): <b>{state.scores.player1}</b></div>
+        <div style={{ color: 'blue', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'right', fontSize: 22 }}>Player 2 (Blue): <b>{state.scores.player2}</b></div>
       </div>
-      <h2>Current Turn: {currentPlayer === 'player1' ? 'Player 1 (Red)' : 'Player 2 (Blue)'}</h2>
+      <div style={{ width: BOARD_WIDTH, margin: '0 auto', textAlign: 'center', marginBottom: 0 }}>
+        <h2 style={{ color: currentPlayer === 'player1' ? '#ff9800' : 'blue', textShadow: '0 0 1px #fff', margin: 0, fontSize: 28, textDecoration: 'underline' }}>
+          Current Turn: {currentPlayer === 'player1' ? 'Player 1 (Orange)' : 'Player 2 (Blue)'}
+        </h2>
+      </div>
       
       {state.pendingEcho ? (
         <EchoActionAssignment pendingEcho={state.pendingEcho} onComplete={handleFinalizeEcho} allEchoes={state.echoes} />
       ) : (selectionMode === 'choosing' && playerEchoes.length > 0) ? (
-        <EchoSelection 
-          currentPlayer={currentPlayer}
-          existingEchoes={state.echoes}
-          onNewEcho={handleNewEcho}
-          onExtendEcho={handleExtendEcho}
-        />
+        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+          <EchoSelection 
+            currentPlayer={currentPlayer}
+            existingEchoes={state.echoes}
+            onNewEcho={handleNewEcho}
+            onExtendEcho={handleExtendEcho}
+          />
+          <div style={{ marginLeft: '60px' }}>
+            <Board 
+              echoes={state.echoes} 
+              highlightedTiles={boardHighlightedTiles}
+              onTileClick={boardOnTileClick}
+              fullWidth={false}
+            />
+          </div>
+        </div>
       ) : (
         <div>
           <Board 
             echoes={state.echoes} 
-            highlightedTiles={selectionMode === 'new-echo' ? highlightedTiles : existingEchoTiles} 
-            onTileClick={selectionMode === 'new-echo' ? handleNewEchoTileClick : handleExtendEchoTileClick} 
+            highlightedTiles={boardHighlightedTiles}
+            onTileClick={boardOnTileClick}
+            fullWidth={true}
           />
+          {state.phase === 'replay' && (
+            <div style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold', fontSize: 20, margin: '12px 0' }}>
+              Tick: {state.currentTick}
+            </div>
+          )}
           <div style={{ marginTop: '1rem', textAlign: 'center' }}>
             {playerEchoes.length > 0 && (
               <button
@@ -931,7 +969,7 @@ const GamePage: React.FC = () => {
         <h3 style={{ margin: '0 0 1rem 0', color: '#4CAF50' }}>Debug Info - Turn {state.turnNumber}</h3>
         
         <div style={{ marginBottom: '1rem' }}>
-          <strong>Phase:</strong> {state.phase} | <strong>Current Player:</strong> {state.currentPlayer === 'player1' ? 'Player 1 (Red)' : 'Player 2 (Blue)'}
+          <strong>Phase:</strong> {state.phase} | <strong>Current Player:</strong> {state.currentPlayer === 'player1' ? 'Player 1 (Orange)' : 'Player 2 (Blue)'}
         </div>
         
         <div style={{ marginBottom: '1rem' }}>
@@ -948,7 +986,7 @@ const GamePage: React.FC = () => {
                 const echoNames = generateEchoNames(state.echoes);
                 return state.echoes.map((echo, index) => (
                   <div key={echo.id} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: '#333', borderRadius: '4px' }}>
-                    <div style={{ color: echo.playerId === 'player1' ? '#ff6b6b' : '#4ecdc4', fontWeight: 'bold' }}>
+                    <div style={{ color: echo.playerId === 'player1' ? 'orange' : '#4ecdc4', fontWeight: 'bold' }}>
                       {echoNames.get(echo.id) || `Echo ${index + 1}`} ({echo.playerId === 'player1' ? 'Player 1' : 'Player 2'})
                     </div>
                     <div><strong>Position:</strong> {getBoardPosition(echo.position.row, echo.position.col)} | <strong>Alive:</strong> {echo.alive ? 'Yes' : 'No'}</div>
@@ -995,7 +1033,7 @@ const GamePage: React.FC = () => {
           <div style={{ marginBottom: '1rem' }}>
             <strong>Pending Echo:</strong>
             <div style={{ marginLeft: '1rem', padding: '0.5rem', background: '#333', borderRadius: '4px' }}>
-              <div style={{ color: state.pendingEcho.playerId === 'player1' ? '#ff6b6b' : '#4ecdc4', fontWeight: 'bold' }}>
+              <div style={{ color: state.pendingEcho.playerId === 'player1' ? 'orange' : '#4ecdc4', fontWeight: 'bold' }}>
                 {state.pendingEcho.playerId === 'player1' ? 'Player 1' : 'Player 2'} - {state.pendingEcho.actionPoints} Action Points
               </div>
               <div><strong>Position:</strong> {getBoardPosition(state.pendingEcho.position.row, state.pendingEcho.position.col)}</div>
