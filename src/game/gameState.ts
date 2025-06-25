@@ -63,7 +63,7 @@ export type GameAction =
   | { type: 'NEXT_TURN' }
   | { type: 'REMOVE_ECHO'; echoId: string }
   | { type: 'RECORD_TURN_HISTORY'; entry: import('../types/gameTypes').TurnHistoryEntry }
-  | { type: 'UPDATE_SCORES'; destroyedEchoes: { echoId: string; by: PlayerId | null }[] }
+  | { type: 'UPDATE_SCORES'; destroyedEchoes: { echoId: string; by: PlayerId | null; position: Position }[] }
   | { type: 'CHECK_WIN_CONDITIONS' };
 
 function switchPlayer(player: PlayerId): PlayerId {

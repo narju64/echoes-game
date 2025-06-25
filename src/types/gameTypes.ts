@@ -47,7 +47,8 @@ export interface TurnHistoryEntry {
   player1Echoes: Echo[];
   player2Echoes: Echo[];
   scores: Record<PlayerId, number>;
-  destroyedEchoes: { echoId: string; by: PlayerId | null }[];
+  destroyedEchoes: { echoId: string; by: PlayerId | null; position: Position }[];
+  destroyedProjectiles: { id: string; type: 'projectile' | 'mine'; position: Position }[];
   collisions: { row: number; col: number }[];
 }
 

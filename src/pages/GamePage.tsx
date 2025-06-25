@@ -76,8 +76,8 @@ function deepCopyEcho(e: Echo): Echo {
 }
 
 // Simulate the replay phase, returning an array of { echoes, projectiles, mines, tick, destroyed: { echoId, by: PlayerId|null }[], collisions: { row, col }[] } for each tick
-function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: number } })[]): { echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[]; collisions: { row: number; col: number }[]; shieldBlocks: { row: number; col: number; projectileDirection: Direction }[] }[] {
-  const states: { echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[]; collisions: { row: number; col: number }[]; shieldBlocks: { row: number; col: number; projectileDirection: Direction }[] }[] = [];
+function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: number } })[]): { echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null; position: { row: number; col: number }; playerId: PlayerId }[]; destroyedProjectiles: { id: string; type: 'projectile' | 'mine'; position: { row: number; col: number } }[]; collisions: { row: number; col: number }[]; shieldBlocks: { row: number; col: number; projectileDirection: Direction }[] }[] {
+  const states: { echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null; position: { row: number; col: number }; playerId: PlayerId }[]; destroyedProjectiles: { id: string; type: 'projectile' | 'mine'; position: { row: number; col: number } }[]; collisions: { row: number; col: number }[]; shieldBlocks: { row: number; col: number; projectileDirection: Direction }[] }[] = [];
   
   let currentEchoes = echoes.map(e => ({
     ...deepCopyEcho(e),
@@ -97,6 +97,7 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
     projectiles: [],
     tick: 0,
     destroyed: [],
+    destroyedProjectiles: [],
     collisions: [],
     shieldBlocks: [],
   });
@@ -130,7 +131,8 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
       break;
     }
 
-    let destroyedThisTick: { echoId: string; by: PlayerId|null }[] = [];
+    let destroyedThisTick: { echoId: string; by: PlayerId|null; position: { row: number; col: number }; playerId: PlayerId }[] = [];
+    let destroyedProjectilesThisTick: { id: string; type: 'projectile' | 'mine'; position: { row: number; col: number } }[] = [];
     let collisionsThisTick: { row: number; col: number }[] = [];
     let shieldBlocksThisTick: { row: number; col: number; projectileDirection: Direction }[] = [];
     
@@ -226,6 +228,12 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
                 
                 if (blocked) {
                   proj.alive = false;
+                  // Record destroyed projectile
+                  destroyedProjectilesThisTick.push({
+                    id: proj.id,
+                    type: proj.type,
+                    position: { ...proj.position }
+                  });
                   // Record shield block for animation
                   shieldBlocksThisTick.push({ 
                     row, 
@@ -237,23 +245,35 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
                   echo.shieldDirection = undefined;
                 } else {
                   proj.alive = false;
+                  // Record destroyed projectile
+                  destroyedProjectilesThisTick.push({
+                    id: proj.id,
+                    type: proj.type,
+                    position: { ...proj.position }
+                  });
                   // Remove echo immediately
                   currentEchoes = currentEchoes.filter(e => e.id !== echo.id);
                   // Award point to opponent
                   const opponent = echo.playerId === 'player1' ? 'player2' : 'player1';
-                  destroyedThisTick.push({ echoId: echo.id, by: opponent });
+                  destroyedThisTick.push({ echoId: echo.id, by: opponent, position: { row, col }, playerId: echo.playerId });
                   // Record regular collision
                   collisionsThisTick.push({ row, col });
                 }
               } else {
                 // No shield or mine collision - echo is destroyed
                 proj.alive = false;
+                // Record destroyed projectile
+                destroyedProjectilesThisTick.push({
+                  id: proj.id,
+                  type: proj.type,
+                  position: { ...proj.position }
+                });
                 if (echo) {
                   // Remove echo immediately
                   currentEchoes = currentEchoes.filter(e => e.id !== echo.id);
                   // Award point to opponent
                   const opponent = echo.playerId === 'player1' ? 'player2' : 'player1';
-                  destroyedThisTick.push({ echoId: echo.id, by: opponent });
+                  destroyedThisTick.push({ echoId: echo.id, by: opponent, position: { row, col }, playerId: echo.playerId });
                   // Record regular collision
                   collisionsThisTick.push({ row, col });
                 }
@@ -269,15 +289,31 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
                 currentEchoes = currentEchoes.filter(e => e.id !== echo.id);
                 // Award point to opponent
                 const opponent = echo.playerId === 'player1' ? 'player2' : 'player1';
-                destroyedThisTick.push({ echoId: echo.id, by: opponent });
+                destroyedThisTick.push({ echoId: echo.id, by: opponent, position: { row, col }, playerId: echo.playerId });
                 // Record regular collision
                 collisionsThisTick.push({ row, col });
               }
             } else {
               const proj = projectiles.find(p => p.id === ent.id);
-              if (proj) proj.alive = false;
+              if (proj) {
+                proj.alive = false;
+                // Record destroyed projectile
+                destroyedProjectilesThisTick.push({
+                  id: proj.id,
+                  type: proj.type,
+                  position: { ...proj.position }
+                });
+              }
               const mine = mines.find(m => m.id === ent.id);
-              if (mine) mine.alive = false;
+              if (mine) {
+                mine.alive = false;
+                // Record destroyed mine
+                destroyedProjectilesThisTick.push({
+                  id: mine.id,
+                  type: mine.type,
+                  position: { ...mine.position }
+                });
+              }
             }
           });
           // If there are 2+ projectiles/mines and no echo, record a collision for animation
@@ -294,6 +330,7 @@ function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: 
       projectiles: [...projectiles.filter(p => p.alive), ...mines.filter(m => m.alive)].map(p => ({ ...p })),
       tick,
       destroyed: destroyedThisTick,
+      destroyedProjectiles: destroyedProjectilesThisTick,
       collisions: collisionsThisTick,
       shieldBlocks: shieldBlocksThisTick,
     });
@@ -509,7 +546,7 @@ const GamePage: React.FC = () => {
   };
 
   // Replay phase logic
-  const [replayStates, setReplayStates] = useState<{ echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null }[]; collisions: { row: number; col: number }[]; shieldBlocks: { row: number; col: number; projectileDirection: Direction }[] }[]>([]);
+  const [replayStates, setReplayStates] = useState<{ echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null; position: { row: number; col: number }; playerId: PlayerId }[]; destroyedProjectiles: { id: string; type: 'projectile' | 'mine'; position: { row: number; col: number } }[]; collisions: { row: number; col: number }[]; shieldBlocks: { row: number; col: number; projectileDirection: Direction }[] }[]>([]);
   const [replayTick, setReplayTick] = useState(0);
   const replayTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const currentTickRef = useRef(0);
@@ -544,7 +581,7 @@ const GamePage: React.FC = () => {
     // Record turn history before moving to next turn
     if (replayStates.length > 0) {
       const destroyedEchoIds = new Set<string>();
-      const allDestroyed: { echoId: string; by: PlayerId | null }[] = [];
+      const allDestroyed: { echoId: string; by: PlayerId | null; position: { row: number; col: number } }[] = [];
       const allCollisions: { row: number; col: number }[] = [];
       
       replayStates.forEach(state => {
@@ -564,6 +601,7 @@ const GamePage: React.FC = () => {
         player2Echoes: state.echoes.filter(e => e.playerId === 'player2').map(deepCopyEcho),
         scores: { ...state.scores },
         destroyedEchoes: allDestroyed,
+        destroyedProjectiles: replayStates.flatMap(state => state.destroyedProjectiles || []),
         collisions: allCollisions,
       };
       
@@ -616,7 +654,7 @@ const GamePage: React.FC = () => {
   }
 
   if (state.phase === 'replay') {
-    const current = replayStates[replayTick] || { echoes: state.echoes, projectiles: [], tick: 0, destroyed: [], collisions: [], shieldBlocks: [] };
+    const current = replayStates[replayTick] || { echoes: state.echoes, projectiles: [], tick: 0, destroyed: [], destroyedProjectiles: [], collisions: [], shieldBlocks: [] };
     // Map SimProjectile to ProjectilePreview for Board
     const projectilePreviews = current.projectiles.map(p => ({ row: p.position.row, col: p.position.col, type: p.type, direction: p.direction }));
     return (
@@ -628,6 +666,7 @@ const GamePage: React.FC = () => {
           scores={state.scores}
           echoes={state.echoes}
           currentTick={current.tick}
+          replayStates={replayStates}
         />
         <div style={{ width: BOARD_WIDTH, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <div style={{ color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'left', fontSize: 22 }}>Player 1 (Orange): <b>{state.scores.player1}</b></div>
@@ -844,6 +883,9 @@ const GamePage: React.FC = () => {
                     {entry.destroyedEchoes.length > 0 && (
                       <div><strong>Destroyed:</strong> {entry.destroyedEchoes.length} echoes</div>
                     )}
+                    {entry.destroyedProjectiles && entry.destroyedProjectiles.length > 0 && (
+                      <div><strong>Destroyed Projectiles:</strong> {entry.destroyedProjectiles.length} projectiles</div>
+                    )}
                     {entry.collisions.length > 0 && (
                       <div><strong>Collisions:</strong> {entry.collisions.length} events</div>
                     )}
@@ -1000,6 +1042,7 @@ const GamePage: React.FC = () => {
         scores={state.scores}
         echoes={state.echoes}
         currentTick={state.currentTick}
+        replayStates={[]}
       />
       <div style={{ width: BOARD_WIDTH, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <div style={{ color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'left', fontSize: 22 }}>Player 1 (Orange): <b>{state.scores.player1}</b></div>
@@ -1201,6 +1244,9 @@ const GamePage: React.FC = () => {
                   <div><strong>Echoes:</strong> P1: {entry.player1Echoes.length} | P2: {entry.player2Echoes.length}</div>
                   {entry.destroyedEchoes.length > 0 && (
                     <div><strong>Destroyed:</strong> {entry.destroyedEchoes.length} echoes</div>
+                  )}
+                  {entry.destroyedProjectiles && entry.destroyedProjectiles.length > 0 && (
+                    <div><strong>Destroyed Projectiles:</strong> {entry.destroyedProjectiles.length} projectiles</div>
                   )}
                   {entry.collisions.length > 0 && (
                     <div><strong>Collisions:</strong> {entry.collisions.length} events</div>
