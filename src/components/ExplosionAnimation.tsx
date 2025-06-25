@@ -26,7 +26,7 @@ const ExplosionAnimation: React.FC<ExplosionAnimationProps> = ({
     // Calculate which edge the projectile hit based on its direction
     // For horizontal: negate the direction (projectile going right = explosion on right edge)
     // For vertical: use the direction directly (projectile going down = explosion on bottom edge)
-    const edgeDistance = 12; // Distance from center to edge
+    const edgeDistance = 24; // Distance from center to edge (increased from 12 since echoes are bigger)
     return {
       x: -projectileDirection.x * edgeDistance,
       y: projectileDirection.y * edgeDistance

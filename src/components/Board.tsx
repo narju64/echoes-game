@@ -239,28 +239,67 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
                               70%  { box-shadow: 0 0 32px 12px rgba(100,181,246,0.09); }
                               100% { box-shadow: 0 0 0 0 rgba(235,188,118,0.04), 0 0 0 0 rgba(100,181,246,0.04); }
                             }
+                            @keyframes shield-pulse {
+                              0% { filter: drop-shadow(0 0 8px #4CAF50); }
+                              50% { filter: drop-shadow(0 0 12px #4CAF50); }
+                              100% { filter: drop-shadow(0 0 8px #4CAF50); }
+                            }
+                            @keyframes shield-particle {
+                              0% { opacity: 0.3; stroke-width: 2; }
+                              25% { opacity: 1; stroke-width: 4; }
+                              50% { opacity: 0.7; stroke-width: 3; }
+                              75% { opacity: 0.9; stroke-width: 3; }
+                              100% { opacity: 0.3; stroke-width: 2; }
+                            }
                           `}
                         </style>
                         {/* Shield rendering */}
                         {echo.isShielded && echo.shieldDirection && (
                           <svg
-                            width={32}
-                            height={32}
-                            viewBox="0 0 32 32"
+                            width={64}
+                            height={64}
+                            viewBox="0 0 64 64"
                             style={{
                               position: 'absolute',
                               top: '50%',
                               left: '50%',
                               transform: `translate(-50%, -50%) rotate(${getShieldRotation(echo.shieldDirection)}deg)`,
                               pointerEvents: 'none',
+                              zIndex: 10,
+                              filter: 'drop-shadow(0 0 8px #4CAF50)',
+                              animation: 'shield-pulse 1.5s ease-in-out infinite',
                             }}
                           >
-                            <path
-                              d="M16,16 m-16,0 a16,16 0 0,1 32,0"
-                              fill="none"
-                              stroke="white"
-                              strokeWidth="4"
-                            />
+                            {/* Static electricity effect - small dashes along the arc */}
+                            {Array.from({ length: 12 }).map((_, i) => {
+                              const angle = (i * 15 - 180) * (Math.PI / 180); // Start from -90 degrees (left) to +90 degrees (right)
+                              const radius = 28;
+                              const dashLength = 8;
+                              const startAngle = angle - (dashLength / radius) / 2;
+                              const endAngle = angle + (dashLength / radius) / 2;
+                              const x1 = 32 + radius * Math.cos(startAngle);
+                              const y1 = 32 + radius * Math.sin(startAngle);
+                              const x2 = 32 + radius * Math.cos(endAngle);
+                              const y2 = 32 + radius * Math.sin(endAngle);
+                              
+                              return (
+                                <line
+                                  key={i}
+                                  x1={x1}
+                                  y1={y1}
+                                  x2={x2}
+                                  y2={y2}
+                                  stroke="#4CAF50"
+                                  strokeWidth="3"
+                                  strokeLinecap="round"
+                                  opacity={0.6 + Math.random() * 0.4}
+                                  style={{
+                                    animation: `shield-particle ${0.6 + Math.random() * 0.8}s ease-in-out infinite`,
+                                    animationDelay: `${Math.random() * 0.6}s`
+                                  }}
+                                />
+                              );
+                            })}
                           </svg>
                         )}
                       </>

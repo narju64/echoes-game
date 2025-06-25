@@ -1075,40 +1075,38 @@ const GamePage: React.FC = () => {
         </div>
       )}
       
-      {(state.pendingEcho || selectionMode === 'choosing') && (
-        <div style={{ textAlign: 'center', marginTop: '1rem', marginBottom: '1rem' }}>
-          <button 
-            onClick={handleReset}
-            style={{
-              position: 'relative',
-              background: 'linear-gradient(145deg, #f4433620, #f4433640)',
-              color: 'white',
-              border: '2px solid #f44336',
-              padding: '10px 20px',
-              fontSize: '1rem',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              fontFamily: 'Orbitron, monospace',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              boxShadow: '0 0 8px #f4433640, inset 0 1px 0 #f4433660',
-              textShadow: '0 0 4px #f44336'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-              e.currentTarget.style.boxShadow = '0 4px 16px #f4433660, inset 0 1px 0 #f4433680';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0) scale(1)';
-              e.currentTarget.style.boxShadow = '0 0 8px #f4433640, inset 0 1px 0 #f4433660';
-            }}
-          >
-            🔄 Reset Game
-          </button>
-        </div>
-      )}
+      <div style={{ textAlign: 'center', marginTop: '1rem', marginBottom: '1rem' }}>
+        <button 
+          onClick={handleReset}
+          style={{
+            position: 'relative',
+            background: 'linear-gradient(145deg, #f4433620, #f4433640)',
+            color: 'white',
+            border: '2px solid #f44336',
+            padding: '10px 20px',
+            fontSize: '1rem',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            fontFamily: 'Orbitron, monospace',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            boxShadow: '0 0 8px #f4433640, inset 0 1px 0 #f4433660',
+            textShadow: '0 0 4px #f44336'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+            e.currentTarget.style.boxShadow = '0 4px 16px #f4433660, inset 0 1px 0 #f4433680';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0) scale(1)';
+            e.currentTarget.style.boxShadow = '0 0 8px #f4433640, inset 0 1px 0 #f4433660';
+          }}
+        >
+          🔄 Reset Game
+        </button>
+      </div>
       
       {/* Clean Debug Output */}
       <div style={{ background: '#222', color: '#eee', padding: '1rem', marginTop: '2rem', borderRadius: '8px', fontSize: '0.9rem' }}>
