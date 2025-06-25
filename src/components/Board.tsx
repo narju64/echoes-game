@@ -316,7 +316,9 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
                           top: '50%',
                           left: '50%',
                           transform: 'translate(-50%, -50%)',
-                          boxShadow: projectile.type === 'projectile' ? '0 0 6px 2px #fff8' : undefined,
+                          boxShadow: projectile.type === 'projectile' 
+                            ? '0 0 6px 2px #fff, 0 0 12px 4px rgba(255, 255, 255, 0.4)' 
+                            : undefined,
                         }}
                       />
                     )}
@@ -383,7 +385,9 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
                             top: '50%',
                             left: '50%',
                             transform: 'translate(-50%, -50%)',
-                            boxShadow: previewProjectile.type === 'projectile' ? '0 0 6px 2px rgba(128, 128, 128, 0.3)' : undefined,
+                            boxShadow: previewProjectile.type === 'projectile' 
+                              ? '0 0 6px 2px rgba(128, 128, 128, 0.6), 0 0 12px 4px rgba(128, 128, 128, 0.3)' 
+                              : undefined,
                           }}
                         />
                       </>

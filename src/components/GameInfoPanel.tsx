@@ -132,7 +132,7 @@ const GameInfoPanel: React.FC<GameInfoPanelProps> = ({
           let echoDescription = '';
           if (echoData.blueCount > 0 && echoData.orangeCount > 0) {
             // Both types of echoes destroyed
-            echoDescription = `${echoData.blueCount} Blue echo${echoData.blueCount > 1 ? 's' : ''} and ${echoData.orangeCount} Orange echo${echoData.orangeCount > 1 ? 's' : ''} destroyed by ${destroyer}`;
+            echoDescription = `${echoData.blueCount} Blue and ${echoData.orangeCount} Orange echo${echoData.blueCount + echoData.orangeCount > 1 ? 's' : ''} destroyed by ${destroyer}`;
           } else if (echoData.blueCount > 0) {
             // Only Blue echoes destroyed
             echoDescription = `${echoData.blueCount} Blue echo${echoData.blueCount > 1 ? 's' : ''} destroyed by ${destroyer}`;
@@ -148,7 +148,7 @@ const GameInfoPanel: React.FC<GameInfoPanelProps> = ({
           
           if (echoData.blueCount > 0 && echoData.orangeCount > 0) {
             // Both types of echoes destroyed
-            echoDescription = `${echoData.blueCount} Blue echo${echoData.blueCount > 1 ? 's' : ''} and ${echoData.orangeCount} Orange echo${echoData.orangeCount > 1 ? 's' : ''} destroyed`;
+            echoDescription = `${echoData.blueCount} Blue and ${echoData.orangeCount} Orange echo${echoData.blueCount + echoData.orangeCount > 1 ? 's' : ''} destroyed`;
           } else if (echoData.blueCount > 0) {
             // Only Blue echoes destroyed
             echoDescription = `${echoData.blueCount} Blue echo${echoData.blueCount > 1 ? 's' : ''} destroyed`;
@@ -175,15 +175,15 @@ const GameInfoPanel: React.FC<GameInfoPanelProps> = ({
           
           let parts = [];
           if (adjustedProjectiles > 0) {
-            parts.push(`${adjustedProjectiles} projectile${adjustedProjectiles > 1 ? 's' : ''} destroyed`);
+            parts.push(`${adjustedProjectiles} projectile${adjustedProjectiles > 1 ? 's' : ''}`);
           }
           if (adjustedMines > 0) {
-            parts.push(`${adjustedMines} mine${adjustedMines > 1 ? 's' : ''} destroyed`);
+            parts.push(`${adjustedMines} mine${adjustedMines > 1 ? 's' : ''}`);
           }
           
           // Only create event if there are actually entities to report
           if (parts.length > 0) {
-            eventDescription = `Tick ${tick} - ${parts.join(' and ')} at ${boardPos}`;
+            eventDescription = `Tick ${tick} - ${parts.join(' and ')} destroyed at ${boardPos}`;
           }
         }
         
@@ -290,6 +290,8 @@ const GameInfoPanel: React.FC<GameInfoPanelProps> = ({
             
             if (event.includes('shield blocks')) {
               color = '#4CAF50'; // green
+            } else if (event.includes('Blue') && event.includes('Orange')) {
+              color = '#9C27B0'; // purple for mixed echo destruction
             } else if (event.includes('Orange echo')) {
               color = '#2196F3'; // blue
             } else if (event.includes('Blue echo')) {
