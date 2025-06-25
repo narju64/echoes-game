@@ -1,7 +1,9 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const RulesPage: React.FC = () => {
+  const navigate = useNavigate();
+
   return (
     <div style={{ 
       padding: '2rem', 
@@ -10,6 +12,46 @@ const RulesPage: React.FC = () => {
       minHeight: '100vh',
       fontFamily: 'Orbitron, monospace'
     }}>
+      {/* Home Button - Top Left Corner */}
+      <button 
+        onClick={() => navigate('/home')}
+        style={{
+          position: 'absolute',
+          top: '1rem',
+          left: '1rem',
+          background: 'linear-gradient(145deg, #333, #444)',
+          color: 'white',
+          border: '2px solid #666',
+          padding: '8px 16px',
+          fontSize: '0.9rem',
+          borderRadius: '6px',
+          cursor: 'pointer',
+          fontWeight: 'bold',
+          fontFamily: 'Orbitron, monospace',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+          zIndex: 1000
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
+          e.currentTarget.style.borderColor = '#2196F3';
+          e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.textShadow = '0 0 8px #2196F3';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'linear-gradient(145deg, #333, #444)';
+          e.currentTarget.style.borderColor = '#666';
+          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.textShadow = 'none';
+        }}
+      >
+        Home
+      </button>
+      
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         <h1 style={{ 
           color: '#ff9800', 
@@ -223,45 +265,6 @@ const RulesPage: React.FC = () => {
             <li>Plan your echo count carefully (maximum 8 echoes)</li>
             <li>Use shields strategically to protect valuable echoes</li>
           </ul>
-        </div>
-        
-        <div style={{ textAlign: 'center' }}>
-          <Link 
-            to="/" 
-            style={{
-              display: 'inline-block',
-              padding: '1rem 2rem',
-              fontSize: '1.2rem',
-              background: 'linear-gradient(145deg, #333, #444)',
-              color: 'white',
-              border: '2px solid #666',
-              borderRadius: '12px',
-              cursor: 'pointer',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              textDecoration: 'none',
-              fontFamily: 'Orbitron, monospace',
-              fontWeight: 'bold',
-              textTransform: 'uppercase',
-              letterSpacing: '1px',
-              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(145deg, #4CAF50, #45a049)';
-              e.currentTarget.style.borderColor = '#4CAF50';
-              e.currentTarget.style.boxShadow = '0 0 20px #4CAF50, 0 8px 16px rgba(76, 175, 80, 0.3)';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.textShadow = '0 0 8px #4CAF50';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(145deg, #333, #444)';
-              e.currentTarget.style.borderColor = '#666';
-              e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.textShadow = 'none';
-            }}
-          >
-            ← Back to Home
-          </Link>
         </div>
       </div>
     </div>

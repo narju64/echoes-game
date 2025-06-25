@@ -1,4 +1,5 @@
 import React, { useReducer, useEffect, useState, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { initialGameState, gameReducer, type GameAction } from '../game/gameState';
 import type { Echo, PlayerId, Direction, GameState } from '../types/gameTypes';
 import Board from '../components/Board';
@@ -662,6 +663,7 @@ function generateEventLogFromReplayStates(replayStates: any[]): string[] {
 }
 
 const GamePage: React.FC = () => {
+  const navigate = useNavigate();
   const [state, dispatch] = useReducer(gameReducer, initialGameState) as [GameState, React.Dispatch<GameAction>];
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('choosing');
   const currentPlayer: PlayerId = state.currentPlayer;
@@ -870,6 +872,46 @@ const GamePage: React.FC = () => {
     const projectilePreviews = current.projectiles.map(p => ({ row: p.position.row, col: p.position.col, type: p.type, direction: p.direction }));
     return (
       <div style={{ color: 'white', background: '#1a1a1a', minHeight: '100vh', padding: '2rem' }}>
+        {/* Home Button - Top Left Corner */}
+        <button 
+          onClick={() => navigate('/home')}
+          style={{
+            position: 'absolute',
+            top: '1rem',
+            left: '1rem',
+            background: 'linear-gradient(145deg, #333, #444)',
+            color: 'white',
+            border: '2px solid #666',
+            padding: '8px 16px',
+            fontSize: '0.9rem',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            fontFamily: 'Orbitron, monospace',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+            zIndex: 1000
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
+            e.currentTarget.style.borderColor = '#2196F3';
+            e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.textShadow = '0 0 8px #2196F3';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(145deg, #333, #444)';
+            e.currentTarget.style.borderColor = '#666';
+            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.textShadow = 'none';
+          }}
+        >
+          Home
+        </button>
+        
         <GameInfoPanel 
           currentPlayer={currentPlayer}
           turnNumber={state.turnNumber}
@@ -1120,6 +1162,46 @@ const GamePage: React.FC = () => {
     
     return (
       <div style={{ color: 'white', background: '#1a1a1a', minHeight: '100vh', padding: '2rem' }}>
+        {/* Home Button - Top Left Corner */}
+        <button 
+          onClick={() => navigate('/home')}
+          style={{
+            position: 'absolute',
+            top: '1rem',
+            left: '1rem',
+            background: 'linear-gradient(145deg, #333, #444)',
+            color: 'white',
+            border: '2px solid #666',
+            padding: '8px 16px',
+            fontSize: '0.9rem',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            fontFamily: 'Orbitron, monospace',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+            zIndex: 1000
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
+            e.currentTarget.style.borderColor = '#2196F3';
+            e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.textShadow = '0 0 8px #2196F3';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(145deg, #333, #444)';
+            e.currentTarget.style.borderColor = '#666';
+            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.textShadow = 'none';
+          }}
+        >
+          Home
+        </button>
+        
         <div style={{ textAlign: 'center', maxWidth: '600px', margin: '0 auto' }}>
           <h1 style={{ fontSize: '3rem', marginBottom: '2rem', color: winner === 'player1' ? 'orange' : '#4ecdc4' }}>
             🏆 Game Over! 🏆
@@ -1173,6 +1255,7 @@ const GamePage: React.FC = () => {
             </div>
           </div>
           
+          {/* Board hidden on win screen
           <div style={{ marginBottom: '2rem' }}>
             <Board 
               echoes={state.echoes} 
@@ -1181,6 +1264,7 @@ const GamePage: React.FC = () => {
               shieldBlocks={[]}
             />
           </div>
+          */}
           
           <button 
             onClick={handleReset}
@@ -1247,6 +1331,46 @@ const GamePage: React.FC = () => {
 
   return (
     <div style={{ color: 'white', background: '#1a1a1a', minHeight: '100vh', padding: '2rem' }}>
+      {/* Home Button - Top Left Corner */}
+      <button 
+        onClick={() => navigate('/home')}
+        style={{
+          position: 'absolute',
+          top: '1rem',
+          left: '1rem',
+          background: 'linear-gradient(145deg, #333, #444)',
+          color: 'white',
+          border: '2px solid #666',
+          padding: '8px 16px',
+          fontSize: '0.9rem',
+          borderRadius: '6px',
+          cursor: 'pointer',
+          fontWeight: 'bold',
+          fontFamily: 'Orbitron, monospace',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+          zIndex: 1000
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
+          e.currentTarget.style.borderColor = '#2196F3';
+          e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.textShadow = '0 0 8px #2196F3';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'linear-gradient(145deg, #333, #444)';
+          e.currentTarget.style.borderColor = '#666';
+          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.textShadow = 'none';
+        }}
+      >
+        Home
+      </button>
+      
       <GameInfoPanel 
         currentPlayer={currentPlayer}
         turnNumber={state.turnNumber}
@@ -1259,7 +1383,7 @@ const GamePage: React.FC = () => {
       />
       <div style={{ width: BOARD_WIDTH, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <div style={{ color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'left', fontSize: 22 }}>Player 1 (Orange): <b>{state.scores.player1}</b></div>
-        <div style={{ color: 'blue', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'right', fontSize: 22 }}>Player 2 (Blue): <b>{state.scores.player2}</b></div>
+      <div style={{ color: 'blue', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'right', fontSize: 22 }}>Player 2 (Blue): <b>{state.scores.player2}</b></div>
       </div>
       <div style={{ width: BOARD_WIDTH, margin: '0 auto', textAlign: 'center', marginBottom: 0 }}>
         <h2 style={{ color: currentPlayer === 'player1' ? '#ff9800' : 'blue', textShadow: '0 0 1px #fff', margin: 0, fontSize: 28, textDecoration: 'underline' }}>
@@ -1312,16 +1436,22 @@ const GamePage: React.FC = () => {
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  boxShadow: '0 0 8px #66640, inset 0 1px 0 #66660',
-                  textShadow: '0 0 4px #666'
+                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+                  zIndex: 1000
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-                  e.currentTarget.style.boxShadow = '0 4px 16px #66660, inset 0 1px 0 #66680';
+                  e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
+                  e.currentTarget.style.borderColor = '#2196F3';
+                  e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.textShadow = '0 0 8px #2196F3';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                  e.currentTarget.style.boxShadow = '0 0 8px #66640, inset 0 1px 0 #66660';
+                  e.currentTarget.style.background = 'linear-gradient(145deg, #333, #444)';
+                  e.currentTarget.style.borderColor = '#666';
+                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.textShadow = 'none';
                 }}
               >
                 ← Back to Choose Echo Action
@@ -1348,8 +1478,8 @@ const GamePage: React.FC = () => {
             textTransform: 'uppercase',
             letterSpacing: '0.5px',
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            boxShadow: '0 0 8px #f4433640, inset 0 1px 0 #f4433660',
-            textShadow: '0 0 4px #f44336'
+            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+            zIndex: 1000
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';

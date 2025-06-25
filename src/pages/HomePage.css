@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background-color: #1a1a1a;
+  background-color: #000000;
   color: white;
   font-family: 'Orbitron', 'Rajdhani', 'Share Tech Mono', Arial, sans-serif;
 }
@@ -13,7 +13,7 @@
   font-size: 4rem;
   margin-bottom: 2rem;
   color: #ff9800;
-  text-shadow: 0 0 20px #ff9800, 0 0 40px #ff9800;
+  text-shadow: 0 0 10px #ffffff, 0 0 20px #ffffff;
   font-weight: bold;
   letter-spacing: 2px;
   animation: title-glow 3s ease-in-out infinite alternate;
@@ -21,10 +21,10 @@
 
 @keyframes title-glow {
   from {
-    text-shadow: 0 0 20px #ff9800, 0 0 40px #ff9800;
+    text-shadow: 0 0 10px #ffffff, 0 0 20px #ffffff, 0 0 30px #ffffff;
   }
   to {
-    text-shadow: 0 0 30px #ff9800, 0 0 60px #ff9800, 0 0 80px #ff9800;
+    text-shadow: 0 0 5px #ffffff, 0 0 15px #ffffff, 0 0 25px #ffffff;
   }
 }
 
@@ -72,15 +72,15 @@
 }
 
 .menu-button:hover {
-  background: linear-gradient(145deg, #4CAF50, #45a049);
-  border-color: #4CAF50;
+  background: linear-gradient(145deg, #2196F3, #1976D2);
+  border-color: #2196F3;
   color: white;
-  box-shadow: 0 0 20px #4CAF50, 0 8px 16px rgba(76, 175, 80, 0.3);
+  box-shadow: 0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3);
   transform: translateY(-2px);
-  text-shadow: 0 0 8px #4CAF50;
+  text-shadow: 0 0 8px #2196F3;
 }
 
 .menu-button:active {
   transform: translateY(0);
-  box-shadow: 0 0 10px #4CAF50, 0 4px 8px rgba(76, 175, 80, 0.3);
+  box-shadow: 0 0 10px #2196F3, 0 4px 8px rgba(33, 150, 243, 0.3);
 } 
