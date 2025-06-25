@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const introLines = [
@@ -65,7 +65,7 @@ function getStanzaIndex(lineIdx: number) {
 }
 
 // Helper to highlight specific words in the intro text
-function highlightWords(line: string, stanzaColor: { color: string, glow: string }, fadeOutFades = false) {
+function highlightWords(line: string, stanzaColor: { color: string, glow: string }, fadeOutFades = false, hideDeathWord = false) {
   const blueWords = ['echo', 'trace', 'illusion', 'death'];
   const orangeWords = ['always', 'fades'];
   // Regex to match any of the target words, case-insensitive
@@ -74,6 +74,9 @@ function highlightWords(line: string, stanzaColor: { color: string, glow: string
   return parts.map((part, i) => {
     const lower = part.toLowerCase();
     if (blueWords.includes(lower)) {
+      if (lower === 'death' && hideDeathWord) {
+        return <span key={i} style={{ opacity: 0, visibility: 'hidden', display: 'inline-block' }}>{part}</span>;
+      }
       return <span key={i} style={{ color: '#1565c0', textShadow: '0 0 8px #fff, 0 0 16px #fff, 0 0 24px #fff' }}>{part}</span>;
     }
     if (orangeWords.includes(lower)) {
@@ -99,6 +102,18 @@ const IntroScreen: React.FC = () => {
   const [now, setNow] = useState(() => performance.now());
   const [pulse, setPulse] = useState(1);
   const SPEED = 0.0001;
+  // Track echoes in state for removal
+  const [echoes, setEchoes] = useState(() => generateEchoes());
+  const [foregroundEchoes, setForegroundEchoes] = useState(() => generateEchoes(FOREGROUND_ECHO_COUNT, 1.3));
+  // Explosion state: array of { x, y, color, key }
+  const [explosions, setExplosions] = useState<{ x: number, y: number, color: string, key: string }[]>([]);
+  const [showDeathExplosion, setShowDeathExplosion] = useState(false);
+  const DEATH_EXPLOSION_X = 490;
+  const DEATH_EXPLOSION_Y = 1460;
+  const [hideDeathWord, setHideDeathWord] = useState(false);
+  // For 'always' fade-in
+  const [alwaysVisible, setAlwaysVisible] = useState(false);
+
   useEffect(() => {
     if (!showEchoes) return;
     let running = true;
@@ -135,22 +150,96 @@ const IntroScreen: React.FC = () => {
     }
   }, [visibleLines]);
 
-  // Generate echoes once for animation
-  const echoes = useRef(generateEchoes());
-  const foregroundEchoes = useRef(generateEchoes(FOREGROUND_ECHO_COUNT, 1.3));
-
   // Proceed on any input (keypress, click, or touch) after all lines are shown
   const proceed = useCallback(() => {
     if (ready && !exiting) {
       setExiting(true);
-      navigate('/home');
+      setShowDeathExplosion(true);
+      setHideDeathWord(true);
+      // Explode all remaining echoes
+      setExplosions(prev => [
+        ...prev,
+        ...echoes.map((e, i) => {
+          let cx = e.centerX + Math.cos(e.angle + t * e.freqX + e.phase) * e.radius;
+          let cy = e.centerY + Math.sin(e.angle + t * e.freqY + e.phase) * e.radius;
+          const { bx, by } = outwardBias(cx, cy, 1000, 0.85);
+          return {
+            x: bx,
+            y: by,
+            color: e.color.main,
+            key: `bg-final-${i}-${Date.now()}`
+          };
+        }),
+        ...foregroundEchoes.map((e, i) => {
+          const tFast = t * 1.25;
+          let cx = e.centerX + Math.cos(e.angle + tFast * e.freqX + e.phase) * e.radius;
+          let cy = e.centerY + Math.sin(e.angle + tFast * e.freqY + e.phase) * e.radius;
+          const { bx, by } = outwardBias(cx, cy, 1000, 0.85);
+          return {
+            x: bx,
+            y: by,
+            color: e.color.main,
+            key: `fg-final-${i}-${Date.now()}`
+          };
+        })
+      ]);
+      setEchoes([]);
+      setForegroundEchoes([]);
+      setTimeout(() => {
+        setShowDeathExplosion(false);
+        navigate('/home');
+      }, 700);
     }
-  }, [ready, exiting, navigate]);
+  }, [ready, exiting, navigate, echoes, foregroundEchoes, t]);
+
+  // For testing: force transition and explosion regardless of ready
+  const forceProceed = useCallback(() => {
+    if (!exiting) {
+      setExiting(true);
+      setShowDeathExplosion(true);
+      setExplosions(prev => [
+        ...prev,
+        ...echoes.map((e, i) => {
+          let cx = e.centerX + Math.cos(e.angle + t * e.freqX + e.phase) * e.radius;
+          let cy = e.centerY + Math.sin(e.angle + t * e.freqY + e.phase) * e.radius;
+          const { bx, by } = outwardBias(cx, cy, 1000, 0.85);
+          return {
+            x: bx,
+            y: by,
+            color: e.color.main,
+            key: `bg-final-${i}-${Date.now()}`
+          };
+        }),
+        ...foregroundEchoes.map((e, i) => {
+          const tFast = t * 1.25;
+          let cx = e.centerX + Math.cos(e.angle + tFast * e.freqX + e.phase) * e.radius;
+          let cy = e.centerY + Math.sin(e.angle + tFast * e.freqY + e.phase) * e.radius;
+          const { bx, by } = outwardBias(cx, cy, 1000, 0.85);
+          return {
+            x: bx,
+            y: by,
+            color: e.color.main,
+            key: `fg-final-${i}-${Date.now()}`
+          };
+        })
+      ]);
+      setEchoes([]);
+      setForegroundEchoes([]);
+      setTimeout(() => {
+        setShowDeathExplosion(false);
+        navigate('/home');
+      }, 700);
+    }
+  }, [exiting, navigate, echoes, foregroundEchoes, t]);
 
   useEffect(() => {
     if (!ready) return;
     const handler = (e: Event) => {
-      proceed();
+      if (e instanceof KeyboardEvent && e.key === 'Escape') {
+        forceProceed();
+      } else {
+        proceed();
+      }
     };
     window.addEventListener('keydown', handler);
     window.addEventListener('mousedown', handler);
@@ -160,7 +249,34 @@ const IntroScreen: React.FC = () => {
       window.removeEventListener('mousedown', handler);
       window.removeEventListener('touchstart', handler);
     };
-  }, [ready, proceed]);
+  }, [ready, proceed, forceProceed]);
+
+  // Clean up explosions after animation
+  useEffect(() => {
+    if (explosions.length === 0) return;
+    const timeout = setTimeout(() => {
+      setExplosions(prev => prev.slice(1));
+    }, 600);
+    return () => clearTimeout(timeout);
+  }, [explosions]);
+
+  useEffect(() => {
+    // Trigger 'always' fade-in immediately on mount
+    setTimeout(() => setAlwaysVisible(true), 100);
+  }, [showEchoes]);
+
+  // Esc key should always trigger forceProceed, even if not ready
+  useEffect(() => {
+    const escHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        forceProceed();
+      }
+    };
+    window.addEventListener('keydown', escHandler);
+    return () => {
+      window.removeEventListener('keydown', escHandler);
+    };
+  }, [forceProceed]);
 
   return (
     <div style={{
@@ -181,10 +297,10 @@ const IntroScreen: React.FC = () => {
       overflow: 'hidden',
     }}>
       <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-        <svg width="100vw" height="100vh" viewBox="0 0 2000 2000" style={{ width: '100vw', height: '170vh', display: 'block' }}>
+        <svg width="100vw" height="100vh" viewBox="0 0 2000 2000" style={{ width: '100vw', height: '170vh', display: 'block', position: 'absolute', inset: 0 }}>
           {showEchoes && <>
             {/* Background echoes */}
-            {echoes.current.map((e, i) => {
+            {echoes.map((e, i) => {
               let cx = e.centerX + Math.cos(e.angle + t * e.freqX + e.phase) * e.radius;
               let cy = e.centerY + Math.sin(e.angle + t * e.freqY + e.phase) * e.radius;
               const { bx, by } = outwardBias(cx, cy, 1000, 0.85);
@@ -196,7 +312,19 @@ const IntroScreen: React.FC = () => {
                   y={by - e.size / 2}
                   width={e.size}
                   height={e.size}
-                  style={{ overflow: 'visible', pointerEvents: 'none', opacity: 0.75 }}
+                  style={{ overflow: 'visible', pointerEvents: 'auto', opacity: 0.75, cursor: 'pointer' }}
+                  onClick={() => {
+                    setExplosions(prev => [
+                      ...prev,
+                      {
+                        x: bx,
+                        y: by,
+                        color: e.color.main,
+                        key: `bg-${i}-${Date.now()}`
+                      }
+                    ]);
+                    setEchoes(prev => prev.filter((_, idx) => idx !== i));
+                  }}
                 >
                   <div style={{ position: 'relative', width: e.size, height: e.size }}>
                     <div
@@ -224,7 +352,7 @@ const IntroScreen: React.FC = () => {
               );
             })}
             {/* Foreground echoes */}
-            {foregroundEchoes.current.map((e, i) => {
+            {foregroundEchoes.map((e, i) => {
               const tFast = t * 1.25;
               let cx = e.centerX + Math.cos(e.angle + tFast * e.freqX + e.phase) * e.radius;
               let cy = e.centerY + Math.sin(e.angle + tFast * e.freqY + e.phase) * e.radius;
@@ -237,7 +365,19 @@ const IntroScreen: React.FC = () => {
                   y={by - e.size / 2}
                   width={e.size}
                   height={e.size}
-                  style={{ overflow: 'visible', pointerEvents: 'none', opacity: 0.93 }}
+                  style={{ overflow: 'visible', pointerEvents: 'auto', opacity: 0.93, cursor: 'pointer' }}
+                  onClick={() => {
+                    setExplosions(prev => [
+                      ...prev,
+                      {
+                        x: bx,
+                        y: by,
+                        color: e.color.main,
+                        key: `fg-${i}-${Date.now()}`
+                      }
+                    ]);
+                    setForegroundEchoes(prev => prev.filter((_, idx) => idx !== i));
+                  }}
                 >
                   <div style={{ position: 'relative', width: e.size, height: e.size }}>
                     <div
@@ -264,10 +404,47 @@ const IntroScreen: React.FC = () => {
                 </foreignObject>
               );
             })}
+            {/* SVG-based explosion bursts */}
+            {explosions.map(explosion => (
+              <g key={explosion.key}>
+                {/* Main burst */}
+                <circle
+                  cx={explosion.x}
+                  cy={explosion.y}
+                  r={48}
+                  fill={`url(#explosion-burst-${explosion.key})`}
+                  className="explosion-burst-svg"
+                />
+                {/* Shockwave ring */}
+                <circle
+                  cx={explosion.x}
+                  cy={explosion.y}
+                  r={48}
+                  fill="none"
+                  stroke={explosion.color}
+                  strokeWidth={8}
+                  className="explosion-shockwave-svg"
+                />
+                {/* Fast inner burst */}
+                <circle
+                  cx={explosion.x}
+                  cy={explosion.y}
+                  r={24}
+                  fill={`url(#explosion-burst-${explosion.key})`}
+                  className="explosion-inner-svg"
+                />
+              </g>
+            ))}
+            {/* SVG radial gradients for each explosion */}
+            {explosions.map(explosion => (
+              <radialGradient id={`explosion-burst-${explosion.key}`} key={`grad-${explosion.key}`} cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor={explosion.color} stopOpacity="0.8" />
+                <stop offset="80%" stopColor={explosion.color} stopOpacity="0.2" />
+                <stop offset="100%" stopColor={explosion.color} stopOpacity="0" />
+              </radialGradient>
+            ))}
           </>}
         </svg>
-      </div>
-      <div style={{ maxWidth: 800, textAlign: 'center', zIndex: 1, position: 'relative' }}>
         <style>{`
           @keyframes intro-fade-pulse {
             0% { opacity: 0; }
@@ -328,15 +505,152 @@ const IntroScreen: React.FC = () => {
             50% { box-shadow: 0 0 12px 5px var(--echo-glow-color, #fff3), 0 3px 10px 0 rgba(0,0,0,0.45), 0 0 0 4px rgba(255,255,255,0.06) inset; }
             100% { box-shadow: 0 0 8px 3px var(--echo-glow-color, #fff5), 0 2px 8px 0 rgba(0,0,0,0.4), 0 0 0 3px rgba(255,255,255,0.05) inset; }
           }
+          .explosion-burst-svg {
+            opacity: 0.7;
+            transform: scale(0.5);
+            transform-box: fill-box;
+            transform-origin: 50% 50%;
+            filter: blur(0px);
+            animation: explosion-burst-anim-svg 0.6s cubic-bezier(0.4,0,0.2,1) forwards;
+          }
+          @keyframes explosion-burst-anim-svg {
+            0% {
+              opacity: 0.7;
+              transform: scale(0.5);
+              filter: blur(0px);
+            }
+            60% {
+              opacity: 0.9;
+              transform: scale(1.2);
+              filter: blur(2px);
+            }
+            100% {
+              opacity: 0;
+              transform: scale(2.2);
+              filter: blur(8px);
+            }
+          }
+          .explosion-shockwave-svg {
+            opacity: 0.45;
+            stroke: #fff;
+            filter: blur(2.5px);
+            transform: scale(0.7);
+            transform-box: fill-box;
+            transform-origin: 50% 50%;
+            animation: explosion-shockwave-anim-svg 0.55s cubic-bezier(0.4,0,0.2,1) forwards;
+          }
+          @keyframes explosion-shockwave-anim-svg {
+            0% {
+              opacity: 0.45;
+              transform: scale(0.7);
+              stroke-width: 8;
+            }
+            60% {
+              opacity: 0.25;
+              transform: scale(1.5);
+              stroke-width: 4;
+            }
+            100% {
+              opacity: 0;
+              transform: scale(2.2);
+              stroke-width: 0;
+            }
+          }
+          .explosion-inner-svg {
+            opacity: 0.8;
+            filter: blur(1.5px);
+            transform: scale(0.7);
+            transform-box: fill-box;
+            transform-origin: 50% 50%;
+            animation: explosion-inner-anim-svg 0.32s cubic-bezier(0.4,0,0.2,1) forwards;
+          }
+          @keyframes explosion-inner-anim-svg {
+            0% {
+              opacity: 0.8;
+              transform: scale(0.7);
+              filter: blur(1.5px);
+            }
+            80% {
+              opacity: 0.5;
+              transform: scale(1.2);
+              filter: blur(2.5px);
+            }
+            100% {
+              opacity: 0;
+              transform: scale(1.7);
+              filter: blur(4px);
+            }
+          }
         `}</style>
+      </div>
+      <div style={{ maxWidth: 800, textAlign: 'center', zIndex: 1, position: 'relative', pointerEvents: 'none' }}>
         {introLines.map((line, i) => {
           const stanzaIdx = getStanzaIndex(i);
           const stanzaColor = STANZA_COLORS[stanzaIdx % 2];
           const isLastLine = i === introLines.length - 1;
           const isVisible = i < visibleLines;
-          const animation = isVisible ? 'intro-fade-pulse 5600ms linear forwards' : undefined;
-          // If this is the 'and what fades never was.' line, fade out 'fades' only when fadeOutFadesActive is true
           const fadeOutFades = i === 4 && fadeOutFadesActive;
+
+          // Special-case the third line (index 3) to make 'always' fade in immediately on mount
+          if (i === 3 && line.includes('always')) {
+            const match = line.match(/^(.*)(always)(.*)$/i);
+            const before = match ? match[1] : '';
+            const after = match ? match[3] : '';
+            return (
+              <div
+                key={i}
+                style={{
+                  marginBottom: line === '' ? '1.5rem' : '0.2rem',
+                  whiteSpace: 'pre-line',
+                  color: '#fff',
+                  fontWeight: 600,
+                  fontFamily: "'Orbitron', 'Rajdhani', 'Share Tech Mono', Arial, sans-serif",
+                  fontSize: '2rem',
+                  letterSpacing: '0.02em',
+                  lineHeight: 2.1,
+                  display: 'inline-block',
+                }}
+              >
+                {/* Before 'always' fades in with the line */}
+                <span
+                  style={{
+                    opacity: isVisible ? 1 : 0,
+                    transition: 'opacity 5600ms linear',
+                  }}
+                >
+                  {highlightWords(before, stanzaColor, fadeOutFades, false)}
+                </span>
+                {/* 'always' fades in immediately on mount */}
+                <span
+                  style={{
+                    color: '#fb8c00',
+                    textShadow: '0 0 8px #fff, 0 0 16px #fff, 0 0 24px #fff',
+                    fontWeight: 600,
+                    fontFamily: "'Orbitron', 'Rajdhani', 'Share Tech Mono', Arial, sans-serif",
+                    fontSize: '2rem',
+                    letterSpacing: '0.02em',
+                    lineHeight: 2.1,
+                    pointerEvents: 'none',
+                    whiteSpace: 'nowrap',
+                    opacity: alwaysVisible ? 1 : 0.4,
+                    transition: 'opacity 15s cubic-bezier(0.2,0,0.6,1)',
+                  }}
+                >
+                  always
+                </span>
+                {/* After 'always' fades in with the line */}
+                <span
+                  style={{
+                    opacity: isVisible ? 1 : 0,
+                    transition: 'opacity 5600ms linear',
+                  }}
+                >
+                  {highlightWords(after, stanzaColor, fadeOutFades, false)}
+                </span>
+              </div>
+            );
+          }
+
           if (isLastLine) {
             return (
               <div
@@ -350,13 +664,14 @@ const IntroScreen: React.FC = () => {
                   fontFamily: "'Orbitron', 'Rajdhani', 'Share Tech Mono', Arial, sans-serif",
                   display: 'inline-block',
                   maxWidth: 'none',
-                  animation,
+                  animation: isVisible ? 'intro-fade-pulse 5600ms linear forwards' : undefined,
                 }}
               >
-                {highlightWords(line, stanzaColor, fadeOutFades)}
+                {highlightWords(line, stanzaColor, fadeOutFades, isLastLine ? hideDeathWord : false)}
               </div>
             );
           }
+
           return (
             <div
               key={i}
@@ -367,14 +682,50 @@ const IntroScreen: React.FC = () => {
                 color: line === '' ? undefined : '#fff',
                 fontWeight: 600,
                 fontFamily: "'Orbitron', 'Rajdhani', 'Share Tech Mono', Arial, sans-serif",
-                animation,
+                animation: isVisible ? 'intro-fade-pulse 5600ms linear forwards' : undefined,
               }}
             >
-              {highlightWords(line, stanzaColor, fadeOutFades)}
+              {highlightWords(line, stanzaColor, fadeOutFades, isLastLine ? hideDeathWord : false)}
             </div>
           );
         })}
       </div>
+      {showDeathExplosion && (
+        <svg width="100vw" height="100vh" viewBox="0 0 2000 2000" style={{ position: 'fixed', inset: 0, zIndex: 100, pointerEvents: 'none', width: '100vw', height: '100vh' }}>
+          <g>
+            <circle
+              cx={DEATH_EXPLOSION_X}
+              cy={DEATH_EXPLOSION_Y}
+              r={72}
+              fill="url(#death-explosion-burst)"
+              className="explosion-burst-svg"
+            />
+            <circle
+              cx={DEATH_EXPLOSION_X}
+              cy={DEATH_EXPLOSION_Y}
+              r={72}
+              fill="none"
+              stroke="#1565c0"
+              strokeWidth={8}
+              className="explosion-shockwave-svg"
+            />
+            <circle
+              cx={DEATH_EXPLOSION_X}
+              cy={DEATH_EXPLOSION_Y}
+              r={36}
+              fill="url(#death-explosion-burst)"
+              className="explosion-inner-svg"
+            />
+          </g>
+          <defs>
+            <radialGradient id="death-explosion-burst" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#1565c0" stopOpacity="0.8" />
+              <stop offset="80%" stopColor="#1565c0" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#1565c0" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+        </svg>
+      )}
     </div>
   );
 };
