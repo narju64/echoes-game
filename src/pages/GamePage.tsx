@@ -4,6 +4,7 @@ import type { Echo, PlayerId, Direction, GameState } from '../types/gameTypes';
 import Board from '../components/Board';
 import EchoActionAssignment from '../components/EchoActionAssignment';
 import EchoSelection from '../components/EchoSelection';
+import GameInfoPanel from '../components/GameInfoPanel';
 
 const getHomeRow = (playerId: PlayerId) => (playerId === 'player1' ? 0 : 7);
 
@@ -620,6 +621,14 @@ const GamePage: React.FC = () => {
     const projectilePreviews = current.projectiles.map(p => ({ row: p.position.row, col: p.position.col, type: p.type, direction: p.direction }));
     return (
       <div style={{ color: 'white', background: '#1a1a1a', minHeight: '100vh', padding: '2rem' }}>
+        <GameInfoPanel 
+          currentPlayer={currentPlayer}
+          turnNumber={state.turnNumber}
+          phase={state.phase}
+          scores={state.scores}
+          echoes={state.echoes}
+          currentTick={current.tick}
+        />
         <div style={{ width: BOARD_WIDTH, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <div style={{ color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'left', fontSize: 22 }}>Player 1 (Orange): <b>{state.scores.player1}</b></div>
           <div style={{ color: 'blue', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'right', fontSize: 22 }}>Player 2 (Blue): <b>{state.scores.player2}</b></div>
@@ -635,10 +644,7 @@ const GamePage: React.FC = () => {
           collisions={current.collisions}
           shieldBlocks={current.shieldBlocks}
         />
-        <div style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold', fontSize: 20, margin: '12px 0' }}>
-          Tick: {current.tick}
-        </div>
-        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+        <div style={{ textAlign: 'center', marginTop: '1rem', marginBottom: '1rem' }}>
           <button 
             onClick={handleReset}
             style={{
@@ -656,8 +662,7 @@ const GamePage: React.FC = () => {
               letterSpacing: '0.5px',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               boxShadow: '0 0 8px #f4433640, inset 0 1px 0 #f4433660',
-              textShadow: '0 0 4px #f44336',
-              marginRight: '8px'
+              textShadow: '0 0 4px #f44336'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
@@ -988,6 +993,14 @@ const GamePage: React.FC = () => {
 
   return (
     <div style={{ color: 'white', background: '#1a1a1a', minHeight: '100vh', padding: '2rem' }}>
+      <GameInfoPanel 
+        currentPlayer={currentPlayer}
+        turnNumber={state.turnNumber}
+        phase={state.phase}
+        scores={state.scores}
+        echoes={state.echoes}
+        currentTick={state.currentTick}
+      />
       <div style={{ width: BOARD_WIDTH, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <div style={{ color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'left', fontSize: 22 }}>Player 1 (Orange): <b>{state.scores.player1}</b></div>
         <div style={{ color: 'blue', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'right', fontSize: 22 }}>Player 2 (Blue): <b>{state.scores.player2}</b></div>
@@ -1025,12 +1038,7 @@ const GamePage: React.FC = () => {
             onTileClick={boardOnTileClick}
             fullWidth={true}
           />
-          {state.phase === 'replay' && (
-            <div style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold', fontSize: 20, margin: '12px 0' }}>
-              Tick: {state.currentTick}
-            </div>
-          )}
-          <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+          <div style={{ marginTop: '2rem', textAlign: 'center' }}>
             {playerEchoes.length > 0 && (
               <button
                 onClick={handleBackFromTileSelection}
@@ -1067,40 +1075,40 @@ const GamePage: React.FC = () => {
         </div>
       )}
       
-      <p>Turn: {state.turnNumber}</p>
-      <p>Number of Echoes: {state.echoes.length}</p>
-      <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-        <button 
-          onClick={handleReset}
-          style={{
-            position: 'relative',
-            background: 'linear-gradient(145deg, #f4433620, #f4433640)',
-            color: 'white',
-            border: '2px solid #f44336',
-            padding: '10px 20px',
-            fontSize: '1rem',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            fontFamily: 'Orbitron, monospace',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            boxShadow: '0 0 8px #f4433640, inset 0 1px 0 #f4433660',
-            textShadow: '0 0 4px #f44336'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-            e.currentTarget.style.boxShadow = '0 4px 16px #f4433660, inset 0 1px 0 #f4433680';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0) scale(1)';
-            e.currentTarget.style.boxShadow = '0 0 8px #f4433640, inset 0 1px 0 #f4433660';
-          }}
-        >
-          🔄 Reset Game
-        </button>
-      </div>
+      {(state.pendingEcho || selectionMode === 'choosing') && (
+        <div style={{ textAlign: 'center', marginTop: '1rem', marginBottom: '1rem' }}>
+          <button 
+            onClick={handleReset}
+            style={{
+              position: 'relative',
+              background: 'linear-gradient(145deg, #f4433620, #f4433640)',
+              color: 'white',
+              border: '2px solid #f44336',
+              padding: '10px 20px',
+              fontSize: '1rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontFamily: 'Orbitron, monospace',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: '0 0 8px #f4433640, inset 0 1px 0 #f4433660',
+              textShadow: '0 0 4px #f44336'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+              e.currentTarget.style.boxShadow = '0 4px 16px #f4433660, inset 0 1px 0 #f4433680';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
+              e.currentTarget.style.boxShadow = '0 0 8px #f4433640, inset 0 1px 0 #f4433660';
+            }}
+          >
+            🔄 Reset Game
+          </button>
+        </div>
+      )}
       
       {/* Clean Debug Output */}
       <div style={{ background: '#222', color: '#eee', padding: '1rem', marginTop: '2rem', borderRadius: '8px', fontSize: '0.9rem' }}>
