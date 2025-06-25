@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 
 interface ExplosionAnimationProps {
-  row: number;
-  col: number;
+  row?: number;
+  col?: number;
+  x?: number;
+  y?: number;
+  scale?: number;
+  duration?: number;
   onComplete: () => void;
   isShieldBlock?: boolean;
   projectileDirection?: { x: number; y: number };
@@ -11,12 +15,16 @@ interface ExplosionAnimationProps {
 const ExplosionAnimation: React.FC<ExplosionAnimationProps> = ({ 
   row, 
   col, 
+  x, 
+  y, 
+  scale = 1, 
+  duration = 1000, 
   onComplete, 
   isShieldBlock = false, 
   projectileDirection 
 }) => {
   const [phase, setPhase] = useState<'start' | 'explode' | 'fade'>('start');
-  const [scale, setScale] = useState(0);
+  const [animScale, setAnimScale] = useState(0);
   const [opacity, setOpacity] = useState(1);
 
   // Calculate offset for shield block animation
@@ -39,40 +47,52 @@ const ExplosionAnimation: React.FC<ExplosionAnimationProps> = ({
     // Start animation
     const startTimer = setTimeout(() => {
       setPhase('explode');
-      setScale(1);
-    }, 100);
+      setAnimScale(1);
+    }, 0);
 
     // Fade out
     const fadeTimer = setTimeout(() => {
       setPhase('fade');
       setOpacity(0);
-    }, 600);
+    }, duration * 0.6);
 
     // Complete animation
     const completeTimer = setTimeout(() => {
       onComplete();
-    }, 1000);
+    }, duration);
 
     return () => {
       clearTimeout(startTimer);
       clearTimeout(fadeTimer);
       clearTimeout(completeTimer);
     };
-  }, [onComplete]);
+  }, [onComplete, duration]);
 
-  return (
-    <div
-      style={{
+  // If x/y are provided, use them for absolute positioning; else, use center (for board)
+  const style: React.CSSProperties = x !== undefined && y !== undefined
+    ? {
         position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: `translate(calc(-50% + ${shieldOffset.x}px), calc(-50% + ${shieldOffset.y}px)) scale(${scale})`,
+        left: x,
+        top: y,
+        transform: `translate(-50%, -50%) scale(${scale * animScale})`,
         opacity: opacity,
         transition: 'transform 0.3s ease-out, opacity 0.4s ease-out',
         pointerEvents: 'none',
         zIndex: 10,
-      }}
-    >
+      }
+    : {
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: `translate(calc(-50% + ${shieldOffset.x}px), calc(-50% + ${shieldOffset.y}px)) scale(${scale * animScale})`,
+        opacity: opacity,
+        transition: 'transform 0.3s ease-out, opacity 0.4s ease-out',
+        pointerEvents: 'none',
+        zIndex: 10,
+      };
+
+  return (
+    <div style={style}>
       {/* Explosion particles */}
       {Array.from({ length: 8 }).map((_, i) => {
         const angle = (i * 45) * (Math.PI / 180);
