@@ -452,6 +452,215 @@ export { simulateAllyPreviewAtTick };
 
 const BOARD_WIDTH = 32 + 80 * 8; // ROW_LABEL_WIDTH + TILE_SIZE * 8
 
+// Helper function to generate event log from replay states
+function generateEventLogFromReplayStates(replayStates: any[]): string[] {
+  const events: string[] = [];
+  
+  if (!replayStates || replayStates.length === 0) return events;
+  
+  // Group events by tick
+  const eventsByTick = new Map<number, string[]>();
+  
+  replayStates.forEach((state, tickIndex) => {
+    const tick = state.tick;
+    const tickEvents: string[] = [];
+    
+    // Process destroyed echoes with their positions
+    const destroyedEchoesByPosition = new Map<string, { blueCount: number; orangeCount: number }>();
+    state.destroyed.forEach((destroyed: any) => {
+      const posKey = `${destroyed.position.row},${destroyed.position.col}`;
+      const existing = destroyedEchoesByPosition.get(posKey);
+      
+      if (existing) {
+        if (destroyed.playerId === 'player1') {
+          existing.orangeCount++;
+        } else {
+          existing.blueCount++;
+        }
+      } else {
+        destroyedEchoesByPosition.set(posKey, {
+          blueCount: destroyed.playerId === 'player2' ? 1 : 0,
+          orangeCount: destroyed.playerId === 'player1' ? 1 : 0
+        });
+      }
+    });
+    
+    // Process destroyed projectiles with their positions
+    const destroyedProjectilesByPosition = new Map<string, { projectiles: number; mines: number }>();
+    state.destroyedProjectiles.forEach((destroyed: any) => {
+      const posKey = `${destroyed.position.row},${destroyed.position.col}`;
+      const existing = destroyedProjectilesByPosition.get(posKey);
+      if (existing) {
+        if (destroyed.type === 'projectile') {
+          existing.projectiles++;
+        } else {
+          existing.mines++;
+        }
+      } else {
+        destroyedProjectilesByPosition.set(posKey, {
+          projectiles: destroyed.type === 'projectile' ? 1 : 0,
+          mines: destroyed.type === 'mine' ? 1 : 0
+        });
+      }
+    });
+    
+    // Create events for each unique position
+    const allPositions = new Set([
+      ...destroyedEchoesByPosition.keys(),
+      ...destroyedProjectilesByPosition.keys()
+    ]);
+    
+    allPositions.forEach(posKey => {
+      const [row, col] = posKey.split(',').map(Number);
+      const boardPos = getBoardPosition(row, col);
+      
+      const echoData = destroyedEchoesByPosition.get(posKey);
+      const projectileData = destroyedProjectilesByPosition.get(posKey);
+      
+      let eventDescription = '';
+      
+      if (echoData && projectileData) {
+        // Both echoes and projectiles destroyed at same location
+        
+        // Check if there's a shield block at this location and adjust projectile count
+        const hasShieldBlock = state.shieldBlocks.some((block: any) => 
+          block.row === row && block.col === col
+        );
+        
+        let adjustedProjectiles = projectileData.projectiles;
+        let adjustedMines = projectileData.mines;
+        
+        if (hasShieldBlock && adjustedProjectiles > 0) {
+          adjustedProjectiles -= 1; // Subtract 1 projectile that was blocked
+        }
+        
+        // Determine what destroyed the echo
+        let destroyer = '';
+        if (adjustedProjectiles > 0 && adjustedMines > 0) {
+          destroyer = 'projectile and mine';
+        } else if (adjustedProjectiles > 0) {
+          destroyer = 'projectile';
+        } else if (adjustedMines > 0) {
+          destroyer = 'mine';
+        }
+        
+        // Build echo description
+        let echoDescription = '';
+        if (echoData.blueCount > 0 && echoData.orangeCount > 0) {
+          echoDescription = `${echoData.blueCount} Blue and ${echoData.orangeCount} Orange echo${echoData.blueCount + echoData.orangeCount > 1 ? 's' : ''} destroyed by ${destroyer}`;
+        } else if (echoData.blueCount > 0) {
+          echoDescription = `${echoData.blueCount} Blue echo${echoData.blueCount > 1 ? 's' : ''} destroyed by ${destroyer}`;
+        } else if (echoData.orangeCount > 0) {
+          echoDescription = `${echoData.orangeCount} Orange echo${echoData.orangeCount > 1 ? 's' : ''} destroyed by ${destroyer}`;
+        }
+        
+        eventDescription = `Tick ${tick} - ${echoDescription} at ${boardPos}`;
+      } else if (echoData) {
+        // Only echoes destroyed (echo vs echo collision)
+        let echoDescription = '';
+        
+        if (echoData.blueCount > 0 && echoData.orangeCount > 0) {
+          echoDescription = `${echoData.blueCount} Blue and ${echoData.orangeCount} Orange echo${echoData.blueCount + echoData.orangeCount > 1 ? 's' : ''} destroyed`;
+        } else if (echoData.blueCount > 0) {
+          echoDescription = `${echoData.blueCount} Blue echo${echoData.blueCount > 1 ? 's' : ''} destroyed`;
+        } else if (echoData.orangeCount > 0) {
+          echoDescription = `${echoData.orangeCount} Orange echo${echoData.orangeCount > 1 ? 's' : ''} destroyed`;
+        }
+        
+        eventDescription = `Tick ${tick} - ${echoDescription} at ${boardPos}`;
+      } else if (projectileData) {
+        // Only projectiles destroyed (projectile vs projectile collision)
+        
+        // Check if there's a shield block at this location and adjust projectile count
+        const hasShieldBlock = state.shieldBlocks.some((block: any) => 
+          block.row === row && block.col === col
+        );
+        
+        let adjustedProjectiles = projectileData.projectiles;
+        let adjustedMines = projectileData.mines;
+        
+        if (hasShieldBlock && adjustedProjectiles > 0) {
+          adjustedProjectiles -= 1; // Subtract 1 projectile that was blocked
+        }
+        
+        let parts = [];
+        if (adjustedProjectiles > 0) {
+          parts.push(`${adjustedProjectiles} projectile${adjustedProjectiles > 1 ? 's' : ''}`);
+        }
+        if (adjustedMines > 0) {
+          parts.push(`${adjustedMines} mine${adjustedMines > 1 ? 's' : ''}`);
+        }
+        
+        // Only create event if there are actually entities to report
+        if (parts.length > 0) {
+          eventDescription = `Tick ${tick} - ${parts.join(' and ')} destroyed at ${boardPos}`;
+        }
+      }
+      
+      if (eventDescription) {
+        tickEvents.push(eventDescription);
+      }
+    });
+    
+    // Add shield blocks (these are separate from collisions)
+    state.shieldBlocks.forEach((block: any) => {
+      const boardPos = getBoardPosition(block.row, block.col);
+      // Find which player's echo is at this location to determine the shield owner
+      const shieldedEcho = state.echoes.find((echo: any) => 
+        echo.position.row === block.row && echo.position.col === block.col
+      );
+      const playerNumber = shieldedEcho?.playerId === 'player1' ? '1' : '2';
+      tickEvents.push(`Tick ${tick} - Player ${playerNumber} shield blocks at ${boardPos}`);
+    });
+    
+    if (tickEvents.length > 0) {
+      eventsByTick.set(tick, tickEvents);
+    }
+  });
+  
+  // Convert to sorted array
+  const sortedTicks = Array.from(eventsByTick.keys()).sort((a, b) => a - b);
+  sortedTicks.forEach((tick, index) => {
+    const tickEvents = eventsByTick.get(tick) || [];
+    
+    // Sort events within each tick by tile position and type
+    const sortedTickEvents = tickEvents.sort((a, b) => {
+      // Extract tile position from event strings
+      const getTilePosition = (event: string) => {
+        const match = event.match(/at ([A-H][1-8])/);
+        return match ? match[1] : '';
+      };
+      
+      const tileA = getTilePosition(a);
+      const tileB = getTilePosition(b);
+      
+      // First sort by tile position (A1, A2, ..., H8)
+      if (tileA !== tileB) {
+        return tileA.localeCompare(tileB);
+      }
+      
+      // If same tile, put shield blocks before collisions
+      const isShieldBlockA = a.includes('shield blocks');
+      const isShieldBlockB = b.includes('shield blocks');
+      
+      if (isShieldBlockA && !isShieldBlockB) return -1;
+      if (!isShieldBlockA && isShieldBlockB) return 1;
+      
+      return 0;
+    });
+    
+    // Add a blank line between different ticks (except before the first tick)
+    if (index > 0) {
+      events.push('');
+    }
+    sortedTickEvents.forEach(event => {
+      events.push(event);
+    });
+  });
+  
+  return events;
+}
+
 const GamePage: React.FC = () => {
   const [state, dispatch] = useReducer(gameReducer, initialGameState) as [GameState, React.Dispatch<GameAction>];
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('choosing');
@@ -603,6 +812,8 @@ const GamePage: React.FC = () => {
         destroyedEchoes: allDestroyed,
         destroyedProjectiles: replayStates.flatMap(state => state.destroyedProjectiles || []),
         collisions: allCollisions,
+        shieldBlocks: replayStates.flatMap(state => state.shieldBlocks || []),
+        eventLog: generateEventLogFromReplayStates(replayStates),
       };
       
       dispatch({ type: 'RECORD_TURN_HISTORY', entry: turnHistoryEntry });
@@ -667,6 +878,7 @@ const GamePage: React.FC = () => {
           echoes={state.echoes}
           currentTick={current.tick}
           replayStates={replayStates}
+          turnHistory={state.turnHistory}
         />
         <div style={{ width: BOARD_WIDTH, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <div style={{ color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'left', fontSize: 22 }}>Player 1 (Orange): <b>{state.scores.player1}</b></div>
@@ -1043,6 +1255,7 @@ const GamePage: React.FC = () => {
         echoes={state.echoes}
         currentTick={state.currentTick}
         replayStates={[]}
+        turnHistory={state.turnHistory}
       />
       <div style={{ width: BOARD_WIDTH, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <div style={{ color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'left', fontSize: 22 }}>Player 1 (Orange): <b>{state.scores.player1}</b></div>

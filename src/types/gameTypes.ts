@@ -50,6 +50,8 @@ export interface TurnHistoryEntry {
   destroyedEchoes: { echoId: string; by: PlayerId | null; position: Position }[];
   destroyedProjectiles: { id: string; type: 'projectile' | 'mine'; position: Position }[];
   collisions: { row: number; col: number }[];
+  shieldBlocks: { row: number; col: number; projectileDirection: Direction }[];
+  eventLog: string[];
 }
 
 // The overall game state
