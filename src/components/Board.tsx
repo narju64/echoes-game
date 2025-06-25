@@ -328,8 +328,8 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
                       <>
                         <div
                           style={{
-                            width: 32,
-                            height: 32,
+                            width: 40,
+                            height: 40,
                             borderRadius: '50%',
                             background: 'rgba(128, 128, 128, 0.6)',
                             position: 'absolute',
@@ -342,9 +342,9 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
                         {/* Preview shield rendering */}
                         {previewEcho.isShielded && previewEcho.shieldDirection && (
                           <svg
-                            width={32}
-                            height={32}
-                            viewBox="0 0 32 32"
+                            width={64}
+                            height={64}
+                            viewBox="0 0 64 64"
                             style={{
                               position: 'absolute',
                               top: '50%',
@@ -354,7 +354,7 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
                             }}
                           >
                             <path
-                              d="M16,16 m-16,0 a16,16 0 0,1 32,0"
+                              d="M32,32 m-32,0 a32,32 0 0,1 64,0"
                               fill="none"
                               stroke="rgba(128, 128, 128, 0.6)"
                               strokeWidth="4"

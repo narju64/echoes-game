@@ -230,8 +230,8 @@ const GameInfoPanel: React.FC<GameInfoPanelProps> = ({
         }
         
         // If same tile, put shield blocks before collisions
-        const isShieldBlockA = a.includes('Shield block');
-        const isShieldBlockB = b.includes('Shield block');
+        const isShieldBlockA = a.includes('shield blocks');
+        const isShieldBlockB = b.includes('shield blocks');
         
         if (isShieldBlockA && !isShieldBlockB) return -1;
         if (!isShieldBlockA && isShieldBlockB) return 1;
@@ -300,8 +300,57 @@ const GameInfoPanel: React.FC<GameInfoPanelProps> = ({
               color = '#f44336'; // red
             }
             
+            // Extract tile position for grouping
+            const getTilePosition = (eventText: string) => {
+              const match = eventText.match(/at ([A-H][1-8])/);
+              return match ? match[1] : '';
+            };
+            
+            const currentTile = getTilePosition(event);
+            const events = generateEventLog();
+            
+            // Check if this event is part of a group at the same tile
+            let isGroupStart = false;
+            let isGroupEnd = false;
+            let groupStyle = {};
+            
+            if (currentTile) {
+              // Check if previous event is at different tile (group start)
+              if (index === 0 || getTilePosition(events[index - 1]) !== currentTile) {
+                isGroupStart = true;
+              }
+              
+              // Check if next event is at different tile (group end)
+              if (index === events.length - 1 || getTilePosition(events[index + 1]) !== currentTile) {
+                isGroupEnd = true;
+              }
+              
+              // If this is part of a group (not alone), add grouping styles
+              if (isGroupStart || isGroupEnd || (index > 0 && getTilePosition(events[index - 1]) === currentTile)) {
+                groupStyle = {
+                  borderLeft: '2px solid rgba(255, 255, 255, 0.2)',
+                  borderRight: '2px solid rgba(255, 255, 255, 0.2)',
+                  paddingLeft: '8px',
+                  paddingRight: '8px',
+                  marginLeft: '4px',
+                  marginRight: '4px',
+                  ...(isGroupStart && { borderTopLeftRadius: '4px', borderTopRightRadius: '4px' }),
+                  ...(isGroupEnd && { borderBottomLeftRadius: '4px', borderBottomRightRadius: '4px' }),
+                  ...(isGroupStart && isGroupEnd && { borderRadius: '4px' }),
+                  ...(isGroupStart && { borderTop: '1px solid rgba(255, 255, 255, 0.1)' }),
+                  ...(isGroupEnd && { borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }),
+                  ...(isGroupStart && { paddingTop: '4px' }),
+                  ...(isGroupEnd && { paddingBottom: '4px' }),
+                };
+              }
+            }
+            
             return (
-              <div key={index} style={{ marginBottom: '0.2rem', color }}>
+              <div key={index} style={{ 
+                marginBottom: '0.2rem', 
+                color,
+                ...groupStyle
+              }}>
                 {event}
               </div>
             );
