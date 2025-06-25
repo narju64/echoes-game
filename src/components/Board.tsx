@@ -35,9 +35,97 @@ const TRAIL_LENGTH = 3;
 const BASE_OPACITY = 0.3;
 const ROW_LABEL_WIDTH = 32;
 
+// Helper functions for board position formatting
+const getColumnLetter = (col: number): string => {
+  return String.fromCharCode(65 + col); // A, B, C, etc.
+};
+
+const getRowNumber = (row: number): string => {
+  return String(8 - row); // 8, 7, 6, etc. (board is displayed bottom-to-top)
+};
+
+const getBoardPosition = (row: number, col: number): string => {
+  return `${getColumnLetter(col)}${getRowNumber(row)}`;
+};
+
+const getDirectionName = (dir: Direction): string => {
+  if (dir.x === 0 && dir.y === 1) return '↑'; // N
+  if (dir.x === 1 && dir.y === 1) return '↗'; // NE
+  if (dir.x === 1 && dir.y === 0) return '→'; // E
+  if (dir.x === 1 && dir.y === -1) return '↘'; // SE
+  if (dir.x === 0 && dir.y === -1) return '↓'; // S
+  if (dir.x === -1 && dir.y === -1) return '↙'; // SW
+  if (dir.x === -1 && dir.y === 0) return '←'; // W
+  if (dir.x === -1 && dir.y === 1) return '↖'; // NW
+  return '?';
+};
+
+// Simple hover popup component
+const EchoActionPopup: React.FC<{ echo: Echo; position: { row: number; col: number } }> = ({ echo, position }) => {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: `${(BOARD_SIZE - 1 - position.row) * TILE_SIZE + 16 - 120}px`,
+        left: `${position.col * TILE_SIZE + 16 + 32}px`,
+        background: '#222',
+        color: '#eee',
+        padding: '0.75rem',
+        borderRadius: '8px',
+        fontSize: '0.8rem',
+        zIndex: 1000,
+        minWidth: '200px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.8)',
+        border: '1px solid #444',
+        pointerEvents: 'none',
+      }}
+    >
+      <div style={{ marginBottom: '0.5rem', fontWeight: 'bold', color: echo.playerId === 'player1' ? 'orange' : '#4ecdc4' }}>
+        Actions ({echo.instructionList.length}):
+      </div>
+      {echo.instructionList.length === 0 ? (
+        <div style={{ color: '#888', fontStyle: 'italic' }}>No actions assigned</div>
+      ) : (
+        <div style={{ color: '#ccc' }}>
+          {(() => {
+            let currentPos = { ...echo.position };
+            return echo.instructionList.map((action, actionIndex) => {
+              // Calculate position for this tick
+              let tickPosition = currentPos;
+              if (action.type === 'walk') {
+                tickPosition = { 
+                  row: currentPos.row + action.direction.y, 
+                  col: currentPos.col + action.direction.x 
+                };
+              } else if (action.type === 'dash') {
+                tickPosition = { 
+                  row: currentPos.row + action.direction.y * 2, 
+                  col: currentPos.col + action.direction.x * 2 
+                };
+              }
+              
+              // Update current position for next iteration
+              if (action.type === 'walk' || action.type === 'dash') {
+                currentPos = tickPosition;
+              }
+              
+              return (
+                <div key={actionIndex} style={{ marginBottom: '0.25rem' }}>
+                  Tick {action.tick}: {action.type.toUpperCase()} ({getDirectionName(action.direction)}) at {getBoardPosition(tickPosition.row, tickPosition.col)}
+                </div>
+              );
+            });
+          })()}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClick, origin, onDirectionSelect, projectiles = [], collisions = [], shieldBlocks = [], previewEchoes = [], previewProjectiles = [], fullWidth = false }) => {
   const [activeExplosions, setActiveExplosions] = React.useState<Set<string>>(new Set());
   const [activeShieldBlocks, setActiveShieldBlocks] = React.useState<Map<string, Direction>>(new Map());
+  const [hoveredEcho, setHoveredEcho] = React.useState<Echo | null>(null);
 
   // Helper to check if a tile is highlighted
   const isHighlighted = (row: number, col: number) =>
@@ -105,7 +193,7 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: fullWidth ? '95vw' : 'auto', paddingTop: 10 }}>
-      <div style={{ display: 'inline-block', background: 'black', padding: 16, borderRadius: 12 }}>
+      <div style={{ display: 'inline-block', background: 'black', padding: 16, borderRadius: 12, position: 'relative' }}>
         {/* Column labels */}
         <div style={{ display: 'flex', marginBottom: 4 }}>
           <div style={{ width: ROW_LABEL_WIDTH }} /> {/* Empty cell for row label alignment */}
@@ -151,6 +239,17 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
                         } else if (onTileClick) {
                           onTileClick(rowIdx, colIdx);
                         }
+                      }
+                    }}
+                    onMouseEnter={() => {
+                      // Only show popup for highlighted echoes when not in direction selection mode
+                      if (echo && highlighted && !onDirectionSelect) {
+                        setHoveredEcho(echo);
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      if (!onDirectionSelect) {
+                        setHoveredEcho(null);
                       }
                     }}
                   >
@@ -418,6 +517,11 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
             </div>
           );
         })}
+        
+        {/* Action popup for hovered echo */}
+        {hoveredEcho && (
+          <EchoActionPopup echo={hoveredEcho} position={hoveredEcho.position} />
+        )}
       </div>
     </div>
   );
