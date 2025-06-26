@@ -59,6 +59,7 @@ const HomePage: React.FC = () => {
   const SPEED = 0.00008; // Slower speed for menu
   const [echoes, setEchoes] = useState(() => generateEchoes());
   const [foregroundEchoes, setForegroundEchoes] = useState(() => generateEchoes(FOREGROUND_ECHO_COUNT, 1.2));
+  const [menuState, setMenuState] = useState<'main' | 'aiTraining' | 'multiplayer'>('main');
 
   // Animation loop
   useEffect(() => {
@@ -206,10 +207,29 @@ const HomePage: React.FC = () => {
       }}>
         <h1>Echoes</h1>
         <div className="menu">
-          <Link to="/game" className="menu-button">Single Player</Link>
-          <Link to="/game" className="menu-button">Multiplayer</Link>
-          <Link to="/rules" className="menu-button">Rules</Link>
-          <Link to="/leaderboard" className="menu-button">Leaderboard</Link>
+          {menuState === 'main' && (
+            <>
+              <button className="menu-button" onClick={() => setMenuState('aiTraining')}>AI Training</button>
+              <Link to="/game?mode=ai" className="menu-button">Single Player</Link>
+              <button className="menu-button" onClick={() => setMenuState('multiplayer')}>Multiplayer</button>
+              <Link to="/rules" className="menu-button">Rules</Link>
+              <Link to="/leaderboard" className="menu-button">Leaderboard</Link>
+            </>
+          )}
+          {menuState === 'aiTraining' && (
+            <>
+              <Link to="/ai-training" className="menu-button">Training</Link>
+              <Link to="/ai-tournament" className="menu-button">Tournament</Link>
+              <button className="menu-button" onClick={() => setMenuState('main')}>Back</button>
+            </>
+          )}
+          {menuState === 'multiplayer' && (
+            <>
+              <Link to="/game?mode=hotseat" className="menu-button">Hotseat</Link>
+              <button className="menu-button" disabled>Online</button>
+              <button className="menu-button" onClick={() => setMenuState('main')}>Back</button>
+            </>
+          )}
         </div>
       </div>
     </div>

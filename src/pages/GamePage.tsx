@@ -1,5 +1,5 @@
 import React, { useReducer, useEffect, useState, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { initialGameState, gameReducer, type GameAction } from '../game/gameState';
 import type { Echo, PlayerId, Direction, GameState } from '../types/gameTypes';
 import Board from '../components/Board';
@@ -664,6 +664,10 @@ function generateEventLogFromReplayStates(replayStates: any[]): string[] {
 
 const GamePage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // Extract mode from URL parameters, default to 'hotseat'
+  const modeParam = searchParams.get('mode');
+  const [gameMode, setGameMode] = useState(modeParam || 'hotseat');
   const [state, dispatch] = useReducer(gameReducer, initialGameState) as [GameState, React.Dispatch<GameAction>];
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('choosing');
   const currentPlayer: PlayerId = state.currentPlayer;
@@ -1370,6 +1374,15 @@ const GamePage: React.FC = () => {
       >
         Home
       </button>
+      
+      {/* Mode indicator for debugging/clarity */}
+      <div style={{ position: 'absolute', top: 10, right: 10, background: '#222', color: '#fff', padding: '6px 16px', borderRadius: 8, zIndex: 1000, opacity: 0.85, fontWeight: 600 }}>
+        {gameMode === 'ai' && 'AI vs Human Mode'}
+        {gameMode === 'hotseat' && 'Hotseat Mode'}
+        {gameMode === 'tournament' && 'Tournament Mode'}
+        {gameMode === 'training' && 'AI Training Mode'}
+        {!['ai', 'hotseat', 'tournament', 'training'].includes(gameMode) && `Mode: ${gameMode}`}
+      </div>
       
       <GameInfoPanel 
         currentPlayer={currentPlayer}

@@ -6,6 +6,8 @@ import HomePage from './pages/HomePage.tsx';
 import GamePage from './pages/GamePage.tsx';
 import RulesPage from './pages/RulesPage.tsx';
 import IntroScreen from './pages/IntroScreen';
+import AITrainingPage from './pages/AITrainingPage';
+import AITournamentPage from './pages/AITournamentPage';
 
 import './index.css';
 
@@ -25,6 +27,14 @@ const router = createBrowserRouter([
   {
     path: '/rules',
     element: <RulesPage />,
+  },
+  {
+    path: '/ai-training',
+    element: <AITrainingPage />,
+  },
+  {
+    path: '/ai-tournament',
+    element: <AITournamentPage />,
   },
 ]);
 
