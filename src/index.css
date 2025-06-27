@@ -1,5 +1,186 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 
+/* Mobile-first responsive design */
+* {
+  box-sizing: border-box;
+}
+
 body, html, #root {
   font-family: 'Orbitron', 'Rajdhani', 'Share Tech Mono', Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Responsive breakpoints */
+:root {
+  --mobile-tile-size: 40px;
+  --tablet-tile-size: 60px;
+  --desktop-tile-size: 80px;
+  --mobile-font-size: 0.8rem;
+  --tablet-font-size: 1rem;
+  --desktop-font-size: 1.2rem;
+}
+
+/* Mobile styles (default) */
+@media (max-width: 768px) {
+  .board-tile {
+    width: var(--mobile-tile-size) !important;
+    height: var(--mobile-tile-size) !important;
+  }
+  
+  .board-label {
+    font-size: 14px !important;
+  }
+  
+  .menu-button {
+    min-width: 250px !important;
+    padding: 1rem 2rem !important;
+    font-size: 1rem !important;
+  }
+  
+  .home-page h1 {
+    font-size: 2.5rem !important;
+  }
+  
+  .game-container {
+    flex-direction: column !important;
+    padding: 10px !important;
+  }
+  
+  .sidebar {
+    width: 100% !important;
+    max-width: none !important;
+    margin-top: 10px !important;
+  }
+  
+  .echo-popup {
+    display: none !important; /* Hide hover popups on mobile */
+  }
+  
+  /* EchoActionAssignment mobile layout */
+  .echo-action-assignment {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  
+  .echo-action-sidebar {
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 400px !important;
+    margin: 0 !important;
+    left: auto !important;
+    top: auto !important;
+  }
+  
+  .echo-action-board {
+    order: -1 !important; /* Board appears first on mobile */
+  }
+}
+
+/* Tablet styles */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .board-tile {
+    width: var(--tablet-tile-size) !important;
+    height: var(--tablet-tile-size) !important;
+  }
+  
+  .board-label {
+    font-size: 18px !important;
+  }
+  
+  .menu-button {
+    min-width: 280px !important;
+    padding: 1.1rem 2.3rem !important;
+    font-size: 1.1rem !important;
+  }
+  
+  .home-page h1 {
+    font-size: 3.5rem !important;
+  }
+  
+  /* EchoActionAssignment tablet layout */
+  .echo-action-assignment {
+    gap: 15px !important;
+  }
+  
+  .echo-action-sidebar {
+    width: 350px !important;
+    height: 600px !important;
+    left: -410px !important; /* Adjust for tablet board size */
+  }
+}
+
+/* Desktop styles */
+@media (min-width: 1025px) {
+  .board-tile {
+    width: var(--desktop-tile-size) !important;
+    height: var(--desktop-tile-size) !important;
+  }
+  
+  .board-label {
+    font-size: 28px !important;
+  }
+  
+  .menu-button {
+    min-width: 280px !important;
+    padding: 1.2rem 2.5rem !important;
+    font-size: 1.3rem !important;
+  }
+  
+  .home-page h1 {
+    font-size: 4rem !important;
+  }
+  
+  /* EchoActionAssignment desktop layout */
+  .echo-action-sidebar {
+    left: -460px !important; /* Desktop positioning */
+  }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+  .menu-button {
+    min-height: 44px !important; /* iOS minimum touch target */
+  }
+  
+  .board-tile {
+    min-height: 44px !important;
+  }
+  
+  /* Increase touch targets */
+  button, a {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+}
+
+/* Landscape mobile adjustments */
+@media (max-width: 768px) and (orientation: landscape) {
+  .home-page h1 {
+    font-size: 2rem !important;
+    margin-bottom: 1rem !important;
+  }
+  
+  .menu {
+    gap: 1rem !important;
+  }
+  
+  .menu-button {
+    padding: 0.8rem 1.5rem !important;
+    font-size: 0.9rem !important;
+  }
+  
+  /* EchoActionAssignment landscape mobile */
+  .echo-action-assignment {
+    flex-direction: row !important;
+    gap: 10px !important;
+  }
+  
+  .echo-action-sidebar {
+    width: 300px !important;
+    height: 400px !important;
+  }
 }

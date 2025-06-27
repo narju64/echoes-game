@@ -24,17 +24,19 @@ const EchoSelection: React.FC<EchoSelectionProps> = ({
 
   return (
     <div style={{ 
+      position: 'absolute',
+      right: 'calc(100% + 60px)',
+      top: '64px',
       color: 'white', 
       background: '#222', 
       padding: '1rem', 
       borderRadius: 12, 
-      width: '400px', 
+      width: '430px', 
       height: '640px', 
       minWidth: 240, 
-      maxWidth: 400, 
-      overflowY: 'auto', 
-      marginLeft: '60px', 
-      marginTop: '36px' 
+      maxWidth: 430, 
+      overflowY: 'auto',
+      zIndex: 10
     }}>
       <h2>Choose Echo Action</h2>
       <p style={{

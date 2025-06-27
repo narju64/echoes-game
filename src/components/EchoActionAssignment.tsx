@@ -366,163 +366,182 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
     : [];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
-      <div style={{ color: 'white', background: '#222', padding: '1rem', borderRadius: 12, width: '400px', height: '640px', minWidth: 240, maxWidth: 400, overflowY: 'auto', marginLeft: '60px', marginTop: '36px' }}>
-        <h2 style={{ margin: '0 0 0.5rem 0' }}>Assign Actions to Echo</h2>
-        <p style={{ color: isNewEcho ? '#4CAF50' : '#2196F3', fontWeight: 'bold', margin: '0 0 0.5rem 0' }}>
-          {isNewEcho ? 'New Echo' : 'Extended Echo'} ({maxActionPoints} Action Points)
-        </p>
-        <p style={{ margin: '0 0 0.5rem 0' }}>Current Tick: {displayTick}</p>
-        <p style={{ margin: '0 0 0.5rem 0' }}>Remaining Action Points: {remainingPoints}</p>
-        {/* Undo button */}
-        {(actions.length > 0 || selectingDirection) && (
-          <div style={{ marginBottom: '0.5rem' }}>
-            <button 
-              onClick={handleUndoLastAction}
-              style={{
-                position: 'relative',
-                background: 'linear-gradient(145deg, #ff572220, #ff572240)',
-                color: 'white',
-                border: '2px solid #ff5722',
-                padding: '10px 16px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                fontWeight: 'bold',
-                fontFamily: 'Orbitron, monospace',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: '0 0 8px #ff572240, inset 0 1px 0 #ff572260',
-                textShadow: '0 0 4px #ff5722',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-                e.currentTarget.style.boxShadow = '0 4px 16px #ff572260, inset 0 1px 0 #ff572280';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                e.currentTarget.style.boxShadow = '0 0 8px #ff572240, inset 0 1px 0 #ff572260';
-              }}
-            >
-              <span style={{ fontSize: '1.1rem' }}>↩</span>
-              <span>Undo Last Action</span>
-            </button>
-          </div>
-        )}
-        {/* Show existing instructions for extended echoes */}
-        {!isNewEcho && pendingEcho.instructionList.length > 0 && (
-          <div style={{ marginBottom: '0.5rem' }}>
-            <p style={{ fontWeight: 'bold', color: '#ccc' }}>Existing Instructions:</p>
-            <ol style={{ color: '#ccc', fontSize: '0.9rem' }}>
-              {pendingEcho.instructionList.map((a, i) => (
-                <li key={i}>{a.type.toUpperCase()} ({a.direction.x},{a.direction.y}) [Tick: {a.tick}]</li>
-              ))}
-            </ol>
-          </div>
-        )}
-        {/* Show new actions being assigned */}
-        {actions.length > 0 && (
-          <div style={{ marginBottom: '0.5rem' }}>
-            <p style={{ fontWeight: 'bold', color: '#4CAF50' }}>New Actions:</p>
-            <div style={{ color: '#4CAF50', fontFamily: 'monospace', fontSize: '0.9rem' }}>
-              {/* Show tick 0 (spawned) */}
-              <div style={{ display: 'grid', gridTemplateColumns: '15px 10px 1fr', gap: '8px', alignItems: 'center' }}>
-                <span>0.</span>
-                <span>{getBoardPosition(pendingEcho.position.row, pendingEcho.position.col)}</span>
-                <span>: SPAWNED</span>
-              </div>
-              {/* Show each action with position and cardinal direction */}
-              {actions.map((a, i) => {
-                // Calculate position for this tick
-                let currentPos = { ...pendingEcho.position };
-                for (let j = 0; j <= i; j++) {
-                  const action = actions[j];
-                  if (action.type === 'walk') {
-                    currentPos = { 
-                      row: currentPos.row + action.direction.y, 
-                      col: currentPos.col + action.direction.x 
-                    };
-                  } else if (action.type === 'dash') {
-                    currentPos = { 
-                      row: currentPos.row + action.direction.y * 2, 
-                      col: currentPos.col + action.direction.x * 2 
-                    };
-                  }
-                }
-                
-                // Convert direction to cardinal format
-                const getCardinalDirection = (dir: Direction) => {
-                  if (dir.x === 0 && dir.y === 1) return '↑'; // N
-                  if (dir.x === 1 && dir.y === 1) return '↗'; // NE
-                  if (dir.x === 1 && dir.y === 0) return '→'; // E
-                  if (dir.x === 1 && dir.y === -1) return '↘'; // SE
-                  if (dir.x === 0 && dir.y === -1) return '↓'; // S
-                  if (dir.x === -1 && dir.y === -1) return '↙'; // SW
-                  if (dir.x === -1 && dir.y === 0) return '←'; // W
-                  if (dir.x === -1 && dir.y === 1) return '↖'; // NW
-                  return '?';
-                };
-                
-                return (
-                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '15px 10px 70px 30px 15px 50px', gap: '8px', alignItems: 'center' }}>
-                    <span>{a.tick}.</span>
-                    <span>{getBoardPosition(currentPos.row, currentPos.col)}</span>
-                    <span>: {a.type.toUpperCase()}</span>
-                    <span>({getCardinalDirection(a.direction)})</span>
-                    <span>-</span>
-                    <span>{a.cost} AP</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-        <p>Select an action:</p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-          {availableActions.map(a => (
-            <ActionButton 
-              key={a.type} 
-              action={a} 
-              onClick={() => handleActionSelect(a.type, a.cost)}
-              disabled={a.cost > remainingPoints}
-              selected={a.type === selectedActionType}
-            />
-          ))}
-        </div>
-        {selectingDirection && (
-          <p style={{ marginTop: '1rem', color: '#ff9800', fontWeight: 'bold' }}>
-            Select direction by clicking a highlighted adjacent tile:
+    <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+      {/* Sidebar positioned relative to board */}
+      <div style={{ position: 'relative' }}>
+        <div style={{ 
+          position: 'absolute',
+          right: 'calc(100% + 60px)',
+          top: '64px',
+          color: 'white', 
+          background: '#222', 
+          padding: '1rem', 
+          borderRadius: 12, 
+          width: '430px', 
+          height: '640px', 
+          minWidth: 240, 
+          maxWidth: 430, 
+          overflowY: 'auto',
+          zIndex: 10
+        }}>
+          <h2 style={{ margin: '0 0 0.5rem 0' }}>Assign Actions to Echo</h2>
+          <p style={{ color: isNewEcho ? '#4CAF50' : '#2196F3', fontWeight: 'bold', margin: '0 0 0.5rem 0' }}>
+            {isNewEcho ? 'New Echo' : 'Extended Echo'} ({maxActionPoints} Action Points)
           </p>
-        )}
-      </div>
-      <div style={{ marginLeft: '60px' }}>
-        {selectingDirection ? (
-          <div>
-            <Board
-              echoes={dirEchoes}
-              highlightedTiles={highlightedTiles}
-              origin={simForDirection.simPos}
-              onDirectionSelect={handleDirectionSelect}
-              projectiles={dirProjectiles}
-              previewEchoes={allyPreview.echoes}
-              previewProjectiles={allyPreview.projectiles}
-            />
+          <p style={{ margin: '0 0 0.5rem 0' }}>Current Tick: {displayTick}</p>
+          <p style={{ margin: '0 0 0.5rem 0' }}>Remaining Action Points: {remainingPoints}</p>
+          {/* Undo button */}
+          {(actions.length > 0 || selectingDirection) && (
+            <div style={{ marginBottom: '0.5rem' }}>
+              <button 
+                onClick={handleUndoLastAction}
+                style={{
+                  position: 'relative',
+                  background: 'linear-gradient(145deg, #ff572220, #ff572240)',
+                  color: 'white',
+                  border: '2px solid #ff5722',
+                  padding: '10px 16px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  fontWeight: 'bold',
+                  fontFamily: 'Orbitron, monospace',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 0 8px #ff572240, inset 0 1px 0 #ff572260',
+                  textShadow: '0 0 4px #ff5722',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px #ff572260, inset 0 1px 0 #ff572280';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                  e.currentTarget.style.boxShadow = '0 0 8px #ff572240, inset 0 1px 0 #ff572260';
+                }}
+              >
+                <span style={{ fontSize: '1.1rem' }}>↩</span>
+                <span>Undo Last Action</span>
+              </button>
+            </div>
+          )}
+          {/* Show existing instructions for extended echoes */}
+          {!isNewEcho && pendingEcho.instructionList.length > 0 && (
+            <div style={{ marginBottom: '0.5rem' }}>
+              <p style={{ fontWeight: 'bold', color: '#ccc' }}>Existing Instructions:</p>
+              <ol style={{ color: '#ccc', fontSize: '0.9rem' }}>
+                {pendingEcho.instructionList.map((a, i) => (
+                  <li key={i}>{a.type.toUpperCase()} ({a.direction.x},{a.direction.y}) [Tick: {a.tick}]</li>
+                ))}
+              </ol>
+            </div>
+          )}
+          {/* Show new actions being assigned */}
+          {actions.length > 0 && (
+            <div style={{ marginBottom: '0.5rem' }}>
+              <p style={{ fontWeight: 'bold', color: '#4CAF50' }}>New Actions:</p>
+              <div style={{ color: '#4CAF50', fontFamily: 'monospace', fontSize: '0.9rem' }}>
+                {/* Show tick 0 (spawned) */}
+                <div style={{ display: 'grid', gridTemplateColumns: '15px 10px 1fr', gap: '8px', alignItems: 'center' }}>
+                  <span>0.</span>
+                  <span>{getBoardPosition(pendingEcho.position.row, pendingEcho.position.col)}</span>
+                  <span>: SPAWNED</span>
+                </div>
+                {/* Show each action with position and cardinal direction */}
+                {actions.map((a, i) => {
+                  // Calculate position for this tick
+                  let currentPos = { ...pendingEcho.position };
+                  for (let j = 0; j <= i; j++) {
+                    const action = actions[j];
+                    if (action.type === 'walk') {
+                      currentPos = { 
+                        row: currentPos.row + action.direction.y, 
+                        col: currentPos.col + action.direction.x 
+                      };
+                    } else if (action.type === 'dash') {
+                      currentPos = { 
+                        row: currentPos.row + action.direction.y * 2, 
+                        col: currentPos.col + action.direction.x * 2 
+                      };
+                    }
+                  }
+                  
+                  // Convert direction to cardinal format
+                  const getCardinalDirection = (dir: Direction) => {
+                    if (dir.x === 0 && dir.y === 1) return '↑'; // N
+                    if (dir.x === 1 && dir.y === 1) return '↗'; // NE
+                    if (dir.x === 1 && dir.y === 0) return '→'; // E
+                    if (dir.x === 1 && dir.y === -1) return '↘'; // SE
+                    if (dir.x === 0 && dir.y === -1) return '↓'; // S
+                    if (dir.x === -1 && dir.y === -1) return '↙'; // SW
+                    if (dir.x === -1 && dir.y === 0) return '←'; // W
+                    if (dir.x === -1 && dir.y === 1) return '↖'; // NW
+                    return '?';
+                  };
+                  
+                  return (
+                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '15px 10px 70px 30px 15px 50px', gap: '8px', alignItems: 'center' }}>
+                      <span>{a.tick}.</span>
+                      <span>{getBoardPosition(currentPos.row, currentPos.col)}</span>
+                      <span>: {a.type.toUpperCase()}</span>
+                      <span>({getCardinalDirection(a.direction)})</span>
+                      <span>-</span>
+                      <span>{a.cost} AP</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          <p>Select an action:</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {availableActions.map(a => (
+              <ActionButton 
+                key={a.type} 
+                action={a} 
+                onClick={() => handleActionSelect(a.type, a.cost)}
+                disabled={a.cost > remainingPoints}
+                selected={a.type === selectedActionType}
+              />
+            ))}
           </div>
-        ) : (
-          <div>
-            <Board
-              echoes={previewEchoes}
-              highlightedTiles={[]}
-              projectiles={previewProjectiles}
-              previewEchoes={allyPreview.echoes}
-              previewProjectiles={allyPreview.projectiles}
-            />
-          </div>
-        )}
+          {selectingDirection && (
+            <p style={{ marginTop: '1rem', color: '#ff9800', fontWeight: 'bold' }}>
+              Select direction by clicking a highlighted adjacent tile:
+            </p>
+          )}
+        </div>
+        
+        {/* Board - centered */}
+        <div className="echo-action-board">
+          {selectingDirection ? (
+            <div>
+              <Board
+                echoes={dirEchoes}
+                highlightedTiles={highlightedTiles}
+                origin={simForDirection.simPos}
+                onDirectionSelect={handleDirectionSelect}
+                projectiles={dirProjectiles}
+                previewEchoes={allyPreview.echoes}
+                previewProjectiles={allyPreview.projectiles}
+              />
+            </div>
+          ) : (
+            <div>
+              <Board
+                echoes={previewEchoes}
+                highlightedTiles={[]}
+                projectiles={previewProjectiles}
+                previewEchoes={allyPreview.echoes}
+                previewProjectiles={allyPreview.projectiles}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

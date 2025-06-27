@@ -8,6 +8,7 @@ import RulesPage from './pages/RulesPage.tsx';
 import IntroScreen from './pages/IntroScreen';
 import AITrainingPage from './pages/AITrainingPage';
 import AITournamentPage from './pages/AITournamentPage';
+import LeaderboardPage from './pages/LeaderboardPage';
 
 import './index.css';
 
@@ -35,6 +36,10 @@ const router = createBrowserRouter([
   {
     path: '/ai-tournament',
     element: <AITournamentPage />,
+  },
+  {
+    path: '/leaderboard',
+    element: <LeaderboardPage />,
   },
 ]);
 

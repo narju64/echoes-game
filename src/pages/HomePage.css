@@ -3,10 +3,12 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  min-height: 100vh;
   background-color: #000000;
   color: white;
   font-family: 'Orbitron', 'Rajdhani', 'Share Tech Mono', Arial, sans-serif;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 .home-page h1 {
@@ -17,6 +19,7 @@
   font-weight: bold;
   letter-spacing: 2px;
   animation: title-glow 3s ease-in-out infinite alternate;
+  text-align: center;
 }
 
 @keyframes title-glow {
@@ -32,6 +35,9 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  width: 100%;
+  max-width: 400px;
+  align-items: center;
 }
 
 .menu-button {
@@ -54,6 +60,8 @@
   position: relative;
   overflow: hidden;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 300px;
 }
 
 .menu-button::before {
@@ -83,4 +91,70 @@
 .menu-button:active {
   transform: translateY(0);
   box-shadow: 0 0 10px #2196F3, 0 4px 8px rgba(33, 150, 243, 0.3);
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+  .home-page {
+    padding: 10px;
+    justify-content: flex-start;
+    padding-top: 20px;
+  }
+  
+  .home-page h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    letter-spacing: 1px;
+  }
+  
+  .home-page .menu {
+    gap: 1rem;
+    max-width: 100%;
+  }
+  
+  .menu-button {
+    min-width: 250px;
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    letter-spacing: 0.5px;
+  }
+}
+
+/* Landscape mobile adjustments */
+@media (max-width: 768px) and (orientation: landscape) {
+  .home-page {
+    justify-content: center;
+    padding-top: 10px;
+  }
+  
+  .home-page h1 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+  
+  .home-page .menu {
+    gap: 0.8rem;
+  }
+  
+  .menu-button {
+    padding: 0.8rem 1.5rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+  .menu-button {
+    min-height: 44px;
+  }
+  
+  .menu-button:hover {
+    transform: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+  
+  .menu-button:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
 } 

@@ -6,6 +6,25 @@ const BOARD_SIZE = 8;
 const COL_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 const ROW_LABELS = ['1', '2', '3', '4', '5', '6', '7', '8'];
 
+// Responsive tile size calculation
+const getTileSize = () => {
+  if (typeof window !== 'undefined') {
+    if (window.innerWidth <= 768) return 40; // mobile
+    if (window.innerWidth <= 1024) return 60; // tablet
+    return 80; // desktop
+  }
+  return 80; // default
+};
+
+const getRowLabelWidth = () => {
+  if (typeof window !== 'undefined') {
+    if (window.innerWidth <= 768) return 24; // mobile
+    if (window.innerWidth <= 1024) return 28; // tablet
+    return 32; // desktop
+  }
+  return 32; // default
+};
+
 interface ProjectilePreview {
   row: number;
   col: number;
@@ -29,9 +48,6 @@ interface BoardProps {
   previewProjectiles?: ProjectilePreview[];
   fullWidth?: boolean;
 }
-
-const TILE_SIZE = 80; // px
-const ROW_LABEL_WIDTH = 32;
 
 // Helper functions for board position formatting
 const getColumnLetter = (col: number): string => {
@@ -60,12 +76,16 @@ const getDirectionName = (dir: Direction): string => {
 
 // Simple hover popup component
 const EchoActionPopup: React.FC<{ echo: Echo; position: { row: number; col: number } }> = ({ echo, position }) => {
+  const tileSize = getTileSize();
+  const rowLabelWidth = getRowLabelWidth();
+  
   return (
     <div
+      className="echo-popup"
       style={{
         position: 'absolute',
-        top: `${(BOARD_SIZE - 1 - position.row) * TILE_SIZE + 16 - 120}px`,
-        left: `${position.col * TILE_SIZE + 16 + 32}px`,
+        top: `${(BOARD_SIZE - 1 - position.row) * tileSize + 16 - 120}px`,
+        left: `${position.col * tileSize + 16 + rowLabelWidth}px`,
         background: '#222',
         color: '#eee',
         padding: '0.75rem',
@@ -124,6 +144,20 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
   const [activeExplosions, setActiveExplosions] = React.useState<Set<string>>(new Set());
   const [activeShieldBlocks, setActiveShieldBlocks] = React.useState<Map<string, Direction>>(new Map());
   const [hoveredEcho, setHoveredEcho] = React.useState<Echo | null>(null);
+  const [windowSize, setWindowSize] = React.useState({ width: window.innerWidth, height: window.innerHeight });
+
+  // Handle window resize for responsive design
+  React.useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Get current responsive sizes
+  const tileSize = getTileSize();
+  const rowLabelWidth = getRowLabelWidth();
 
   // Helper to check if a tile is highlighted
   const isHighlighted = (row: number, col: number) =>
@@ -187,12 +221,12 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: fullWidth ? '95vw' : 'auto', paddingTop: 10 }}>
-      <div style={{ display: 'inline-block', background: 'black', padding: 16, borderRadius: 12, position: 'relative' }}>
+      <div style={{ display: 'inline-block', background: 'black', padding: windowSize.width <= 768 ? 8 : 16, borderRadius: 12, position: 'relative' }}>
         {/* Column labels */}
         <div style={{ display: 'flex', marginBottom: 4 }}>
-          <div style={{ width: ROW_LABEL_WIDTH }} /> {/* Empty cell for row label alignment */}
+          <div style={{ width: rowLabelWidth }} /> {/* Empty cell for row label alignment */}
           {COL_LABELS.map((label) => (
-            <div key={label} style={{ width: TILE_SIZE, textAlign: 'center', color: 'blue', fontWeight: 'bold', textShadow: '0 0 2px #fff', fontSize: 28 }}>{label}</div>
+            <div key={label} className="board-label" style={{ width: tileSize, textAlign: 'center', color: 'blue', fontWeight: 'bold', textShadow: '0 0 2px #fff' }}>{label}</div>
           ))}
         </div>
         {/* Board grid (rows from bottom to top) */}
@@ -201,7 +235,7 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
           return (
             <div key={rowIdx} style={{ display: 'flex', alignItems: 'center' }}>
               {/* Row label */}
-              <div style={{ width: ROW_LABEL_WIDTH, textAlign: 'left', color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 2px #fff', fontSize: 28 }}>{ROW_LABELS[rowIdx]}</div>
+              <div className="board-label" style={{ width: rowLabelWidth, textAlign: 'left', color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 2px #fff' }}>{ROW_LABELS[rowIdx]}</div>
               {/* Tiles */}
               {Array.from({ length: BOARD_SIZE }).map((_, colIdx) => {
                 const echo = echoes.find(e => e.position.row === rowIdx && e.position.col === colIdx && e.alive);
@@ -213,10 +247,10 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
                 return (
                   <div
                     key={colIdx}
-                    className="board-tile-glow"
+                    className="board-tile board-tile-glow"
                     style={{
-                      width: TILE_SIZE,
-                      height: TILE_SIZE,
+                      width: tileSize,
+                      height: tileSize,
                       border: '1px solid',
                       boxSizing: 'border-box',
                       position: 'relative',
@@ -261,8 +295,8 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
                         <div
                           className={`echo-3d-pulse echo-${echo.playerId}`}
                           style={{
-                            width: 40,
-                            height: 40,
+                            width: Math.max(20, tileSize * 0.5),
+                            height: Math.max(20, tileSize * 0.5),
                             borderRadius: '50%',
                             position: 'absolute',
                             top: '50%',
@@ -349,8 +383,8 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
                         {/* Shield rendering */}
                         {echo.isShielded && echo.shieldDirection && (
                           <svg
-                            width={64}
-                            height={64}
+                            width={Math.max(32, tileSize * 0.8)}
+                            height={Math.max(32, tileSize * 0.8)}
                             viewBox="0 0 64 64"
                             style={{
                               position: 'absolute',
@@ -400,8 +434,8 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
                     {projectile && (
                       <div
                         style={{
-                          width: 16,
-                          height: 16,
+                          width: Math.max(8, tileSize * 0.2),
+                          height: Math.max(8, tileSize * 0.2),
                           borderRadius: '50%',
                           background: projectile.type === 'projectile' ? 'white' : 'transparent',
                           border: projectile.type === 'mine' ? '2px solid white' : undefined,
@@ -421,8 +455,8 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
                       <>
                         <div
                           style={{
-                            width: 40,
-                            height: 40,
+                            width: Math.max(20, tileSize * 0.5),
+                            height: Math.max(20, tileSize * 0.5),
                             borderRadius: '50%',
                             background: 'rgba(128, 128, 128, 0.6)',
                             position: 'absolute',
@@ -435,8 +469,8 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
                         {/* Preview shield rendering */}
                         {previewEcho.isShielded && previewEcho.shieldDirection && (
                           <svg
-                            width={64}
-                            height={64}
+                            width={Math.max(32, tileSize * 0.8)}
+                            height={Math.max(32, tileSize * 0.8)}
                             viewBox="0 0 64 64"
                             style={{
                               position: 'absolute',
@@ -469,8 +503,8 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
                         )}
                         <div
                           style={{
-                            width: 16,
-                            height: 16,
+                            width: Math.max(8, tileSize * 0.2),
+                            height: Math.max(8, tileSize * 0.2),
                             borderRadius: '50%',
                             background: previewProjectile.type === 'projectile' ? 'rgba(128, 128, 128, 0.6)' : 'transparent',
                             border: previewProjectile.type === 'mine' ? '2px solid rgba(128, 128, 128, 0.6)' : undefined,
@@ -540,19 +574,21 @@ const ProjectileTrail: React.FC<{ row: number; col: number; direction: Direction
   const prevCol = col - direction.x;
   if (prevRow < 0 || prevRow > 7 || prevCol < 0 || prevCol > 7) return null;
 
+  const tileSize = getTileSize();
+
   // Calculate start and end points (relative to current tile)
-  const x1 = TILE_SIZE / 2 - direction.x * TILE_SIZE;
-  const y1 = TILE_SIZE / 2 + direction.y * TILE_SIZE;
-  const x2 = TILE_SIZE / 2;
-  const y2 = TILE_SIZE / 2;
+  const x1 = tileSize / 2 - direction.x * tileSize;
+  const y1 = tileSize / 2 + direction.y * tileSize;
+  const x2 = tileSize / 2;
+  const y2 = tileSize / 2;
 
   // Unique gradient id per projectile position/direction
   const gradId = `trail-gradient-${row}-${col}-${direction.x}-${direction.y}`;
 
   return (
     <svg
-      width={TILE_SIZE}
-      height={TILE_SIZE}
+      width={tileSize}
+      height={tileSize}
       style={{
         position: 'absolute',
         top: 0,
@@ -573,7 +609,7 @@ const ProjectileTrail: React.FC<{ row: number; col: number; direction: Direction
         x2={x2}
         y2={y2}
         stroke={`url(#${gradId})`}
-        strokeWidth={3}
+        strokeWidth={Math.max(2, tileSize * 0.04)}
       />
     </svg>
   );

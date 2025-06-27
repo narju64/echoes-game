@@ -257,18 +257,18 @@ const GameInfoPanel: React.FC<GameInfoPanelProps> = ({
   return (
     <div style={{ 
       position: 'absolute',
-      top: '140px',
-      right: '100px',
+      left: 'calc(100% + 60px)',
+      top: '64px',
       color: 'white', 
       background: '#222', 
       padding: '1rem', 
       borderRadius: 12, 
-      width: '400px', 
+      width: '430px', 
       height: '640px', 
       minWidth: 240, 
-      maxWidth: 400, 
+      maxWidth: 430, 
       overflowY: 'auto',
-      zIndex: 1000
+      zIndex: 10
     }}>
       {/* Turn Number and Phase */}
       <div style={{ marginBottom: '1rem' }}>
