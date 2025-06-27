@@ -57,8 +57,8 @@ const HomePage: React.FC = () => {
   const [now, setNow] = useState(() => performance.now());
   const [pulse, setPulse] = useState(1);
   const SPEED = 0.00008; // Slower speed for menu
-  const [echoes, setEchoes] = useState(() => generateEchoes());
-  const [foregroundEchoes, setForegroundEchoes] = useState(() => generateEchoes(FOREGROUND_ECHO_COUNT, 1.2));
+  const [echoes, _setEchoes] = useState(() => generateEchoes());
+  const [foregroundEchoes, _setForegroundEchoes] = useState(() => generateEchoes(FOREGROUND_ECHO_COUNT, 1.2));
   const [menuState, setMenuState] = useState<'main' | 'aiTraining' | 'multiplayer'>('main');
 
   // Animation loop

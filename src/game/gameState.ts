@@ -140,7 +140,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const destroyedEchoes = action.destroyedEchoes;
       const newScores = { ...state.scores };
       
-      destroyedEchoes.forEach(({ echoId, by }) => {
+      destroyedEchoes.forEach(({ echoId: _echoId, by }) => {
         if (by) {
           newScores[by] += 1;
         }

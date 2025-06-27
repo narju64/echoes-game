@@ -31,8 +31,6 @@ interface BoardProps {
 }
 
 const TILE_SIZE = 80; // px
-const TRAIL_LENGTH = 3;
-const BASE_OPACITY = 0.3;
 const ROW_LABEL_WIDTH = 32;
 
 // Helper functions for board position formatting
@@ -145,10 +143,6 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
   // Helper to find projectile/mine at a tile
   const getProjectile = (row: number, col: number) =>
     projectiles.find(p => p.row === row && p.col === col);
-
-  // Helper to check if a tile has a collision
-  const hasCollision = (row: number, col: number) =>
-    collisions.some(c => c.row === row && c.col === col);
 
   // Helper to get collision key
   const getCollisionKey = (row: number, col: number) => `${row},${col}`;
@@ -495,8 +489,8 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
                     {/* Explosion animation */}
                     {activeExplosions.has(getCollisionKey(rowIdx, colIdx)) && !activeShieldBlocks.has(getCollisionKey(rowIdx, colIdx)) && (
                       <ExplosionAnimation
-                        row={rowIdx}
-                        col={colIdx}
+                        _row={rowIdx}
+                        _col={colIdx}
                         onComplete={() => handleExplosionComplete(rowIdx, colIdx)}
                       />
                     )}
@@ -504,8 +498,8 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
                     {/* Shield block animation */}
                     {activeShieldBlocks.has(getCollisionKey(rowIdx, colIdx)) && (
                       <ExplosionAnimation
-                        row={rowIdx}
-                        col={colIdx}
+                        _row={rowIdx}
+                        _col={colIdx}
                         onComplete={() => handleShieldBlockComplete(rowIdx, colIdx)}
                         isShieldBlock={true}
                         projectileDirection={activeShieldBlocks.get(getCollisionKey(rowIdx, colIdx))}

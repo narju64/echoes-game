@@ -98,7 +98,7 @@ const IntroScreen: React.FC = () => {
   const [exiting, setExiting] = useState(false);
   const navigate = useNavigate();
   const startTime = useRef(performance.now());
-  const [showEchoes, setShowEchoes] = useState(true);
+  const [showEchoes, _setShowEchoes] = useState(true);
   const [now, setNow] = useState(() => performance.now());
   const [pulse, setPulse] = useState(1);
   const SPEED = 0.0001;
@@ -128,7 +128,6 @@ const IntroScreen: React.FC = () => {
     return () => { running = false; };
   }, [showEchoes]);
   const t = (now - startTime.current) * SPEED;
-  const tFast = t * 1.25;
 
   // Fade in lines one by one
   useEffect(() => {

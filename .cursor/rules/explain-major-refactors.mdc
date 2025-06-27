@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Before making major architectural changes or refactors, explain the reasoning and get user confirmation.

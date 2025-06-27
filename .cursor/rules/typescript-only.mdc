@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+All new source files in src/ must be .ts or .tsx. Do not create .js files in src/.

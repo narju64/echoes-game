@@ -1,5 +1,5 @@
 import { gameReducer, initialGameState } from '../game/gameState';
-import type { GameState, Echo } from '../types/gameTypes';
+import type { GameState } from '../types/gameTypes';
 import { GameInterface } from '../ai/agents/base/GameInterface';
 
 export interface Agent {

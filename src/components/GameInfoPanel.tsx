@@ -2,22 +2,22 @@ import React from 'react';
 import type { Echo, PlayerId, TurnHistoryEntry } from '../types/gameTypes';
 
 interface GameInfoPanelProps {
-  currentPlayer: PlayerId;
+  // _currentPlayer: PlayerId;
   turnNumber: number;
   phase: string;
-  scores: { player1: number; player2: number };
-  echoes: Echo[];
+  // _scores: { player1: number; player2: number };
+  // _echoes: Echo[];
   currentTick?: number;
   replayStates?: { echoes: Echo[]; projectiles: any[]; tick: number; destroyed: { echoId: string; by: PlayerId|null; position: { row: number; col: number }; playerId: PlayerId }[]; destroyedProjectiles: { id: string; type: 'projectile' | 'mine'; position: { row: number; col: number } }[]; collisions: { row: number; col: number }[]; shieldBlocks: { row: number; col: number; projectileDirection: any }[] }[];
   turnHistory?: TurnHistoryEntry[];
 }
 
 const GameInfoPanel: React.FC<GameInfoPanelProps> = ({
-  currentPlayer,
+  // _currentPlayer,
   turnNumber,
   phase,
-  scores,
-  echoes,
+  // _scores,
+  // _echoes,
   currentTick,
   replayStates = [],
   turnHistory
@@ -38,7 +38,7 @@ const GameInfoPanel: React.FC<GameInfoPanelProps> = ({
       // Group events by tick
       const eventsByTick = new Map<number, string[]>();
       
-      replayStates.forEach((state, tickIndex) => {
+      replayStates.forEach((state, _tickIndex) => {
         const tick = state.tick;
         const tickEvents: string[] = [];
         

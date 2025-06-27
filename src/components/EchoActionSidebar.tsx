@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Action, ActionType, Direction, Echo } from '../types/gameTypes';
+import type { Action, ActionType, Echo } from '../types/gameTypes';
 
 interface EchoActionSidebarProps {
   isNewEcho: boolean;
@@ -8,7 +8,6 @@ interface EchoActionSidebarProps {
   remainingPoints: number;
   actions: Action[];
   selectingDirection: ActionType | null;
-  selectedActionType: ActionType | null;
   pendingEcho: Echo;
   availableActions: { type: ActionType; label: string; cost: number; needsDirection: boolean }[];
   handleActionSelect: (actionType: ActionType, cost: number) => void;
@@ -22,7 +21,6 @@ const EchoActionSidebar: React.FC<EchoActionSidebarProps> = ({
   remainingPoints,
   actions,
   selectingDirection,
-  selectedActionType,
   pendingEcho,
   availableActions,
   handleActionSelect,

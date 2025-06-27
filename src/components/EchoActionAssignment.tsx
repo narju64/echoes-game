@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Echo, Action, ActionType, Direction, PlayerId } from '../types/gameTypes';
+import type { Echo, Action, ActionType, Direction } from '../types/gameTypes';
 import Board from './Board';
 import { simulateAllyPreviewAtTick } from '../pages/GamePage';
 
@@ -200,9 +200,6 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
   // For extended echoes, start from the tick after existing instructions
   const startingTick = isNewEcho ? 1 : pendingEcho.instructionList.length + 1;
   const [currentTick, setCurrentTick] = useState(startingTick);
-
-  // Only show alive allies (not enemies)
-  const allies = allEchoes.filter(e => e.playerId === pendingEcho.playerId && e.alive && e.id !== pendingEcho.id);
 
   // Helper to simulate echo and projectiles up to a given number of actions
   function simulate(actionsToSim: Action[]) {

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
 interface ExplosionAnimationProps {
-  row?: number;
-  col?: number;
+  _row: number;
+  _col: number;
   x?: number;
   y?: number;
   scale?: number;
@@ -13,8 +13,6 @@ interface ExplosionAnimationProps {
 }
 
 const ExplosionAnimation: React.FC<ExplosionAnimationProps> = ({ 
-  row, 
-  col, 
   x, 
   y, 
   scale = 1, 

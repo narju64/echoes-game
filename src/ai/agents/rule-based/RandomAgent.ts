@@ -18,7 +18,7 @@ export class RandomAgent implements Agent {
     return actions[idx];
   }
 
-  getEchoAction(state: GameState, echo: any, validEchoActions: any[]): any {
+  getEchoAction(_state: GameState, _echo: any, validEchoActions: any[]): any {
     if (!validEchoActions || validEchoActions.length === 0) return null;
     const idx = Math.floor(Math.random() * validEchoActions.length);
     return validEchoActions[idx];

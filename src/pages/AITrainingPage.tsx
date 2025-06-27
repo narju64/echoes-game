@@ -3,8 +3,8 @@ import { HeadlessGameRunner } from '../simulation/HeadlessGameRunner';
 import { RandomAgent } from '../ai/agents/rule-based/RandomAgent';
 
 const AITrainingPage: React.FC = () => {
-  // For now, no game is selected
-  const [selectedGame, setSelectedGame] = useState(null);
+  // Remove unused selectedGame state
+  // const [selectedGame, setSelectedGame] = useState(null);
   const [showGameViewer, setShowGameViewer] = useState(false);
   const [simulationLog, setSimulationLog] = useState<string[]>([]);
 

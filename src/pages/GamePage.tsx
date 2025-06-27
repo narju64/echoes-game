@@ -462,7 +462,7 @@ function generateEventLogFromReplayStates(replayStates: any[]): string[] {
   // Group events by tick
   const eventsByTick = new Map<number, string[]>();
   
-  replayStates.forEach((state, tickIndex) => {
+  replayStates.forEach((state, _tickIndex) => {
     const tick = state.tick;
     const tickEvents: string[] = [];
     
@@ -667,7 +667,7 @@ const GamePage: React.FC = () => {
   const [searchParams] = useSearchParams();
   // Extract mode from URL parameters, default to 'hotseat'
   const modeParam = searchParams.get('mode');
-  const [gameMode, setGameMode] = useState(modeParam || 'hotseat');
+  const [gameMode, _setGameMode] = useState(modeParam || 'hotseat');
   const [state, dispatch] = useReducer(gameReducer, initialGameState) as [GameState, React.Dispatch<GameAction>];
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('choosing');
   const currentPlayer: PlayerId = state.currentPlayer;
@@ -916,12 +916,9 @@ const GamePage: React.FC = () => {
           Home
         </button>
         
-        <GameInfoPanel 
-          currentPlayer={currentPlayer}
+        <GameInfoPanel
           turnNumber={state.turnNumber}
-          phase={state.phase}
-          scores={state.scores}
-          echoes={state.echoes}
+          phase="replay"
           currentTick={current.tick}
           replayStates={replayStates}
           turnHistory={state.turnHistory}
@@ -1133,7 +1130,7 @@ const GamePage: React.FC = () => {
             <div style={{ marginBottom: '1rem' }}>
               <strong>Turn History ({state.turnHistory.length} turns):</strong>
               <div style={{ marginLeft: '1rem', maxHeight: '300px', overflowY: 'auto' }}>
-                {state.turnHistory.slice().reverse().map((entry, index) => (
+                {state.turnHistory.slice().reverse().map((entry, _index) => (
                   <div key={entry.turnNumber} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: '#333', borderRadius: '4px', fontSize: '0.8rem' }}>
                     <div style={{ fontWeight: 'bold', color: '#4CAF50' }}>Turn {entry.turnNumber}</div>
                     <div><strong>Scores:</strong> P1: {entry.scores.player1} | P2: {entry.scores.player2}</div>
@@ -1314,7 +1311,7 @@ const GamePage: React.FC = () => {
               <div>
                 <strong>Turn History ({state.turnHistory.length} turns):</strong>
                 <div style={{ marginLeft: '1rem', maxHeight: '200px', overflowY: 'auto' }}>
-                  {state.turnHistory.slice().reverse().map((entry, index) => (
+                  {state.turnHistory.slice().reverse().map((entry, _index) => (
                     <div key={entry.turnNumber} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: '#333', borderRadius: '4px', fontSize: '0.8rem' }}>
                       <div style={{ fontWeight: 'bold', color: '#4CAF50' }}>Turn {entry.turnNumber}</div>
                       <div><strong>Scores:</strong> P1: {entry.scores.player1} | P2: {entry.scores.player2}</div>
@@ -1384,12 +1381,9 @@ const GamePage: React.FC = () => {
         {!['ai', 'hotseat', 'tournament', 'training'].includes(gameMode) && `Mode: ${gameMode}`}
       </div>
       
-      <GameInfoPanel 
-        currentPlayer={currentPlayer}
+      <GameInfoPanel
         turnNumber={state.turnNumber}
-        phase={state.phase}
-        scores={state.scores}
-        echoes={state.echoes}
+        phase="input"
         currentTick={state.currentTick}
         replayStates={[]}
         turnHistory={state.turnHistory}
@@ -1593,7 +1587,7 @@ const GamePage: React.FC = () => {
           <div style={{ marginTop: '1rem' }}>
             <strong>Turn History ({state.turnHistory.length} turns):</strong>
             <div style={{ marginLeft: '1rem', maxHeight: '300px', overflowY: 'auto' }}>
-              {state.turnHistory.slice().reverse().map((entry, index) => (
+              {state.turnHistory.slice().reverse().map((entry, _index) => (
                 <div key={entry.turnNumber} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: '#333', borderRadius: '4px', fontSize: '0.8rem' }}>
                   <div style={{ fontWeight: 'bold', color: '#4CAF50' }}>Turn {entry.turnNumber}</div>
                   <div><strong>Scores:</strong> P1: {entry.scores.player1} | P2: {entry.scores.player2}</div>

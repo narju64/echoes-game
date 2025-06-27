@@ -1,4 +1,4 @@
-import type { GameState, Position, PlayerId, Echo, Direction } from '../../../types/gameTypes';
+import type { GameState, PlayerId, Echo, Direction } from '../../../types/gameTypes';
 import type { Action } from '../../../types/gameTypes';
 
 function getHomeRow(playerId: PlayerId): number {
@@ -61,7 +61,7 @@ export class GameInterface {
     return actions;
   }
 
-  static getValidEchoActions(state: GameState, echo: Echo): Action[] {
+  static getValidEchoActions(_state: GameState, echo: Echo): Action[] {
     // Only allow walk actions for now
     const directions: Direction[] = [
       { x: 0, y: 1 },   // right (E)
