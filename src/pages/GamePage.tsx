@@ -731,31 +731,13 @@ const GamePage: React.FC = () => {
   // Handle new echo selection
   const handleNewEcho = () => {
     setSelectionMode('new-echo');
-    const newEcho: Echo = {
-      id: Math.random().toString(36).substr(2, 9),
-      playerId: currentPlayer,
-      position: { row: 0, col: 0 }, // Will be set when tile is clicked
-      instructionList: [],
-      isShielded: false,
-      actionPoints: 5,
-      alive: true,
-    };
-    dispatch({ type: 'ADD_ECHO', echo: newEcho });
+    // Don't dispatch ADD_ECHO here - wait for tile click
   };
 
   // Handle extend echo selection
   const handleExtendEcho = () => {
     setSelectionMode('extend-echo');
-    const extendedEcho: Echo = {
-      id: Math.random().toString(36).substr(2, 9),
-      playerId: currentPlayer,
-      position: { row: 0, col: 0 }, // Will be set when tile is clicked
-      instructionList: [],
-      isShielded: false,
-      actionPoints: 3,
-      alive: true,
-    };
-    dispatch({ type: 'ADD_ECHO', echo: extendedEcho });
+    // Don't dispatch ADD_ECHO here - wait for tile click
   };
 
   // Handle going back from tile selection

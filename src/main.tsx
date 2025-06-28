@@ -9,6 +9,8 @@ import IntroScreen from './pages/IntroScreen';
 import AITrainingPage from './pages/AITrainingPage';
 import AITournamentPage from './pages/AITournamentPage';
 import LeaderboardPage from './pages/LeaderboardPage';
+import HostPage from './pages/HostPage';
+import JoinPage from './pages/JoinPage';
 
 import './index.css';
 
@@ -40,6 +42,14 @@ const router = createBrowserRouter([
   {
     path: '/leaderboard',
     element: <LeaderboardPage />,
+  },
+  {
+    path: '/host',
+    element: <HostPage />,
+  },
+  {
+    path: '/join',
+    element: <JoinPage />,
   },
 ]);
 

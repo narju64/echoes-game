@@ -1,37 +1,35 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import './HomePage.css';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { apiService } from '../services/api';
+import { socketService } from '../services/socket';
+import '../pages/HomePage.css';
 
-// Echo animation constants
-const ECHO_COUNT = 48; // More echoes for menu
+// Echo animation constants (same as HomePage)
+const ECHO_COUNT = 24; // Fewer echoes for sub-pages
 const FOREGROUND_ECHO_COUNT = Math.round(ECHO_COUNT * 0.7);
 const ECHO_COLORS = [
   { main: '#ff9800', glow: '#ffd580' }, // orange
   { main: '#2196f3', glow: '#90caf9' }  // blue
 ];
 
-// Helper to generate random movement paths
+// Helper to generate random movement paths (same as HomePage)
 function generateEchoes(count = ECHO_COUNT, sizeMultiplier = 1) {
   return Array.from({ length: count }).map((_, i) => {
     const color = ECHO_COLORS[i % 2];
     
-    // Generate position across entire screen with center bias
     const screenWidth = 2000;
     const screenHeight = 2000;
     
-    // Use polar coordinates with radius bias for center concentration
-    const maxRadius = Math.sqrt(screenWidth * screenWidth + screenHeight * screenHeight) * 0.8; // Increased to 80% of diagonal
+    const maxRadius = Math.sqrt(screenWidth * screenWidth + screenHeight * screenHeight) * 0.8;
     const radius = Math.random() * maxRadius;
     const angle = Math.random() * 2 * Math.PI;
     
-    // Apply bias - more likely to be closer to center, but allow more spread
-    const biasedRadius = radius * Math.pow(Math.random(), 0.15); // Much less aggressive bias for more even spread
+    const biasedRadius = radius * Math.pow(Math.random(), 0.15);
     
     const centerX = screenWidth / 2 + Math.cos(angle) * biasedRadius;
     const centerY = screenHeight / 2 + Math.sin(angle) * biasedRadius;
     
-    // Local orbit parameters
-    const orbitRadius = 80 + Math.random() * 100; // Smaller local orbits
+    const orbitRadius = 80 + Math.random() * 100;
     const orbitAngle = Math.random() * 2 * Math.PI;
     const size = sizeMultiplier * (60 + Math.random() * 8);
     const freqX = 0.5 + Math.random() * 0.3;
@@ -52,16 +50,21 @@ function generateEchoes(count = ECHO_COUNT, sizeMultiplier = 1) {
   });
 }
 
-const HomePage: React.FC = () => {
+const HostPage: React.FC = () => {
+  const [playerName, setPlayerName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  // Animation setup (same as HomePage)
   const startTime = useRef(performance.now());
   const [now, setNow] = useState(() => performance.now());
   const [pulse, setPulse] = useState(1);
-  const SPEED = 0.00008; // Slower speed for menu
+  const SPEED = 0.00008;
   const [echoes, _setEchoes] = useState(() => generateEchoes());
   const [foregroundEchoes, _setForegroundEchoes] = useState(() => generateEchoes(FOREGROUND_ECHO_COUNT, 1.2));
-  const [menuState, setMenuState] = useState<'main' | 'aiTraining' | 'multiplayer'>('main');
 
-  // Animation loop
+  // Animation loop (same as HomePage)
   useEffect(() => {
     let running = true;
     function animate() {
@@ -78,9 +81,36 @@ const HomePage: React.FC = () => {
   const t = (now - startTime.current) * SPEED;
   const tFast = t * 1.15;
 
+  const handleCreateRoom = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!playerName.trim()) {
+      setError('Please enter your name');
+      return;
+    }
+
+    setIsCreating(true);
+    setError('');
+
+    try {
+      // Connect to socket
+      socketService.connect();
+      
+      // Create room
+      const room = await apiService.createRoom(playerName);
+      
+      // Navigate to game with room info
+      navigate(`/game?mode=multiplayer&roomId=${room.id}&playerName=${encodeURIComponent(playerName)}&isHost=true`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create room');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   return (
     <div className="home-page">
-      {/* Floating Echoes Background */}
+      {/* Floating Echoes Background (same as HomePage) */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
         <svg width="100vw" height="100vh" viewBox="0 0 2000 2000" style={{ width: '100vw', height: '100vh', display: 'block', position: 'absolute', inset: 0 }}>
           {/* Background echoes */}
@@ -205,36 +235,50 @@ const HomePage: React.FC = () => {
         height: '100vh',
         width: '100%'
       }}>
-        <h1>Echoes</h1>
+        <h1>Host a Game</h1>
+        
         <div className="menu">
-          {menuState === 'main' && (
-            <>
-              <button className="menu-button" onClick={() => setMenuState('aiTraining')}>AI Training</button>
-              <Link to="/game?mode=ai" className="menu-button">Single Player</Link>
-              <button className="menu-button" onClick={() => setMenuState('multiplayer')}>Multiplayer</button>
-              <Link to="/rules" className="menu-button">Rules</Link>
-              <Link to="/leaderboard" className="menu-button">Leaderboard</Link>
-            </>
-          )}
-          {menuState === 'aiTraining' && (
-            <>
-              <Link to="/ai-training" className="menu-button">Training</Link>
-              <Link to="/ai-tournament" className="menu-button">Tournament</Link>
-              <button className="menu-button" onClick={() => setMenuState('main')}>Back</button>
-            </>
-          )}
-          {menuState === 'multiplayer' && (
-            <>
-              <Link to="/game?mode=hotseat" className="menu-button">Hotseat</Link>
-              <Link to="/host" className="menu-button">Host Game</Link>
-              <Link to="/join" className="menu-button">Join Game</Link>
-              <button className="menu-button" onClick={() => setMenuState('main')}>Back</button>
-            </>
-          )}
+          <form onSubmit={handleCreateRoom} className="menu-form">
+            <div className="form-group">
+              <label htmlFor="playerName" className="form-label">
+                Your Name
+              </label>
+              <input
+                type="text"
+                id="playerName"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                className="menu-input"
+                placeholder="Enter your name"
+                disabled={isCreating}
+              />
+            </div>
+
+            {error && (
+              <div className="error-message">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isCreating}
+              className="menu-button"
+            >
+              {isCreating ? 'Creating Room...' : 'Create Room'}
+            </button>
+          </form>
+
+          <button
+            onClick={() => navigate('/home')}
+            className="menu-button secondary"
+          >
+            ← Back to Menu
+          </button>
         </div>
       </div>
     </div>
   );
 };
 
-export default HomePage; 
+export default HostPage; 
