@@ -721,15 +721,28 @@ const GamePage: React.FC = () => {
 
   // Handle beforeunload event (page refresh, close tab, browser back)
   useEffect(() => {
+    // Set a flag to detect if this is a fresh page load vs a reload
+    const isReload = sessionStorage.getItem('gameReloading');
+    
+    if (isReload) {
+      // This is a reload, redirect to home immediately
+      sessionStorage.removeItem('gameReloading');
+      window.location.href = '/home';
+      return;
+    }
+
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Always show confirmation for all game modes
+      // Set flag to indicate we're about to reload
+      sessionStorage.setItem('gameReloading', 'true');
+      
+      // Show custom message for reload
       e.preventDefault();
-      e.returnValue = 'Leaving will end your game session. Are you sure?';
-      return 'Leaving will end your game session. Are you sure?';
+      e.returnValue = 'Reloading will end your game session. Are you sure?';
+      return 'Reloading will end your game session. Are you sure?';
     };
 
     const handlePopState = (e: PopStateEvent) => {
-      // Always show modal for all game modes
+      // Always show modal for all game sessions
       e.preventDefault();
       setShowLeaveModal(true);
       // Push the current state back to prevent navigation
@@ -747,7 +760,7 @@ const GamePage: React.FC = () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('popstate', handlePopState);
     };
-  }, []); // Remove gameMode dependency so it works in all modes
+  }, []); // Remove any dependencies so it works in all modes
 
   // Handle multiplayer socket events
   useEffect(() => {

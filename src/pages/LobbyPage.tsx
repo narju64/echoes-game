@@ -235,11 +235,24 @@ const LobbyPage: React.FC = () => {
 
   // Handle beforeunload event (page refresh, close tab, browser back)
   useEffect(() => {
+    // Set a flag to detect if this is a fresh page load vs a reload
+    const isReload = sessionStorage.getItem('lobbyReloading');
+    
+    if (isReload) {
+      // This is a reload, redirect to home immediately
+      sessionStorage.removeItem('lobbyReloading');
+      window.location.href = '/home';
+      return;
+    }
+
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Always show confirmation for all lobby sessions
+      // Set flag to indicate we're about to reload
+      sessionStorage.setItem('lobbyReloading', 'true');
+      
+      // Show custom message for reload
       e.preventDefault();
-      e.returnValue = 'Leaving will end your lobby session. Are you sure?';
-      return 'Leaving will end your lobby session. Are you sure?';
+      e.returnValue = 'Reloading will end your lobby session. Are you sure?';
+      return 'Reloading will end your lobby session. Are you sure?';
     };
 
     const handlePopState = (e: PopStateEvent) => {
@@ -269,7 +282,7 @@ const LobbyPage: React.FC = () => {
 
   const handleConfirmLeave = () => {
     if (roomId) {
-      socketService.leaveRoom(roomId, playerId);
+      socketService.leaveRoom(roomId, playerId || undefined);
     }
     setShowLeaveModal(false);
     navigate('/home');

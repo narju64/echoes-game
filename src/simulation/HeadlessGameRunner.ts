@@ -1,34 +1,25 @@
 import { gameReducer, initialGameState } from '../game/gameState';
 import type { GameState } from '../types/gameTypes';
 import { GameInterface } from '../ai/agents/base/GameInterface';
-
-export interface Agent {
-  id: string;
-  name: string;
-  getAction: (state: GameState, playerId: string) => any; // Replace 'any' with your action type
-  getEchoAction?: (state: GameState, echo: any, validEchoActions: any[]) => any;
-}
-
-export interface GameResult {
-  winner: string | null;
-  finalState: GameState;
-  log: string[];
-  history: GameState[];
-}
+import { AIAgent, type GameResult } from '../ai/agents/base/AIAgent';
 
 export class HeadlessGameRunner {
-  runGame(agent1: Agent, agent2: Agent): GameResult {
+  runGame(agent1: AIAgent, agent2: AIAgent): GameResult {
     let state: GameState = initialGameState;
     const log: string[] = [];
     const history: GameState[] = [JSON.parse(JSON.stringify(state))];
     let turn = 0;
     let winner: string | null = null;
-    const agents: { [id: string]: Agent } = {
+    const agents: { [id: string]: AIAgent } = {
       player1: agent1,
       player2: agent2,
     };
     let previousPlayer = state.currentPlayer;
     let previousPhase = state.phase;
+
+    // Reset agents for new game
+    agent1.reset();
+    agent2.reset();
 
     // Main game loop
     while (!winner && turn < 200) { // Prevent infinite games
@@ -44,7 +35,7 @@ export class HeadlessGameRunner {
         const colToLetter = (col: number) => String.fromCharCode('A'.charCodeAt(0) + col);
         const positions = validActions.map(a => `${colToLetter(a.echo.position.col)}${a.echo.position.row + 1}`);
         log.push(`  Add Echo Phase: ${positions.length} valid actions: ${positions.join(', ')}`);
-        const action = agent.getAction(state, state.currentPlayer);
+        const action = agent.getAction(state, undefined, validActions);
         if (!action) {
           log.push(`  No action returned, skipping turn.`);
           break;
@@ -76,7 +67,7 @@ export class HeadlessGameRunner {
             if (dir.x === 1 && dir.y === -1) return '↖'; // SW
             return '?';
           }).join(' ')} `);
-          const echoAction = typeof agent.getEchoAction === 'function' ? agent.getEchoAction(state, { ...echo, instructionList: instrList }, validEchoActions) : validEchoActions[Math.floor(Math.random() * validEchoActions.length)];
+          const echoAction = agent.getAction(state, echo.id, validEchoActions);
           if (!echoAction) {
             log.push(`  No echo-action returned, skipping AP assignment.`);
             break;
@@ -119,7 +110,7 @@ export class HeadlessGameRunner {
       }
       // Other phases (replay, etc.)
       else {
-        const action = agent.getAction(state, state.currentPlayer);
+        const action = agent.getAction(state, undefined, validActions);
         if (!action) {
           log.push(`  No action returned, skipping turn.`);
           break;
@@ -142,12 +133,19 @@ export class HeadlessGameRunner {
     if (!winner) {
       log.push('Game ended in a draw or max turns reached.');
     }
-    return {
-      winner,
+
+    const result: GameResult = {
+      winner: winner as any,
       finalState: state,
       log,
       history,
     };
+
+    // Notify agents of game end
+    agent1.onGameEnd(result, history);
+    agent2.onGameEnd(result, history);
+
+    return result;
   }
 }
 
@@ -155,11 +153,13 @@ export class HeadlessGameRunner {
 import { RandomAgent } from '../ai/agents/rule-based/RandomAgent';
 
 if (typeof window === 'undefined') { // Only run in Node/test, not in browser
-  const agent1 = new RandomAgent('p1', 'RandomAgent1');
-  const agent2 = new RandomAgent('p2', 'RandomAgent2');
+  const agent1 = new RandomAgent('p1', 'RandomAgent1', 'player1');
+  const agent2 = new RandomAgent('p2', 'RandomAgent2', 'player2');
   const runner = new HeadlessGameRunner();
   const result = runner.runGame(agent1, agent2);
   console.log('Game result:', result.winner);
+  console.log('Agent 1 stats:', agent1.getStats());
+  console.log('Agent 2 stats:', agent2.getStats());
   console.log('Log:');
   for (const line of result.log) {
     console.log(line);

@@ -9,8 +9,8 @@ const AITrainingPage: React.FC = () => {
   const [simulationLog, setSimulationLog] = useState<string[]>([]);
 
   const handleRunTestSimulation = () => {
-    const agent1 = new RandomAgent('p1', 'RandomAgent1');
-    const agent2 = new RandomAgent('p2', 'RandomAgent2');
+    const agent1 = new RandomAgent('p1', 'RandomAgent1', 'player1');
+    const agent2 = new RandomAgent('p2', 'RandomAgent2', 'player2');
     const runner = new HeadlessGameRunner();
     const result = runner.runGame(agent1, agent2);
     setSimulationLog(result.log);
