@@ -11,6 +11,7 @@ import AITournamentPage from './pages/AITournamentPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import HostPage from './pages/HostPage';
 import JoinPage from './pages/JoinPage';
+import LobbyPage from './pages/LobbyPage';
 
 import './index.css';
 
@@ -50,6 +51,10 @@ const router = createBrowserRouter([
   {
     path: '/join',
     element: <JoinPage />,
+  },
+  {
+    path: '/lobby',
+    element: <LobbyPage />,
   },
 ]);
 

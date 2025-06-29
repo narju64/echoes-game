@@ -99,8 +99,8 @@ const HostPage: React.FC = () => {
       // Create room
       const room = await apiService.createRoom(playerName);
       
-      // Navigate to game with room info
-      navigate(`/game?mode=multiplayer&roomId=${room.id}&playerName=${encodeURIComponent(playerName)}&isHost=true`);
+      // Navigate to lobby with room info
+      navigate(`/lobby?roomId=${room.id}&playerName=${encodeURIComponent(playerName)}&isHost=true`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create room');
     } finally {

@@ -125,8 +125,8 @@ const JoinPage: React.FC = () => {
       // Join room
       await apiService.joinRoom(selectedRoom.id, playerName);
       
-      // Navigate to game with room info
-      navigate(`/game?mode=multiplayer&roomId=${selectedRoom.id}&playerName=${encodeURIComponent(playerName)}&isHost=false`);
+      // Navigate to lobby with room info
+      navigate(`/lobby?roomId=${selectedRoom.id}&playerName=${encodeURIComponent(playerName)}&isHost=false`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join room');
     } finally {
