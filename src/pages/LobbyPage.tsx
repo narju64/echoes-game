@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { socketService } from '../services/socket';
+import LeaveConfirmationModal from '../components/LeaveConfirmationModal';
 import '../pages/HomePage.css';
 
 // Echo animation constants (same as HomePage)
@@ -61,10 +62,12 @@ const LobbyPage: React.FC = () => {
   const roomId = searchParams.get('roomId');
   const playerName = searchParams.get('playerName');
   const isHost = searchParams.get('isHost') === 'true';
+  const playerId = searchParams.get('playerId');
   
   const [players, setPlayers] = useState<Player[]>([]);
   const [gameStarted, setGameStarted] = useState(false);
   const [error, setError] = useState('');
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   // Animation setup (same as HomePage)
   const startTime = useRef(performance.now());
@@ -122,7 +125,8 @@ const LobbyPage: React.FC = () => {
         if (data.room.players.length === 2) {
           setTimeout(() => {
             setGameStarted(true);
-            navigate(`/game?mode=multiplayer&roomId=${roomId}&playerName=${encodeURIComponent(playerName)}&isHost=${isHost}`);
+            const playerIdParam = playerId ? `&playerId=${playerId}` : '';
+            navigate(`/game?mode=multiplayer&roomId=${roomId}&playerName=${encodeURIComponent(playerName)}&isHost=${isHost}${playerIdParam}`);
           }, 1000); // Small delay for smooth transition
         }
       } else if (data && data.players && Array.isArray(data.players)) {
@@ -133,7 +137,8 @@ const LobbyPage: React.FC = () => {
         if (data.players.length === 2) {
           setTimeout(() => {
             setGameStarted(true);
-            navigate(`/game?mode=multiplayer&roomId=${roomId}&playerName=${encodeURIComponent(playerName)}&isHost=${isHost}`);
+            const playerIdParam = playerId ? `&playerId=${playerId}` : '';
+            navigate(`/game?mode=multiplayer&roomId=${roomId}&playerName=${encodeURIComponent(playerName)}&isHost=${isHost}${playerIdParam}`);
           }, 1000); // Small delay for smooth transition
         }
       } else {
@@ -150,7 +155,8 @@ const LobbyPage: React.FC = () => {
         if (data.room.players.length === 2) {
           setTimeout(() => {
             setGameStarted(true);
-            navigate(`/game?mode=multiplayer&roomId=${roomId}&playerName=${encodeURIComponent(playerName)}&isHost=${isHost}`);
+            const playerIdParam = playerId ? `&playerId=${playerId}` : '';
+            navigate(`/game?mode=multiplayer&roomId=${roomId}&playerName=${encodeURIComponent(playerName)}&isHost=${isHost}${playerIdParam}`);
           }, 1000); // Small delay for smooth transition
         }
       } else {
@@ -173,8 +179,12 @@ const LobbyPage: React.FC = () => {
     };
 
     const handleGameStart = () => {
+      console.log('handleGameStart called with playerId:', playerId);
       setGameStarted(true);
-      navigate(`/game?mode=multiplayer&roomId=${roomId}&playerName=${encodeURIComponent(playerName)}&isHost=${isHost}`);
+      const playerIdParam = playerId ? `&playerId=${playerId}` : '';
+      const gameUrl = `/game?mode=multiplayer&roomId=${roomId}&playerName=${encodeURIComponent(playerName)}&isHost=${isHost}${playerIdParam}`;
+      console.log('Navigating to game with URL:', gameUrl);
+      navigate(gameUrl);
     };
 
     const handleRoomClosed = () => {
@@ -191,11 +201,11 @@ const LobbyPage: React.FC = () => {
       socket.on('roomClosed', handleRoomClosed);
 
       // Join the room via socket
-      socket.emit('joinRoom', { roomId, playerName, isHost });
+      socket.emit('joinRoom', { roomId, playerName, isHost, playerId });
       
       // Debug: Log socket connection status
       console.log('Socket connected:', socket.connected);
-      console.log('Joining room with data:', { roomId, playerName, isHost });
+      console.log('Joining room with data:', { roomId, playerName, isHost, playerId });
     } else {
       console.error('Socket not available');
     }
@@ -221,13 +231,52 @@ const LobbyPage: React.FC = () => {
       }
       clearInterval(pollInterval);
     };
-  }, [roomId, playerName, isHost, navigate]);
+  }, [roomId, playerName, isHost, navigate, playerId]);
+
+  // Handle beforeunload event (page refresh, close tab, browser back)
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Always show confirmation for all lobby sessions
+      e.preventDefault();
+      e.returnValue = 'Leaving will end your lobby session. Are you sure?';
+      return 'Leaving will end your lobby session. Are you sure?';
+    };
+
+    const handlePopState = (e: PopStateEvent) => {
+      // Always show modal for all lobby sessions
+      e.preventDefault();
+      setShowLeaveModal(true);
+      // Push the current state back to prevent navigation
+      window.history.pushState(null, '', window.location.href);
+    };
+
+    // Add event listeners
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+    
+    // Push initial state to enable popstate detection
+    window.history.pushState(null, '', window.location.href);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []); // Remove any dependencies so it works in all modes
 
   const handleLeaveRoom = () => {
+    setShowLeaveModal(true);
+  };
+
+  const handleConfirmLeave = () => {
     if (roomId) {
-      socketService.leaveRoom(roomId);
+      socketService.leaveRoom(roomId, playerId);
     }
+    setShowLeaveModal(false);
     navigate('/home');
+  };
+
+  const handleCancelLeave = () => {
+    setShowLeaveModal(false);
   };
 
   const copyRoomCode = () => {
@@ -237,252 +286,262 @@ const LobbyPage: React.FC = () => {
   };
 
   return (
-    <div className="home-page">
-      {/* Floating Echoes Background (same as HomePage) */}
-      <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-        <svg width="100vw" height="100vh" viewBox="0 0 2000 2000" style={{ width: '100vw', height: '100vh', display: 'block', position: 'absolute', inset: 0 }}>
-          {/* Background echoes */}
-          {echoes.map((e, i) => {
-            let cx = e.centerX + Math.cos(e.angle + t * e.freqX + e.phase) * e.radius;
-            let cy = e.centerY + Math.sin(e.angle + t * e.freqY + e.phase) * e.radius;
-            const isOrange = e.color.main === '#ff9800';
-            return (
-              <foreignObject
-                key={i}
-                x={cx - e.size / 2}
-                y={cy - e.size / 2}
-                width={e.size}
-                height={e.size}
-                style={{ overflow: 'visible', pointerEvents: 'none', opacity: 0.6 }}
-              >
-                <div style={{ position: 'relative', width: e.size, height: e.size }}>
-                  <div
-                    className={`echo-3d-pulse ${isOrange ? 'echo-player1' : 'echo-player2'}`}
-                    style={{ width: e.size, height: e.size, borderRadius: '50%', opacity: 0.6 }}
-                  />
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: `-${e.size * 0.175}px`,
-                      left: `-${e.size * 0.175}px`,
-                      width: e.size * 1.35,
-                      height: e.size * 1.35,
-                      borderRadius: '50%',
-                      pointerEvents: 'none',
-                      background: 'radial-gradient(circle, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.18) 55%, rgba(255,255,255,0.04) 85%, transparent 100%)',
-                      filter: 'blur(12px)',
-                      opacity: 0.25 + 0.25 * pulse,
-                      zIndex: 3,
-                      transition: 'opacity 0.2s linear',
-                    }}
-                  />
-                </div>
-              </foreignObject>
-            );
-          })}
-          {/* Foreground echoes */}
-          {foregroundEchoes.map((e, i) => {
-            let cx = e.centerX + Math.cos(e.angle + tFast * e.freqX + e.phase) * e.radius;
-            let cy = e.centerY + Math.sin(e.angle + tFast * e.freqY + e.phase) * e.radius;
-            const isOrange = e.color.main === '#ff9800';
-            return (
-              <foreignObject
-                key={i + 1000}
-                x={cx - e.size / 2}
-                y={cy - e.size / 2}
-                width={e.size}
-                height={e.size}
-                style={{ overflow: 'visible', pointerEvents: 'none', opacity: 0.8 }}
-              >
-                <div style={{ position: 'relative', width: e.size, height: e.size }}>
-                  <div
-                    className={`echo-3d-pulse ${isOrange ? 'echo-player1' : 'echo-player2'}`}
-                    style={{ width: e.size, height: e.size, borderRadius: '50%', opacity: 0.8 }}
-                  />
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: `-${e.size * 0.175}px`,
-                      left: `-${e.size * 0.175}px`,
-                      width: e.size * 1.35,
-                      height: e.size * 1.35,
-                      borderRadius: '50%',
-                      pointerEvents: 'none',
-                      background: 'radial-gradient(circle, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.18) 55%, rgba(255,255,255,0.04) 85%, transparent 100%)',
-                      filter: 'blur(12px)',
-                      opacity: 0.3 + 0.3 * pulse,
-                      zIndex: 3,
-                      transition: 'opacity 0.2s linear',
-                    }}
-                  />
-                </div>
-              </foreignObject>
-            );
-          })}
-        </svg>
-        <style>{`
-          .echo-3d-pulse {
-            box-shadow:
-              0 0 8px 3px var(--echo-glow-color, #fff5),
-              0 2px 8px 0 rgba(0,0,0,0.4),
-              0 0 0 3px rgba(255,255,255,0.05) inset;
-            background: radial-gradient(circle at 60% 30%, #fff6 0%, transparent 60%),
-                        radial-gradient(circle at 40% 70%, #fff2 0%, transparent 70%);
-            animation: echo-pulse 2.4s infinite cubic-bezier(0.4,0,0.2,1);
-          }
-          .echo-player1 {
-            --echo-glow-color: #ffd580;
-            background-color: #a65c00;
-            background-image:
-              radial-gradient(circle, #ffb347 0%, #ff9800 40%,rgb(117, 65, 0) 80%, #000000 100%),
-              linear-gradient(145deg, #ffb347 0%, #ff9800 60%, #a65c00 100%);
-          }
-          .echo-player2 {
-            --echo-glow-color: #90caf9;
-            background-color: #0d326d;
-            background-image:
-              radial-gradient(circle, #6ec6ff 0%, #2196f3 40%,rgb(44, 82, 143) 80%,rgb(38, 70, 100) 100%),
-              linear-gradient(145deg, #6ec6ff 0%, #2196f3 60%, #0d326d 100%);
-          }
-          @keyframes echo-pulse {
-            0% { box-shadow: 0 0 8px 3px var(--echo-glow-color, #fff5), 0 2px 8px 0 rgba(0,0,0,0.4), 0 0 0 3px rgba(255,255,255,0.05) inset; }
-            50% { box-shadow: 0 0 12px 5px var(--echo-glow-color, #fff3), 0 3px 10px 0 rgba(0,0,0,0.45), 0 0 0 4px rgba(255,255,255,0.06) inset; }
-            100% { box-shadow: 0 0 8px 3px var(--echo-glow-color, #fff5), 0 2px 8px 0 rgba(0,0,0,0.4), 0 0 0 3px rgba(255,255,255,0.05) inset; }
-          }
-        `}</style>
-      </div>
+    <>
+      <div className="home-page">
+        {/* Floating Echoes Background (same as HomePage) */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+          <svg width="100vw" height="100vh" viewBox="0 0 2000 2000" style={{ width: '100vw', height: '100vh', display: 'block', position: 'absolute', inset: 0 }}>
+            {/* Background echoes */}
+            {echoes.map((e, i) => {
+              let cx = e.centerX + Math.cos(e.angle + t * e.freqX + e.phase) * e.radius;
+              let cy = e.centerY + Math.sin(e.angle + t * e.freqY + e.phase) * e.radius;
+              const isOrange = e.color.main === '#ff9800';
+              return (
+                <foreignObject
+                  key={i}
+                  x={cx - e.size / 2}
+                  y={cy - e.size / 2}
+                  width={e.size}
+                  height={e.size}
+                  style={{ overflow: 'visible', pointerEvents: 'none', opacity: 0.6 }}
+                >
+                  <div style={{ position: 'relative', width: e.size, height: e.size }}>
+                    <div
+                      className={`echo-3d-pulse ${isOrange ? 'echo-player1' : 'echo-player2'}`}
+                      style={{ width: e.size, height: e.size, borderRadius: '50%', opacity: 0.6 }}
+                    />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: `-${e.size * 0.175}px`,
+                        left: `-${e.size * 0.175}px`,
+                        width: e.size * 1.35,
+                        height: e.size * 1.35,
+                        borderRadius: '50%',
+                        pointerEvents: 'none',
+                        background: 'radial-gradient(circle, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.18) 55%, rgba(255,255,255,0.04) 85%, transparent 100%)',
+                        filter: 'blur(12px)',
+                        opacity: 0.25 + 0.25 * pulse,
+                        zIndex: 3,
+                        transition: 'opacity 0.2s linear',
+                      }}
+                    />
+                  </div>
+                </foreignObject>
+              );
+            })}
+            {/* Foreground echoes */}
+            {foregroundEchoes.map((e, i) => {
+              let cx = e.centerX + Math.cos(e.angle + tFast * e.freqX + e.phase) * e.radius;
+              let cy = e.centerY + Math.sin(e.angle + tFast * e.freqY + e.phase) * e.radius;
+              const isOrange = e.color.main === '#ff9800';
+              return (
+                <foreignObject
+                  key={i + 1000}
+                  x={cx - e.size / 2}
+                  y={cy - e.size / 2}
+                  width={e.size}
+                  height={e.size}
+                  style={{ overflow: 'visible', pointerEvents: 'none', opacity: 0.8 }}
+                >
+                  <div style={{ position: 'relative', width: e.size, height: e.size }}>
+                    <div
+                      className={`echo-3d-pulse ${isOrange ? 'echo-player1' : 'echo-player2'}`}
+                      style={{ width: e.size, height: e.size, borderRadius: '50%', opacity: 0.8 }}
+                    />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: `-${e.size * 0.175}px`,
+                        left: `-${e.size * 0.175}px`,
+                        width: e.size * 1.35,
+                        height: e.size * 1.35,
+                        borderRadius: '50%',
+                        pointerEvents: 'none',
+                        background: 'radial-gradient(circle, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.18) 55%, rgba(255,255,255,0.04) 85%, transparent 100%)',
+                        filter: 'blur(12px)',
+                        opacity: 0.3 + 0.3 * pulse,
+                        zIndex: 3,
+                        transition: 'opacity 0.2s linear',
+                      }}
+                    />
+                  </div>
+                </foreignObject>
+              );
+            })}
+          </svg>
+          <style>{`
+            .echo-3d-pulse {
+              box-shadow:
+                0 0 8px 3px var(--echo-glow-color, #fff5),
+                0 2px 8px 0 rgba(0,0,0,0.4),
+                0 0 0 3px rgba(255,255,255,0.05) inset;
+              background: radial-gradient(circle at 60% 30%, #fff6 0%, transparent 60%),
+                          radial-gradient(circle at 40% 70%, #fff2 0%, transparent 70%);
+              animation: echo-pulse 2.4s infinite cubic-bezier(0.4,0,0.2,1);
+            }
+            .echo-player1 {
+              --echo-glow-color: #ffd580;
+              background-color: #a65c00;
+              background-image:
+                radial-gradient(circle, #ffb347 0%, #ff9800 40%,rgb(117, 65, 0) 80%, #000000 100%),
+                linear-gradient(145deg, #ffb347 0%, #ff9800 60%, #a65c00 100%);
+            }
+            .echo-player2 {
+              --echo-glow-color: #90caf9;
+              background-color: #0d326d;
+              background-image:
+                radial-gradient(circle, #6ec6ff 0%, #2196f3 40%,rgb(44, 82, 143) 80%,rgb(38, 70, 100) 100%),
+                linear-gradient(145deg, #6ec6ff 0%, #2196f3 60%, #0d326d 100%);
+            }
+            @keyframes echo-pulse {
+              0% { box-shadow: 0 0 8px 3px var(--echo-glow-color, #fff5), 0 2px 8px 0 rgba(0,0,0,0.4), 0 0 0 3px rgba(255,255,255,0.05) inset; }
+              50% { box-shadow: 0 0 12px 5px var(--echo-glow-color, #fff3), 0 3px 10px 0 rgba(0,0,0,0.45), 0 0 0 4px rgba(255,255,255,0.06) inset; }
+              100% { box-shadow: 0 0 8px 3px var(--echo-glow-color, #fff5), 0 2px 8px 0 rgba(0,0,0,0.4), 0 0 0 3px rgba(255,255,255,0.05) inset; }
+            }
+          `}</style>
+        </div>
 
-      {/* Menu Content */}
-      <div style={{ 
-        position: 'relative', 
-        zIndex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        width: '100%'
-      }}>
-        <h1>Game Lobby</h1>
-        
-        <div className="menu">
-          {error && (
-            <div className="error-message" style={{ marginBottom: '1rem' }}>
-              {error}
-            </div>
-          )}
+        {/* Menu Content */}
+        <div style={{ 
+          position: 'relative', 
+          zIndex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          width: '100%'
+        }}>
+          <h1>Game Lobby</h1>
+          
+          <div className="menu">
+            {error && (
+              <div className="error-message" style={{ marginBottom: '1rem' }}>
+                {error}
+              </div>
+            )}
 
-          <div style={{ 
-            background: 'rgba(0, 0, 0, 0.3)', 
-            padding: '2rem', 
-            borderRadius: '12px', 
-            marginBottom: '2rem',
-            minWidth: '300px'
-          }}>
-            <h2 style={{ marginTop: 0, marginBottom: '1rem', textAlign: 'center' }}>Room Code</h2>
             <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '1rem',
-              marginBottom: '1rem'
+              background: 'rgba(0, 0, 0, 0.3)', 
+              padding: '2rem', 
+              borderRadius: '12px', 
+              marginBottom: '2rem',
+              minWidth: '300px'
             }}>
-              <code style={{ 
-                background: 'rgba(255, 255, 255, 0.1)', 
-                padding: '0.5rem 1rem', 
-                borderRadius: '6px',
-                fontSize: '1.2rem',
-                fontFamily: 'monospace'
+              <h2 style={{ marginTop: 0, marginBottom: '1rem', textAlign: 'center' }}>Room Code</h2>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '1rem',
+                marginBottom: '1rem'
               }}>
-                {roomId}
-              </code>
-              <button 
-                onClick={copyRoomCode}
-                className="menu-button"
-                style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
-              >
-                Copy
-              </button>
-            </div>
-            <p style={{ textAlign: 'center', margin: 0, opacity: 0.8 }}>
-              Share this code with your friend to join the game
-            </p>
-          </div>
-
-          <div style={{ 
-            background: 'rgba(0, 0, 0, 0.3)', 
-            padding: '2rem', 
-            borderRadius: '12px', 
-            marginBottom: '2rem',
-            minWidth: '300px'
-          }}>
-            <h2 style={{ marginTop: 0, marginBottom: '1rem', textAlign: 'center' }}>Players</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {players && players.map((player, index) => (
-                <div key={player.id} style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '1rem',
-                  padding: '0.5rem',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  borderRadius: '6px'
+                <code style={{ 
+                  background: 'rgba(255, 255, 255, 0.1)', 
+                  padding: '0.5rem 1rem', 
+                  borderRadius: '6px',
+                  fontSize: '1.2rem',
+                  fontFamily: 'monospace'
                 }}>
-                  <div style={{ 
-                    width: '12px', 
-                    height: '12px', 
-                    borderRadius: '50%',
-                    background: index === 0 ? '#ff9800' : '#2196f3'
-                  }} />
-                  <span style={{ flex: 1 }}>{player.name}</span>
-                  {player.isHost && (
-                    <span style={{ 
-                      background: '#ff9800', 
-                      color: 'black', 
-                      padding: '0.2rem 0.5rem', 
-                      borderRadius: '4px',
-                      fontSize: '0.8rem',
-                      fontWeight: 'bold'
-                    }}>
-                      Host
-                    </span>
-                  )}
-                </div>
-              ))}
-              {(!players || players.length === 1) && (
-                <div style={{ 
-                  textAlign: 'center', 
-                  padding: '1rem',
-                  opacity: 0.6,
-                  fontStyle: 'italic'
-                }}>
-                  Waiting for second player...
-                </div>
-              )}
+                  {roomId}
+                </code>
+                <button 
+                  onClick={copyRoomCode}
+                  className="menu-button"
+                  style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                >
+                  Copy
+                </button>
+              </div>
+              <p style={{ textAlign: 'center', margin: 0, opacity: 0.8 }}>
+                Share this code with your friend to join the game
+              </p>
             </div>
-          </div>
 
-          {gameStarted && (
             <div style={{ 
-              background: 'rgba(76, 175, 80, 0.2)', 
-              padding: '1rem', 
-              borderRadius: '8px',
-              marginBottom: '1rem',
-              textAlign: 'center',
-              color: '#4caf50'
+              background: 'rgba(0, 0, 0, 0.3)', 
+              padding: '2rem', 
+              borderRadius: '12px', 
+              marginBottom: '2rem',
+              minWidth: '300px'
             }}>
-              Starting game...
+              <h2 style={{ marginTop: 0, marginBottom: '1rem', textAlign: 'center' }}>Players</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {players && players.map((player, index) => (
+                  <div key={player.id} style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '1rem',
+                    padding: '0.5rem',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: '6px'
+                  }}>
+                    <div style={{ 
+                      width: '12px', 
+                      height: '12px', 
+                      borderRadius: '50%',
+                      background: index === 0 ? '#ff9800' : '#2196f3'
+                    }} />
+                    <span style={{ flex: 1 }}>{player.name}</span>
+                    {player.isHost && (
+                      <span style={{ 
+                        background: '#ff9800', 
+                        color: 'black', 
+                        padding: '0.2rem 0.5rem', 
+                        borderRadius: '4px',
+                        fontSize: '0.8rem',
+                        fontWeight: 'bold'
+                      }}>
+                        Host
+                      </span>
+                    )}
+                  </div>
+                ))}
+                {(!players || players.length === 1) && (
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '1rem',
+                    opacity: 0.6,
+                    fontStyle: 'italic'
+                  }}>
+                    Waiting for second player...
+                  </div>
+                )}
+              </div>
             </div>
-          )}
 
-          <button
-            onClick={handleLeaveRoom}
-            className="menu-button secondary"
-            disabled={gameStarted}
-          >
-            Leave Room
-          </button>
+            {gameStarted && (
+              <div style={{ 
+                background: 'rgba(76, 175, 80, 0.2)', 
+                padding: '1rem', 
+                borderRadius: '8px',
+                marginBottom: '1rem',
+                textAlign: 'center',
+                color: '#4caf50'
+              }}>
+                Starting game...
+              </div>
+            )}
+
+            <button
+              onClick={handleLeaveRoom}
+              className="menu-button secondary"
+              disabled={gameStarted}
+            >
+              Leave Room
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      <LeaveConfirmationModal
+        isOpen={showLeaveModal}
+        onConfirm={handleConfirmLeave}
+        onCancel={handleCancelLeave}
+        title="Leave Lobby?"
+        message="Leaving the lobby will end your game session. Are you sure you want to continue?"
+      />
+    </>
   );
 };
 

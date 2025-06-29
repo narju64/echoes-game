@@ -21,11 +21,13 @@ export interface CreateRoomResponse {
   id: string;
   host: string;
   status: string;
+  playerId: string;
 }
 
 export interface JoinRoomResponse {
   success: boolean;
   room: any;
+  playerId: string;
 }
 
 class ApiService {

@@ -47,9 +47,13 @@ class SocketService {
     }
   }
 
-  leaveRoom(roomId: string): void {
+  leaveRoom(roomId: string, playerId?: string): void {
     if (this.socket) {
-      this.socket.emit('leaveRoom', roomId);
+      if (playerId) {
+        this.socket.emit('leaveRoom', { roomId, playerId });
+      } else {
+        this.socket.emit('leaveRoom', roomId);
+      }
     }
   }
 

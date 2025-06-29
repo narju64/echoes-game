@@ -122,11 +122,11 @@ const JoinPage: React.FC = () => {
       // Connect to socket
       socketService.connect();
       
-      // Join room
-      await apiService.joinRoom(selectedRoom.id, playerName);
+      // Join room and get playerId from response
+      const response = await apiService.joinRoom(selectedRoom.id, playerName);
       
-      // Navigate to lobby with room info
-      navigate(`/lobby?roomId=${selectedRoom.id}&playerName=${encodeURIComponent(playerName)}&isHost=false`);
+      // Navigate to lobby with room info including playerId
+      navigate(`/lobby?roomId=${selectedRoom.id}&playerName=${encodeURIComponent(playerName)}&isHost=false&playerId=${response.playerId || ''}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join room');
     } finally {

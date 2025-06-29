@@ -96,11 +96,11 @@ const HostPage: React.FC = () => {
       // Connect to socket
       socketService.connect();
       
-      // Create room
+      // Create room and get playerId from response
       const room = await apiService.createRoom(playerName);
       
-      // Navigate to lobby with room info
-      navigate(`/lobby?roomId=${room.id}&playerName=${encodeURIComponent(playerName)}&isHost=true`);
+      // Navigate to lobby with room info including playerId
+      navigate(`/lobby?roomId=${room.id}&playerName=${encodeURIComponent(playerName)}&isHost=true&playerId=${room.playerId || ''}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create room');
     } finally {
