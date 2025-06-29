@@ -6,13 +6,15 @@ interface EchoSelectionProps {
   existingEchoes: Echo[];
   onNewEcho: () => void;
   onExtendEcho: () => void;
+  disabled?: boolean;
 }
 
 const EchoSelection: React.FC<EchoSelectionProps> = ({ 
   currentPlayer, 
   existingEchoes, 
   onNewEcho, 
-  onExtendEcho 
+  onExtendEcho,
+  disabled = false
 }) => {
   // Filter to only show current player's alive echoes
   const playerEchoes = existingEchoes.filter(
@@ -51,33 +53,39 @@ const EchoSelection: React.FC<EchoSelectionProps> = ({
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {canCreateNewEcho && (
           <button
-            onClick={onNewEcho}
+            onClick={disabled ? undefined : onNewEcho}
+            disabled={disabled}
             style={{
               position: 'relative',
-              background: 'linear-gradient(145deg, #4CAF5020, #4CAF5040)',
-              color: 'white',
-              border: '2px solid #4CAF50',
+              background: disabled 
+                ? 'linear-gradient(145deg, #66620, #66640)' 
+                : 'linear-gradient(145deg, #4CAF5020, #4CAF5040)',
+              color: disabled ? '#888' : 'white',
+              border: `2px solid ${disabled ? '#666' : '#4CAF50'}`,
               padding: '1rem 2rem',
               fontSize: '1.2rem',
               borderRadius: '8px',
-              cursor: 'pointer',
+              cursor: disabled ? 'not-allowed' : 'pointer',
               fontWeight: 'bold',
               fontFamily: 'Orbitron, monospace',
               textTransform: 'uppercase',
               letterSpacing: '0.5px',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              boxShadow: '0 0 8px #4CAF5040, inset 0 1px 0 #4CAF5060',
-              textShadow: '0 0 4px #4CAF50',
+              boxShadow: disabled 
+                ? '0 0 8px #66640, inset 0 1px 0 #66660' 
+                : '0 0 8px #4CAF5040, inset 0 1px 0 #4CAF5060',
+              textShadow: disabled ? 'none' : '0 0 4px #4CAF50',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '8px'
+              gap: '8px',
+              opacity: disabled ? 0.6 : 1
             }}
-            onMouseEnter={(e) => {
+            onMouseEnter={disabled ? undefined : (e) => {
               e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
               e.currentTarget.style.boxShadow = '0 4px 16px #4CAF5060, inset 0 1px 0 #4CAF5080';
             }}
-            onMouseLeave={(e) => {
+            onMouseLeave={disabled ? undefined : (e) => {
               e.currentTarget.style.transform = 'translateY(0) scale(1)';
               e.currentTarget.style.boxShadow = '0 0 8px #4CAF5040, inset 0 1px 0 #4CAF5060';
             }}
@@ -89,33 +97,39 @@ const EchoSelection: React.FC<EchoSelectionProps> = ({
         
         {hasExistingEchoes && (
           <button
-            onClick={onExtendEcho}
+            onClick={disabled ? undefined : onExtendEcho}
+            disabled={disabled}
             style={{
               position: 'relative',
-              background: 'linear-gradient(145deg, #2196F320, #2196F340)',
-              color: 'white',
-              border: '2px solid #2196F3',
+              background: disabled 
+                ? 'linear-gradient(145deg, #66620, #66640)' 
+                : 'linear-gradient(145deg, #2196F320, #2196F340)',
+              color: disabled ? '#888' : 'white',
+              border: `2px solid ${disabled ? '#666' : '#2196F3'}`,
               padding: '1rem 2rem',
               fontSize: '1.2rem',
               borderRadius: '8px',
-              cursor: 'pointer',
+              cursor: disabled ? 'not-allowed' : 'pointer',
               fontWeight: 'bold',
               fontFamily: 'Orbitron, monospace',
               textTransform: 'uppercase',
               letterSpacing: '0.5px',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              boxShadow: '0 0 8px #2196F340, inset 0 1px 0 #2196F360',
-              textShadow: '0 0 4px #2196F3',
+              boxShadow: disabled 
+                ? '0 0 8px #66640, inset 0 1px 0 #66660' 
+                : '0 0 8px #2196F340, inset 0 1px 0 #2196F360',
+              textShadow: disabled ? 'none' : '0 0 4px #2196F3',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '8px'
+              gap: '8px',
+              opacity: disabled ? 0.6 : 1
             }}
-            onMouseEnter={(e) => {
+            onMouseEnter={disabled ? undefined : (e) => {
               e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
               e.currentTarget.style.boxShadow = '0 4px 16px #2196F360, inset 0 1px 0 #2196F380';
             }}
-            onMouseLeave={(e) => {
+            onMouseLeave={disabled ? undefined : (e) => {
               e.currentTarget.style.transform = 'translateY(0) scale(1)';
               e.currentTarget.style.boxShadow = '0 0 8px #2196F340, inset 0 1px 0 #2196F360';
             }}

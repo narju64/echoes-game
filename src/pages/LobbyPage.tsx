@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { socketService } from '../services/socket';
 import LeaveConfirmationModal from '../components/LeaveConfirmationModal';
+import type { PlayerId } from '../types/gameTypes';
 import '../pages/HomePage.css';
 
 // Echo animation constants (same as HomePage)
@@ -54,6 +55,7 @@ interface Player {
   id: string;
   name: string;
   isHost: boolean;
+  gamePlayerId?: PlayerId; // 'player1' or 'player2'
 }
 
 const LobbyPage: React.FC = () => {
@@ -104,7 +106,8 @@ const LobbyPage: React.FC = () => {
     const currentPlayer: Player = {
       id: isHost ? 'host' : 'guest',
       name: playerName,
-      isHost: isHost
+      isHost: isHost,
+      gamePlayerId: isHost ? 'player1' : undefined // Host is always player1, guest will be assigned player2
     };
     setPlayers([currentPlayer]);
 
@@ -119,26 +122,56 @@ const LobbyPage: React.FC = () => {
       
       // Handle the actual data format being sent: {player: {...}, room: {...}}
       if (data && data.room && data.room.players && Array.isArray(data.room.players)) {
-        setPlayers(data.room.players);
+        let updatedPlayers = data.room.players;
+        
+        // Assign player2 role to the guest when second player joins
+        if (updatedPlayers.length === 2) {
+          updatedPlayers = updatedPlayers.map((player: Player) => {
+            if (!player.gamePlayerId) {
+              // This is the guest player, assign them player2
+              return { ...player, gamePlayerId: 'player2' as PlayerId };
+            }
+            return player;
+          });
+        }
+        
+        setPlayers(updatedPlayers);
         
         // Auto-start game when second player joins
-        if (data.room.players.length === 2) {
+        if (updatedPlayers.length === 2) {
           setTimeout(() => {
             setGameStarted(true);
+            const currentPlayer = updatedPlayers.find((p: Player) => p.name === playerName);
+            const gamePlayerIdParam = currentPlayer?.gamePlayerId ? `&gamePlayerId=${currentPlayer.gamePlayerId}` : '';
             const playerIdParam = playerId ? `&playerId=${playerId}` : '';
-            navigate(`/game?mode=multiplayer&roomId=${roomId}&playerName=${encodeURIComponent(playerName)}&isHost=${isHost}${playerIdParam}`);
+            navigate(`/game?mode=multiplayer&roomId=${roomId}&playerName=${encodeURIComponent(playerName)}&isHost=${isHost}${playerIdParam}${gamePlayerIdParam}`);
           }, 1000); // Small delay for smooth transition
         }
       } else if (data && data.players && Array.isArray(data.players)) {
         // Fallback for the expected format
-        setPlayers(data.players);
+        let updatedPlayers = data.players;
+        
+        // Assign player2 role to the guest when second player joins
+        if (updatedPlayers.length === 2) {
+          updatedPlayers = updatedPlayers.map((player: Player) => {
+            if (!player.gamePlayerId) {
+              // This is the guest player, assign them player2
+              return { ...player, gamePlayerId: 'player2' as PlayerId };
+            }
+            return player;
+          });
+        }
+        
+        setPlayers(updatedPlayers);
         
         // Auto-start game when second player joins
-        if (data.players.length === 2) {
+        if (updatedPlayers.length === 2) {
           setTimeout(() => {
             setGameStarted(true);
+            const currentPlayer = updatedPlayers.find((p: Player) => p.name === playerName);
+            const gamePlayerIdParam = currentPlayer?.gamePlayerId ? `&gamePlayerId=${currentPlayer.gamePlayerId}` : '';
             const playerIdParam = playerId ? `&playerId=${playerId}` : '';
-            navigate(`/game?mode=multiplayer&roomId=${roomId}&playerName=${encodeURIComponent(playerName)}&isHost=${isHost}${playerIdParam}`);
+            navigate(`/game?mode=multiplayer&roomId=${roomId}&playerName=${encodeURIComponent(playerName)}&isHost=${isHost}${playerIdParam}${gamePlayerIdParam}`);
           }, 1000); // Small delay for smooth transition
         }
       } else {
@@ -149,14 +182,29 @@ const LobbyPage: React.FC = () => {
     const handleRoomJoined = (data: { room: any }) => {
       console.log('Room joined event:', data);
       if (data && data.room && data.room.players && Array.isArray(data.room.players)) {
-        setPlayers(data.room.players);
+        let updatedPlayers = data.room.players;
+        
+        // Assign player roles if not already assigned
+        if (updatedPlayers.length === 2) {
+          updatedPlayers = updatedPlayers.map((player: Player) => {
+            if (!player.gamePlayerId) {
+              // Assign roles based on host status
+              return { ...player, gamePlayerId: player.isHost ? 'player1' : 'player2' as PlayerId };
+            }
+            return player;
+          });
+        }
+        
+        setPlayers(updatedPlayers);
         
         // Auto-start game when both players are present
-        if (data.room.players.length === 2) {
+        if (updatedPlayers.length === 2) {
           setTimeout(() => {
             setGameStarted(true);
+            const currentPlayer = updatedPlayers.find((p: Player) => p.name === playerName);
+            const gamePlayerIdParam = currentPlayer?.gamePlayerId ? `&gamePlayerId=${currentPlayer.gamePlayerId}` : '';
             const playerIdParam = playerId ? `&playerId=${playerId}` : '';
-            navigate(`/game?mode=multiplayer&roomId=${roomId}&playerName=${encodeURIComponent(playerName)}&isHost=${isHost}${playerIdParam}`);
+            navigate(`/game?mode=multiplayer&roomId=${roomId}&playerName=${encodeURIComponent(playerName)}&isHost=${isHost}${playerIdParam}${gamePlayerIdParam}`);
           }, 1000); // Small delay for smooth transition
         }
       } else {
@@ -181,8 +229,10 @@ const LobbyPage: React.FC = () => {
     const handleGameStart = () => {
       console.log('handleGameStart called with playerId:', playerId);
       setGameStarted(true);
+      const currentPlayer = players.find((p: Player) => p.name === playerName);
+      const gamePlayerIdParam = currentPlayer?.gamePlayerId ? `&gamePlayerId=${currentPlayer.gamePlayerId}` : '';
       const playerIdParam = playerId ? `&playerId=${playerId}` : '';
-      const gameUrl = `/game?mode=multiplayer&roomId=${roomId}&playerName=${encodeURIComponent(playerName)}&isHost=${isHost}${playerIdParam}`;
+      const gameUrl = `/game?mode=multiplayer&roomId=${roomId}&playerName=${encodeURIComponent(playerName)}&isHost=${isHost}${playerIdParam}${gamePlayerIdParam}`;
       console.log('Navigating to game with URL:', gameUrl);
       navigate(gameUrl);
     };
@@ -496,6 +546,18 @@ const LobbyPage: React.FC = () => {
                       background: index === 0 ? '#ff9800' : '#2196f3'
                     }} />
                     <span style={{ flex: 1 }}>{player.name}</span>
+                    {player.gamePlayerId && (
+                      <span style={{ 
+                        background: player.gamePlayerId === 'player1' ? '#ff9800' : '#2196f3', 
+                        color: 'white', 
+                        padding: '0.2rem 0.5rem', 
+                        borderRadius: '4px',
+                        fontSize: '0.8rem',
+                        fontWeight: 'bold'
+                      }}>
+                        {player.gamePlayerId === 'player1' ? 'Player 1' : 'Player 2'}
+                      </span>
+                    )}
                     {player.isHost && (
                       <span style={{ 
                         background: '#ff9800', 

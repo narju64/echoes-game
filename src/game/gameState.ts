@@ -58,7 +58,9 @@ function checkWinConditions(echoes: Echo[], scores: Record<PlayerId, number>): P
 export type GameAction =
   | { type: 'RESET_GAME' }
   | { type: 'ADD_ECHO'; echo: Echo }
+  | { type: 'SELECT_ECHO_FOR_EXTENSION'; echo: Echo }
   | { type: 'FINALIZE_ECHO'; echo: Echo }
+  | { type: 'SWITCH_PLAYER' }
   | { type: 'SUBMIT_TURN'; player: PlayerId }
   | { type: 'NEXT_TURN' }
   | { type: 'REMOVE_ECHO'; echoId: string }
@@ -78,8 +80,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'ADD_ECHO':
       return {
         ...state,
+        echoes: [...state.echoes, action.echo],
         pendingEcho: action.echo,
       };
+    case 'SELECT_ECHO_FOR_EXTENSION': {
+      // Set the echo as pending for extension without adding it to the echoes array
+      return {
+        ...state,
+        pendingEcho: action.echo,
+      };
+    }
     case 'FINALIZE_ECHO': {
       // Check if this is an extension of an existing echo (same ID)
       const existingEchoIndex = state.echoes.findIndex(e => e.id === action.echo.id);
@@ -99,8 +109,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         echoes: newEchoes,
         pendingEcho: null,
         submittedPlayers: [...state.submittedPlayers, action.echo.playerId],
-        currentPlayer: switchPlayer(state.currentPlayer),
+        // Don't switch currentPlayer in multiplayer mode - it's handled by assigned gamePlayerId
+        // currentPlayer: switchPlayer(state.currentPlayer),
         // If both players have submitted, phase will be updated in SUBMIT_TURN
+      };
+    }
+    case 'SWITCH_PLAYER': {
+      return {
+        ...state,
+        currentPlayer: switchPlayer(state.currentPlayer),
       };
     }
     case 'SUBMIT_TURN': {

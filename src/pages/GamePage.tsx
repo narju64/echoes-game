@@ -701,12 +701,58 @@ const GamePage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const modeParam = searchParams.get('mode');
   const [gameMode, _setGameMode] = useState(modeParam || 'hotseat');
+  
+  // Multiplayer-specific parameters
+  const roomId = searchParams.get('roomId');
+  const playerId = searchParams.get('playerId');
+  const gamePlayerId = searchParams.get('gamePlayerId') as PlayerId | null;
+  const playerName = searchParams.get('playerName');
+  const isHost = searchParams.get('isHost') === 'true';
+  
   const [state, dispatch] = useReducer(gameReducer, initialGameState) as [GameState, React.Dispatch<GameAction>];
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('choosing');
   const [layoutScale, setLayoutScale] = useState(1);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
-  const currentPlayer: PlayerId = state.currentPlayer;
+  
+  // Multiplayer submission tracking
+  const [submittedPlayers, setSubmittedPlayers] = useState<Set<PlayerId>>(new Set());
+  
+  // Multiplayer waiting state
+  const [waitingForOpponent, setWaitingForOpponent] = useState(false);
+  
+  // For multiplayer: track if we've received opponent echoes for replay
+  const [receivedOpponentEchoes, setReceivedOpponentEchoes] = useState(false);
+  
+  // For multiplayer: store opponent echoes separately until replay phase
+  const pendingOpponentEchoesRef = useRef<Echo[]>([]);
+  
+  // For multiplayer: use assigned gamePlayerId, for other modes: use state.currentPlayer
+  const currentPlayer: PlayerId = gameMode === 'multiplayer' && gamePlayerId ? gamePlayerId : state.currentPlayer;
   const homeRow = getHomeRow(currentPlayer);
+
+  // Debug logging for multiplayer
+  useEffect(() => {
+    if (gameMode === 'multiplayer') {
+      console.log('Multiplayer GamePage loaded with:');
+      console.log('- gameMode:', gameMode);
+      console.log('- roomId:', roomId);
+      console.log('- playerId:', playerId);
+      console.log('- gamePlayerId:', gamePlayerId);
+      console.log('- playerName:', playerName);
+      console.log('- isHost:', isHost);
+      console.log('- currentPlayer (assigned):', currentPlayer);
+    }
+  }, [gameMode, roomId, playerId, gamePlayerId, playerName, isHost, currentPlayer]);
+
+  // Debug logging for echoes state changes
+  useEffect(() => {
+    console.log('Echoes state changed:', {
+      count: state.echoes.length,
+      echoes: state.echoes.map(e => ({ id: e.id, playerId: e.playerId, alive: e.alive })),
+      phase: state.phase,
+      turnNumber: state.turnNumber
+    });
+  }, [state.echoes, state.phase, state.turnNumber]);
 
   // Handle window resize for responsive design
   useEffect(() => {
@@ -771,10 +817,6 @@ const GamePage: React.FC = () => {
         const handlePlayerLeft = (data: any) => {
           console.log('Player left event in GamePage:', data);
           
-          // Get roomId and playerId from URL params
-          const roomId = searchParams.get('roomId');
-          const playerId = searchParams.get('playerId');
-          
           console.log('URL params - roomId:', roomId, 'playerId:', playerId);
           
           // Send leaveRoom event to backend to notify that this player is also leaving
@@ -794,15 +836,110 @@ const GamePage: React.FC = () => {
           navigate('/home');
         };
 
+        // New multiplayer game event handlers
+        const handleGameAction = (data: any) => {
+          console.log('Received game action from opponent:', data);
+          // TODO: Apply opponent's action to local game state
+        };
+
+        const handlePlayerSubmitted = (data: any) => {
+          console.log('Player submitted turn:', data);
+          
+          // Only track opponent submissions (not our own)
+          const opponentPlayerId = data.gamePlayerId;
+          if (opponentPlayerId && opponentPlayerId !== currentPlayer) {
+            console.log('Opponent submitted:', opponentPlayerId);
+            
+            // Add opponent to submitted players
+            const newSubmittedPlayers = new Set(submittedPlayers);
+            newSubmittedPlayers.add(opponentPlayerId);
+            setSubmittedPlayers(newSubmittedPlayers);
+            
+            // Note: Backend will trigger replay phase when both players submit
+            // No need to check submission count here anymore
+          }
+        };
+
+        const handleGameStateUpdate = (data: any) => {
+          console.log('Received game state update:', data);
+          // TODO: Sync local state with received state
+        };
+
+        const handleOpponentEchoes = (data: any) => {
+          console.log('Received opponent echoes for replay:', data);
+          console.log('Current state echoes before adding opponent:', state.echoes);
+          
+          // Store opponent echoes separately until replay phase
+          if (data.echoes && Array.isArray(data.echoes)) {
+            const opponentEchoes = data.echoes.map((echo: any) => ({
+              ...echo,
+              playerId: data.gamePlayerId // Ensure correct player ID
+            }));
+            
+            console.log('Storing opponent echoes for later:', opponentEchoes);
+            pendingOpponentEchoesRef.current = opponentEchoes;
+            
+            // Mark that we've received opponent echoes
+            setReceivedOpponentEchoes(true);
+          } else {
+            console.error('No echoes found in opponent data or not an array:', data.echoes);
+          }
+        };
+
+        const handleReplayPhase = (data: any) => {
+          console.log('Replay phase triggered:', data);
+          console.log('Pending opponent echoes:', pendingOpponentEchoesRef.current);
+          
+          // Add pending opponent echoes to state for replay
+          if (pendingOpponentEchoesRef.current.length > 0) {
+            console.log('Adding pending opponent echoes to state:', pendingOpponentEchoesRef.current);
+            pendingOpponentEchoesRef.current.forEach((echo: Echo) => {
+              dispatch({ type: 'FINALIZE_ECHO', echo });
+            });
+            pendingOpponentEchoesRef.current = []; // Clear pending echoes
+          } else {
+            console.log('No pending opponent echoes to add');
+          }
+          
+          // Clear waiting state and start replay phase
+          setWaitingForOpponent(false);
+          
+          // Mark that we have opponent echoes (they're now in state)
+          setReceivedOpponentEchoes(true);
+          
+          // Echoes are now sent immediately when finalized, so no need to send them here
+          console.log('Starting replay phase - echoes should already be exchanged');
+          
+          // Ensure both players are marked as submitted in game state
+          dispatch({ type: 'SUBMIT_TURN', player: 'player1' });
+          dispatch({ type: 'SUBMIT_TURN', player: 'player2' });
+          
+          // Reset submission tracking for next turn
+          setSubmittedPlayers(new Set());
+        };
+
         socket.on('playerLeft', handlePlayerLeft);
         socket.on('roomClosed', handleRoomClosed);
+        socket.on('gameAction', handleGameAction);
+        socket.on('playerSubmitted', handlePlayerSubmitted);
+        socket.on('gameStateUpdate', handleGameStateUpdate);
+        socket.on('opponentEchoes', handleOpponentEchoes);
+        socket.on('replayPhase', handleReplayPhase);
 
         return () => {
           socket.off('playerLeft', handlePlayerLeft);
           socket.off('roomClosed', handleRoomClosed);
+          socket.off('gameAction', handleGameAction);
+          socket.off('playerSubmitted', handlePlayerSubmitted);
+          socket.off('gameStateUpdate', handleGameStateUpdate);
+          socket.off('opponentEchoes', handleOpponentEchoes);
+          socket.off('replayPhase', handleReplayPhase);
         };
       }
     }
+    
+    // Return empty cleanup function if not multiplayer or no socket
+    return () => {};
   }, [gameMode, navigate, searchParams]);
 
   // Find unoccupied home row tiles
@@ -875,17 +1012,67 @@ const GamePage: React.FC = () => {
       actionPoints: 3, // 3 action points for extension
       // Keep the existing instructionList - new actions will be added to it
     };
-    dispatch({ type: 'ADD_ECHO', echo: extendedEcho });
+    dispatch({ type: 'SELECT_ECHO_FOR_EXTENSION', echo: extendedEcho });
   };
 
   const handleFinalizeEcho = (finalEcho: Echo) => {
+    console.log('Finalizing echo:', finalEcho);
+    console.log('Current state before finalize:', {
+      echoes: state.echoes.map(e => ({ id: e.id, playerId: e.playerId, alive: e.alive })),
+      currentPlayer: state.currentPlayer,
+      phase: state.phase
+    });
+    
     // If startingPosition is missing, add it from position
     const echoWithStart = {
       ...finalEcho,
       startingPosition: (finalEcho as any).startingPosition || { ...finalEcho.position },
     };
     dispatch({ type: 'FINALIZE_ECHO', echo: echoWithStart });
-    dispatch({ type: 'SUBMIT_TURN', player: finalEcho.playerId });
+    
+    // Handle multiplayer submission
+    if (gameMode === 'multiplayer') {
+      // Send the finalized echo to the server (but don't add opponent's echo yet)
+      if (roomId && playerId && playerName && currentPlayer) {
+        const echoToSend = [echoWithStart]; // Send just this finalized echo
+        console.log('Sending finalized echo to server:', echoToSend);
+        socketService.sendGameState(roomId, playerId, playerName, currentPlayer, echoToSend);
+      }
+      
+      // Track this player's submission
+      const newSubmittedPlayers = new Set(submittedPlayers);
+      newSubmittedPlayers.add(currentPlayer);
+      setSubmittedPlayers(newSubmittedPlayers);
+      
+      // Set waiting state to prevent further actions
+      setWaitingForOpponent(true);
+      
+      // Emit submission event to opponent
+      const socket = socketService.getSocket();
+      if (socket && roomId) {
+        socket.emit('playerSubmitted', {
+          roomId,
+          playerId: currentPlayer,
+          playerName,
+          gamePlayerId: currentPlayer
+        });
+        console.log('Emitted playerSubmitted event for:', currentPlayer);
+      }
+      
+      // Note: Backend will trigger replay phase when both players submit
+      // No need to check submission count here anymore
+    } else {
+      // Original hotseat logic
+      // Switch to the other player after finalizing an echo
+      dispatch({ type: 'SWITCH_PLAYER' });
+      
+      // Check if both players have submitted before calling SUBMIT_TURN
+      const newSubmittedPlayers = new Set([...state.submittedPlayers, finalEcho.playerId]);
+      if (newSubmittedPlayers.has('player1') && newSubmittedPlayers.has('player2')) {
+        dispatch({ type: 'SUBMIT_TURN', player: finalEcho.playerId });
+      }
+    }
+    
     setSelectionMode('choosing'); // Reset selection mode
   };
 
@@ -900,9 +1087,6 @@ const GamePage: React.FC = () => {
 
   const handleConfirmLeave = () => {
     console.log('GamePage handleConfirmLeave called');
-    // Get roomId and playerId from URL params
-    const roomId = searchParams.get('roomId');
-    const playerId = searchParams.get('playerId');
     console.log('RoomId from URL:', roomId);
     console.log('PlayerId from URL:', playerId);
     
@@ -929,6 +1113,13 @@ const GamePage: React.FC = () => {
 
   useEffect(() => {
     if (state.phase === 'replay') {
+      // In multiplayer mode, wait for opponent echoes before starting replay
+      if (gameMode === 'multiplayer' && !receivedOpponentEchoes) {
+        console.log('Waiting for opponent echoes before starting replay...');
+        return;
+      }
+      
+      console.log('Starting replay simulation with echoes:', state.echoes);
       const sim = simulateReplay(state.echoes.map(e => ({ ...e, startingPosition: { row: e.position.row, col: e.position.col } }) as Echo & { startingPosition: { row: number; col: number } }));
       setReplayStates(sim);
       setReplayTick(0);
@@ -951,7 +1142,7 @@ const GamePage: React.FC = () => {
       if (replayTimer.current) clearInterval(replayTimer.current);
     }
     return () => { if (replayTimer.current) clearInterval(replayTimer.current); };
-  }, [state.phase, state.echoes]);
+  }, [state.phase, state.echoes, gameMode, receivedOpponentEchoes]);
 
   const handleNextTurn = () => {
     // Record turn history before moving to next turn
@@ -1707,7 +1898,22 @@ const GamePage: React.FC = () => {
                   existingEchoes={state.echoes}
                   onNewEcho={handleNewEcho}
                   onExtendEcho={handleExtendEcho}
+                  disabled={gameMode === 'multiplayer' && waitingForOpponent}
                 />
+                {gameMode === 'multiplayer' && waitingForOpponent && (
+                  <div style={{
+                    background: 'rgba(255, 193, 7, 0.2)',
+                    border: '2px solid #ffc107',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    marginTop: '1rem',
+                    textAlign: 'center',
+                    color: '#ffc107',
+                    fontWeight: 'bold'
+                  }}>
+                    ⏳ Waiting for opponent to submit their turn...
+                  </div>
+                )}
                 <Board 
                   echoes={state.echoes} 
                   highlightedTiles={boardHighlightedTiles}

@@ -63,6 +63,12 @@ class SocketService {
     }
   }
 
+  sendGameState(roomId: string, playerId: string, playerName: string, gamePlayerId: string, echoes: any[]): void {
+    if (this.socket) {
+      this.socket.emit('gameState', { roomId, playerId, playerName, gamePlayerId, echoes });
+    }
+  }
+
   sendChatMessage(roomId: string, message: string, playerName: string): void {
     if (this.socket) {
       this.socket.emit('chatMessage', { roomId, message, playerName });
