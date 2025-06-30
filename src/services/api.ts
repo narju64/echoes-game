@@ -1,6 +1,6 @@
 const API_BASE = import.meta.env.DEV 
   ? 'http://localhost:3000' 
-  : 'https://your-backend-url.com'; // Update this for production
+  : 'https://echoesbackend.narju.net'; // Updated for production
 
 export interface Room {
   id: string;
