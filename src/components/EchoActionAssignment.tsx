@@ -20,6 +20,7 @@ interface ActionButtonProps {
 }
 
 const ActionButton: React.FC<ActionButtonProps> = ({ action, onClick, disabled = false, selected = false }) => {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
   const getActionColor = (type: ActionType) => {
     switch (type) {
       case 'walk': return '#4CAF50'; // Green
@@ -54,16 +55,16 @@ const ActionButton: React.FC<ActionButtonProps> = ({ action, onClick, disabled =
         background: disabled ? '#333' : selected ? `linear-gradient(145deg, ${color}40, ${color}60)` : `linear-gradient(145deg, ${color}20, ${color}40)`,
         color: disabled ? '#666' : 'white',
         border: `2px solid ${disabled ? '#444' : selected ? `${color}80` : color}`,
-        padding: '8px 10px',
+        padding: isMobile ? '4px 6px' : '8px 10px',
         borderRadius: '8px',
         cursor: disabled ? 'not-allowed' : 'pointer',
-        fontSize: '0.7rem',
+        fontSize: isMobile ? '0.6rem' : '0.7rem',
         fontWeight: 'bold',
         fontFamily: 'Orbitron, monospace',
         textTransform: 'uppercase',
         letterSpacing: '0.5px',
-        minWidth: '50px',
-        width: '76px',
+        minWidth: isMobile ? '50px' : '50px',
+        width: isMobile ? '70px' : '76px',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         boxShadow: disabled ? 'none' : selected ? `0 0 16px ${color}80, inset 0 1px 0 ${color}90` : `0 0 8px ${color}40, inset 0 1px 0 ${color}60`,
         textShadow: disabled ? 'none' : selected ? `0 0 8px ${color}` : `0 0 4px ${color}`,
@@ -100,14 +101,14 @@ const ActionButton: React.FC<ActionButtonProps> = ({ action, onClick, disabled =
       />
       
       {/* Content */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-        <span style={{ fontSize: '1.2rem' }}>{icon}</span>
-        <span>{action.label}</span>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isMobile ? '2px' : '4px' }}>
+        <span style={{ fontSize: isMobile ? '0.9rem' : '1.2rem' }}>{icon}</span>
+        <span style={{ fontSize: isMobile ? '0.6rem' : '0.7rem' }}>{action.label}</span>
         <span style={{ 
-          fontSize: '0.8rem', 
+          fontSize: isMobile ? '0.6rem' : '0.8rem', 
           opacity: 0.8,
           background: disabled ? '#444' : `${color}40`,
-          padding: '2px 6px',
+          padding: isMobile ? '1px 4px' : '2px 6px',
           borderRadius: '4px',
           border: `1px solid ${disabled ? '#555' : color}`
         }}>
@@ -365,69 +366,138 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
     ? getValidDirectionTiles(simForDirection.simPos, validDirs, dash)
     : [];
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+
   return (
     <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
       {/* Sidebar positioned relative to board */}
       <div style={{ position: 'relative' }}>
         <div style={{ 
           position: 'absolute',
-          right: 'calc(100% + 60px)',
-          top: '64px',
+          ...(isMobile ? {
+            left: '50%',
+            transform: 'translateX(-50%)',
+            top: 'calc(100% + 20px)',
+            width: '95vw',
+            maxWidth: '430px',
+            height: 'auto',
+            maxHeight: '60vh'
+          } : {
+            right: 'calc(100% + 60px)',
+            top: '64px',
+            width: '430px',
+            height: '640px'
+          }),
           color: 'white', 
           background: '#222', 
-          padding: '1rem', 
+          padding: isMobile ? '0.5rem' : '1rem', 
           borderRadius: 12, 
-          width: '430px', 
-          height: '640px', 
           minWidth: 240, 
-          maxWidth: 430, 
           overflowY: 'auto',
-          zIndex: 10
+          zIndex: 10,
+          fontSize: isMobile ? '0.8rem' : '1rem'
         }}>
-          <h2 style={{ margin: '0 0 0.5rem 0' }}>Assign Actions to Echo</h2>
-          <p style={{ color: isNewEcho ? '#4CAF50' : '#2196F3', fontWeight: 'bold', margin: '0 0 0.5rem 0' }}>
-            {isNewEcho ? 'New Echo' : 'Extended Echo'} ({maxActionPoints} Action Points)
-          </p>
-          <p style={{ margin: '0 0 0.5rem 0' }}>Current Tick: {displayTick}</p>
-          <p style={{ margin: '0 0 0.5rem 0' }}>Remaining Action Points: {remainingPoints}</p>
-          {/* Undo button */}
-          {(actions.length > 0 || selectingDirection) && (
-            <div style={{ marginBottom: '0.5rem' }}>
-              <button 
-                onClick={handleUndoLastAction}
-                style={{
-                  position: 'relative',
-                  background: 'linear-gradient(145deg, #ff572220, #ff572240)',
-                  color: 'white',
-                  border: '2px solid #ff5722',
-                  padding: '10px 16px',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem',
-                  fontWeight: 'bold',
-                  fontFamily: 'Orbitron, monospace',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  boxShadow: '0 0 8px #ff572240, inset 0 1px 0 #ff572260',
-                  textShadow: '0 0 4px #ff5722',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-                  e.currentTarget.style.boxShadow = '0 4px 16px #ff572260, inset 0 1px 0 #ff572280';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                  e.currentTarget.style.boxShadow = '0 0 8px #ff572240, inset 0 1px 0 #ff572260';
-                }}
-              >
-                <span style={{ fontSize: '1.1rem' }}>↩</span>
-                <span>Undo Last Action</span>
-              </button>
+          {isMobile ? (
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'flex-start',
+              marginBottom: '0.5rem'
+            }}>
+              <div>
+                <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.2rem' }}>Assign Actions to Echo</h2>
+                <p style={{ color: isNewEcho ? '#4CAF50' : '#2196F3', fontWeight: 'bold', margin: '0 0 0.5rem 0', fontSize: '0.9rem' }}>
+                  {isNewEcho ? 'New Echo' : 'Extended Echo'} ({maxActionPoints} Action Points)
+                </p>
+                <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem' }}>Current Tick: {displayTick}</p>
+                <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem' }}>Remaining Action Points: {remainingPoints}</p>
+              </div>
+              {/* Undo button - positioned in top right on mobile */}
+              {(actions.length > 0 || selectingDirection) && (
+                <button 
+                  onClick={handleUndoLastAction}
+                  style={{
+                    position: 'relative',
+                    background: 'linear-gradient(145deg, #ff572220, #ff572240)',
+                    color: 'white',
+                    border: '2px solid #ff5722',
+                    padding: '4px 8px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '0.6rem',
+                    fontWeight: 'bold',
+                    fontFamily: 'Orbitron, monospace',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 0 8px #ff572240, inset 0 1px 0 #ff572260',
+                    textShadow: '0 0 4px #ff5722',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '2px',
+                    flexShrink: 0
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                    e.currentTarget.style.boxShadow = '0 4px 16px #ff572260, inset 0 1px 0 #ff572280';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                    e.currentTarget.style.boxShadow = '0 0 8px #ff572240, inset 0 1px 0 #ff572260';
+                  }}
+                >
+                  <span style={{ fontSize: '0.9rem' }}>↩</span>
+                </button>
+              )}
             </div>
+          ) : (
+            <>
+              <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem' }}>Assign Actions to Echo</h2>
+              <p style={{ color: isNewEcho ? '#4CAF50' : '#2196F3', fontWeight: 'bold', margin: '0 0 0.5rem 0', fontSize: '1rem' }}>
+                {isNewEcho ? 'New Echo' : 'Extended Echo'} ({maxActionPoints} Action Points)
+              </p>
+              <p style={{ margin: '0 0 0.5rem 0', fontSize: '1rem' }}>Current Tick: {displayTick}</p>
+              <p style={{ margin: '0 0 0.5rem 0', fontSize: '1rem' }}>Remaining Action Points: {remainingPoints}</p>
+              {/* Undo button - original position for desktop */}
+              {(actions.length > 0 || selectingDirection) && (
+                <div style={{ marginBottom: '0.5rem' }}>
+                  <button 
+                    onClick={handleUndoLastAction}
+                    style={{
+                      position: 'relative',
+                      background: 'linear-gradient(145deg, #ff572220, #ff572240)',
+                      color: 'white',
+                      border: '2px solid #ff5722',
+                      padding: '10px 16px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      fontWeight: 'bold',
+                      fontFamily: 'Orbitron, monospace',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      boxShadow: '0 0 8px #ff572240, inset 0 1px 0 #ff572260',
+                      textShadow: '0 0 4px #ff5722',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                      e.currentTarget.style.boxShadow = '0 4px 16px #ff572260, inset 0 1px 0 #ff572280';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                      e.currentTarget.style.boxShadow = '0 0 8px #ff572240, inset 0 1px 0 #ff572260';
+                    }}
+                  >
+                    <span style={{ fontSize: '1.1rem' }}>↩</span>
+                    <span>Undo Last Action</span>
+                  </button>
+                </div>
+              )}
+            </>
           )}
           {/* Show existing instructions for extended echoes */}
           {!isNewEcho && pendingEcho.instructionList.length > 0 && (
@@ -440,11 +510,29 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
               </ol>
             </div>
           )}
-          {/* Show new actions being assigned */}
+          {!isMobile && <p style={{ fontSize: '1rem' }}>Select an action:</p>}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: isMobile ? 2 : 4 }}>
+            {availableActions.map(a => (
+              <ActionButton 
+                key={a.type} 
+                action={a} 
+                onClick={() => handleActionSelect(a.type, a.cost)}
+                disabled={a.cost > remainingPoints}
+                selected={a.type === selectedActionType}
+              />
+            ))}
+          </div>
+          {selectingDirection && (
+            <p style={{ marginTop: '1rem', color: '#ff9800', fontWeight: 'bold', fontSize: isMobile ? '0.8rem' : '1rem' }}>
+              Select direction by clicking a highlighted adjacent tile:
+            </p>
+          )}
+          
+          {/* Show new actions being assigned - moved to bottom */}
           {actions.length > 0 && (
-            <div style={{ marginBottom: '0.5rem' }}>
-              <p style={{ fontWeight: 'bold', color: '#4CAF50' }}>New Actions:</p>
-              <div style={{ color: '#4CAF50', fontFamily: 'monospace', fontSize: '0.9rem' }}>
+            <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>
+              <p style={{ fontWeight: 'bold', color: '#4CAF50', fontSize: isMobile ? '0.8rem' : '1rem' }}>New Actions:</p>
+              <div style={{ color: '#4CAF50', fontFamily: 'monospace', fontSize: isMobile ? '0.7rem' : '0.9rem' }}>
                 {/* Show tick 0 (spawned) */}
                 <div style={{ display: 'grid', gridTemplateColumns: '15px 10px 1fr', gap: '8px', alignItems: 'center' }}>
                   <span>0.</span>
@@ -496,23 +584,6 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
                 })}
               </div>
             </div>
-          )}
-          <p>Select an action:</p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-            {availableActions.map(a => (
-              <ActionButton 
-                key={a.type} 
-                action={a} 
-                onClick={() => handleActionSelect(a.type, a.cost)}
-                disabled={a.cost > remainingPoints}
-                selected={a.type === selectedActionType}
-              />
-            ))}
-          </div>
-          {selectingDirection && (
-            <p style={{ marginTop: '1rem', color: '#ff9800', fontWeight: 'bold' }}>
-              Select direction by clicking a highlighted adjacent tile:
-            </p>
           )}
         </div>
         

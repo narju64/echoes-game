@@ -696,6 +696,17 @@ function generateEventLogFromReplayStates(replayStates: any[]): string[] {
   return events;
 }
 
+// Add at the top, after imports
+function useIsMobile() {
+  const [isMobile, setIsMobile] = React.useState(window.innerWidth <= 768);
+  React.useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  return isMobile;
+}
+
 const GamePage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -1268,6 +1279,8 @@ const GamePage: React.FC = () => {
     boardOnTileClick = handleExtendEchoTileClick;
   }
 
+  const isMobile = useIsMobile();
+
   if (state.phase === 'replay') {
     const current = replayStates[replayTick] || { echoes: state.echoes, projectiles: [], tick: 0, destroyed: [], destroyedProjectiles: [], collisions: [], shieldBlocks: [] };
     // Map SimProjectile to ProjectilePreview for Board
@@ -1301,46 +1314,76 @@ const GamePage: React.FC = () => {
             </div>
           )}
           {/* Home button */}
-          <button
-            onClick={handleLeaveGame}
-            style={{
-              position: 'absolute',
-              top: 20,
-              left: 20,
-              background: 'linear-gradient(145deg, #333, #444)',
-              color: 'white',
-              border: '2px solid #666',
-              padding: '10px 20px',
-              fontSize: '1rem',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              fontFamily: 'Orbitron, monospace',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
-              zIndex: 1000
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
-              e.currentTarget.style.borderColor = '#2196F3';
-              e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.textShadow = '0 0 8px #2196F3';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(145deg, #333, #444)';
-              e.currentTarget.style.borderColor = '#666';
-              e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.textShadow = 'none';
-            }}
-          >
-            Home
-          </button>
+          {isMobile ? (
+            <button
+              onClick={handleLeaveGame}
+              style={{
+                position: 'absolute',
+                top: 4,
+                left: 4,
+                width: 28,
+                height: 28,
+                background: 'linear-gradient(145deg, #333, #444)',
+                color: 'white',
+                border: '2px solid #666',
+                borderRadius: '50%',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontFamily: 'Orbitron, monospace',
+                fontSize: 18,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+                zIndex: 1000
+              }}
+              aria-label="Home"
+            >
+              🏠
+            </button>
+          ) : (
+            <button
+              onClick={handleLeaveGame}
+              style={{
+                position: 'absolute',
+                top: 20,
+                left: 20,
+                background: 'linear-gradient(145deg, #333, #444)',
+                color: 'white',
+                border: '2px solid #666',
+                padding: '10px 20px',
+                fontSize: '1rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontFamily: 'Orbitron, monospace',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+                zIndex: 1000
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
+                e.currentTarget.style.borderColor = '#2196F3';
+                e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.textShadow = '0 0 8px #2196F3';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(145deg, #333, #444)';
+                e.currentTarget.style.borderColor = '#666';
+                e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.textShadow = 'none';
+              }}
+            >
+              Home
+            </button>
+          )}
           
           {/* Mode indicator for debugging/clarity */}
+          {!isMobile && (
           <div style={{ position: 'absolute', top: 10, right: 10, background: '#222', color: '#fff', padding: '6px 16px', borderRadius: 8, zIndex: 1000, opacity: 0.85, fontWeight: 600 }}>
             {gameMode === 'ai' && 'AI vs Human Mode'}
             {gameMode === 'hotseat' && 'Hotseat Mode'}
@@ -1348,7 +1391,8 @@ const GamePage: React.FC = () => {
             {gameMode === 'training' && 'AI Training Mode'}
             {!['ai', 'hotseat', 'tournament', 'training'].includes(gameMode) && `Mode: ${gameMode}`}
           </div>
-          
+        )}
+
           {/* Main game content - centered container */}
           <div style={{ 
             display: 'flex', 
@@ -1356,30 +1400,79 @@ const GamePage: React.FC = () => {
             alignItems: 'center', 
             maxWidth: '100%',
             margin: '0 auto',
+            marginTop: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? (state.phase === 'replay' ? '-15px' : '-30px') : 0,
+            paddingTop: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? 0 : 0,
             transform: `scale(${layoutScale})`,
             transformOrigin: 'center top',
             minHeight: layoutScale < 1 ? `${100 / layoutScale}vh` : 'auto'
           }}>
             
             {/* Game info panels - centered */}
-            <div style={{ width: '100%', maxWidth: getBoardWidth(), marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, paddingLeft: gameMode === 'multiplayer' ? 30 : 0 }}>
+            <div style={{ 
+              width: '100%', 
+              maxWidth: getBoardWidth(), 
+              marginBottom: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '0.5rem' : '1rem',
+              paddingLeft: isMobile && gameMode !== 'multiplayer' ? 32 : 0,
+              paddingTop: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? 0 : (isMobile ? 10 : 0)
+            }}>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                marginBottom: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? 4 : 8, 
+                paddingLeft: gameMode === 'multiplayer' ? 30 : 0 
+              }}
+                className={isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? 'scoreboard-mobile' : ''}>
                 {gameMode === 'multiplayer' ? (
                   <>
-                    <div style={{ color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'left', fontSize: 28 }}>{playerNames.player1}: <b>{state.scores.player1}</b></div>
-                    <div style={{ color: 'blue', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'right', fontSize: 28 }}>{playerNames.player2}: <b>{state.scores.player2}</b></div>
+                    <div style={{ 
+                      color: '#ff9800', 
+                      fontWeight: 'bold', 
+                      textShadow: '0 0 1px #fff', 
+                      textAlign: 'left', 
+                      fontSize: isMobile ? 16 : 28 
+                    }}>{playerNames.player1}: <b>{state.scores.player1}</b></div>
+                    <div style={{ 
+                      color: 'blue', 
+                      fontWeight: 'bold', 
+                      textShadow: '0 0 1px #fff', 
+                      textAlign: 'right', 
+                      fontSize: isMobile ? 16 : 28 
+                    }}>{playerNames.player2}: <b>{state.scores.player2}</b></div>
                   </>
                 ) : (
                   <>
-                    <div style={{ color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'left', fontSize: 28 }}>Player 1 (Orange): <b>{state.scores.player1}</b></div>
-                    <div style={{ color: 'blue', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'right', fontSize: 28 }}>Player 2 (Blue): <b>{state.scores.player2}</b></div>
+                    <div style={{ 
+                      color: '#ff9800', 
+                      fontWeight: 'bold', 
+                      textShadow: '0 0 1px #fff', 
+                      textAlign: 'left', 
+                      fontSize: isMobile ? 16 : 28 
+                    }}>Player 1{isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '' : ' (Orange)'}: <b>{state.scores.player1}</b></div>
+                    <div style={{ 
+                      color: 'blue', 
+                      fontWeight: 'bold', 
+                      textShadow: '0 0 1px #fff', 
+                      textAlign: 'right', 
+                      fontSize: isMobile ? 16 : 28 
+                    }}>Player 2{isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '' : ' (Blue)'}: <b>{state.scores.player2}</b></div>
                   </>
                 )}
               </div>
               {/* Remove Current Turn title in multiplayer mode */}
               {gameMode !== 'multiplayer' && (
-                <div style={{ textAlign: 'center', marginBottom: 0 }}>
-                  <h2 style={{ color: currentPlayer === 'player1' ? '#ff9800' : 'blue', textShadow: '0 0 1px #fff', margin: 0, fontSize: 28, textDecoration: 'underline' }}>
+                <div style={{ 
+                  textAlign: 'center', 
+                  marginBottom: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? 0 : 0 
+                }}
+                  className={isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? 'turn-title-mobile' : ''}>
+                  <h2 style={{ 
+                    color: currentPlayer === 'player1' ? '#ff9800' : 'blue', 
+                    textShadow: '0 0 1px #fff', 
+                    margin: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '0 0 4px 0' : 0, 
+                    fontSize: 28, 
+                    textDecoration: 'underline' 
+                  }}>
                     Current Turn: {currentPlayer === 'player1' ? 'Player 1 (Orange)' : 'Player 2 (Blue)'}
                   </h2>
                 </div>
@@ -1387,7 +1480,12 @@ const GamePage: React.FC = () => {
             </div>
             
             {/* Game board and controls - centered */}
-            <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              width: '100%',
+              marginTop: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? (state.phase === 'replay' ? '-13px' : '-20px') : 0
+            }}>
               <div style={{ position: 'relative' }}>
                 <GameInfoPanel
                   turnNumber={state.turnNumber}
@@ -1406,227 +1504,235 @@ const GamePage: React.FC = () => {
             </div>
             
             {/* Reset button - centered */}
-            <div style={{ textAlign: 'center', marginTop: '1rem', marginBottom: '1rem' }}>
-              <button 
-                onClick={handleReset}
-                style={{
-                  position: 'relative',
-                  background: 'linear-gradient(145deg, #f4433620, #f4433640)',
-                  color: 'white',
-                  border: '2px solid #f44336',
-                  padding: '10px 20px',
-                  fontSize: '1rem',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                  fontFamily: 'Orbitron, monospace',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
-                  zIndex: 1000
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-                  e.currentTarget.style.boxShadow = '0 4px 16px #f4433660, inset 0 1px 0 #f4433680';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                  e.currentTarget.style.boxShadow = '0 0 8px #f4433640, inset 0 1px 0 #f4433660';
-                }}
-              >
-                🔄 Reset Game
-              </button>
-              <button 
-                onClick={handleReplay}
-                style={{
-                  position: 'relative',
-                  background: 'linear-gradient(145deg, #2196F320, #2196F340)',
-                  color: 'white',
-                  border: '2px solid #2196F3',
-                  padding: '10px 20px',
-                  fontSize: '1rem',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                  fontFamily: 'Orbitron, monospace',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  boxShadow: '0 0 8px #2196F340, inset 0 1px 0 #2196F360',
-                  textShadow: '0 0 4px #2196F3',
-                  marginRight: '8px'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-                  e.currentTarget.style.boxShadow = '0 4px 16px #2196F360, inset 0 1px 0 #2196F380';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                  e.currentTarget.style.boxShadow = '0 0 8px #2196F340, inset 0 1px 0 #2196F360';
-                }}
-              >
-                ▶️ Replay
-              </button>
-              <button 
-                onClick={handleNextTurn}
-                style={{
-                  position: 'relative',
-                  background: 'linear-gradient(145deg, #4CAF5020, #4CAF5040)',
-                  color: 'white',
-                  border: '2px solid #4CAF50',
-                  padding: '10px 20px',
-                  fontSize: '1rem',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                  fontFamily: 'Orbitron, monospace',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  boxShadow: '0 0 8px #4CAF5040, inset 0 1px 0 #4CAF5060',
-                  textShadow: '0 0 4px #4CAF50'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-                  e.currentTarget.style.boxShadow = '0 4px 16px #4CAF5060, inset 0 1px 0 #4CAF5080';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                  e.currentTarget.style.boxShadow = '0 0 8px #4CAF5040, inset 0 1px 0 #4CAF5060';
-                }}
-              >
-                ⏭️ Next Turn
-              </button>
-            </div>
+            {(gameMode !== 'multiplayer' || state.phase === 'replay') && (
+              <div style={{ 
+                textAlign: 'center', 
+                marginTop: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '0.25rem' : (isMobile && gameMode === 'multiplayer' && state.phase === 'replay' ? '0.1rem' : '1rem'), 
+                marginBottom: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '0.5rem' : (isMobile && gameMode === 'multiplayer' && state.phase === 'replay' ? '0.3rem' : '1rem') 
+              }}>
+                <button 
+                  onClick={handleReset}
+                  style={{
+                    position: 'relative',
+                    background: 'linear-gradient(145deg, #f4433620, #f4433640)',
+                    color: 'white',
+                    border: '2px solid #f44336',
+                    padding: isMobile ? '6px 12px' : '10px 20px',
+                    fontSize: isMobile ? '0.8rem' : '1rem',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    fontFamily: 'Orbitron, monospace',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+                    zIndex: 1000
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                    e.currentTarget.style.boxShadow = '0 4px 16px #f4433660, inset 0 1px 0 #f4433680';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                    e.currentTarget.style.boxShadow = '0 0 8px #f4433640, inset 0 1px 0 #f4433660';
+                  }}
+                >
+                  🔄 Reset
+                </button>
+                <button 
+                  onClick={handleReplay}
+                  style={{
+                    position: 'relative',
+                    background: 'linear-gradient(145deg, #2196F320, #2196F340)',
+                    color: 'white',
+                    border: '2px solid #2196F3',
+                    padding: isMobile ? '6px 12px' : '10px 20px',
+                    fontSize: isMobile ? '0.8rem' : '1rem',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    fontFamily: 'Orbitron, monospace',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 0 8px #2196F340, inset 0 1px 0 #2196F360',
+                    textShadow: '0 0 4px #2196F3',
+                    marginRight: isMobile ? '4px' : '8px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                    e.currentTarget.style.boxShadow = '0 4px 16px #2196F360, inset 0 1px 0 #2196F380';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                    e.currentTarget.style.boxShadow = '0 0 8px #2196F340, inset 0 1px 0 #2196F360';
+                  }}
+                >
+                  ▶️ Replay
+                </button>
+                <button 
+                  onClick={handleNextTurn}
+                  style={{
+                    position: 'relative',
+                    background: 'linear-gradient(145deg, #4CAF5020, #4CAF5040)',
+                    color: 'white',
+                    border: '2px solid #4CAF50',
+                    padding: isMobile ? '6px 12px' : '10px 20px',
+                    fontSize: isMobile ? '0.8rem' : '1rem',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    fontFamily: 'Orbitron, monospace',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 0 8px #4CAF5040, inset 0 1px 0 #4CAF5060',
+                    textShadow: '0 0 4px #4CAF50'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                    e.currentTarget.style.boxShadow = '0 4px 16px #4CAF5060, inset 0 1px 0 #4CAF5080';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                    e.currentTarget.style.boxShadow = '0 0 8px #4CAF5040, inset 0 1px 0 #4CAF5060';
+                  }}
+                >
+                  ⏭️ Next
+                </button>
+              </div>
+            )}
             
             {/* Clean Debug Output for Replay Phase */}
-            <div style={{ 
-              background: '#222', 
-              color: '#eee', 
-              padding: '1rem', 
-              marginTop: '2rem', 
-              borderRadius: '8px', 
-              fontSize: '0.9rem',
-              width: '100%',
-              maxWidth: getBoardWidth()
-            }}>
-              <h3 style={{ margin: '0 0 1rem 0', color: '#4CAF50' }}>Debug Info - Turn {state.turnNumber} (Replay)</h3>
-              
-              <div style={{ marginBottom: '1rem' }}>
-                <strong>Phase:</strong> {state.phase} | <strong>Replay Tick:</strong> {current.tick} | <strong>Total Ticks:</strong> {replayStates.length}
-              </div>
-              
-              <div style={{ marginBottom: '1rem' }}>
-                <strong>Scores:</strong> Player 1: {state.scores.player1} | Player 2: {state.scores.player2}
-              </div>
-              
-              <div style={{ marginBottom: '1rem' }}>
-                <strong>Current Echoes ({current.echoes.length}):</strong>
-                {current.echoes.length === 0 ? (
-                  <div style={{ color: '#888', fontStyle: 'italic' }}>No echoes</div>
-                ) : (
-                  <div style={{ marginLeft: '1rem' }}>
-                    {(() => {
-                      const echoNames = generateEchoNames(current.echoes);
-                      return current.echoes.map((echo, index) => (
-                        <div key={echo.id} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: '#333', borderRadius: '4px' }}>
-                          <div style={{ color: echo.playerId === 'player1' ? 'orange' : '#4ecdc4', fontWeight: 'bold' }}>
-                            {echoNames.get(echo.id) || `Echo ${index + 1}`} ({echo.playerId === 'player1' ? 'Player 1' : 'Player 2'})
+            {gameMode !== 'multiplayer' && !(isMobile && (gameMode === 'hotseat' || gameMode === 'ai')) && (
+              <div style={{ 
+                background: '#222', 
+                color: '#eee', 
+                padding: '1rem', 
+                marginTop: '2rem', 
+                borderRadius: '8px', 
+                fontSize: '0.9rem',
+                width: '100%',
+                maxWidth: getBoardWidth()
+              }}>
+                <h3 style={{ margin: '0 0 1rem 0', color: '#4CAF50' }}>Debug Info - Turn {state.turnNumber} (Replay)</h3>
+                
+                <div style={{ marginBottom: '1rem' }}>
+                  <strong>Phase:</strong> {state.phase} | <strong>Replay Tick:</strong> {current.tick} | <strong>Total Ticks:</strong> {replayStates.length}
+                </div>
+                
+                <div style={{ marginBottom: '1rem' }}>
+                  <strong>Scores:</strong> Player 1: {state.scores.player1} | Player 2: {state.scores.player2}
+                </div>
+                
+                <div style={{ marginBottom: '1rem' }}>
+                  <strong>Current Echoes ({current.echoes.length}):</strong>
+                  {current.echoes.length === 0 ? (
+                    <div style={{ color: '#888', fontStyle: 'italic' }}>No echoes</div>
+                  ) : (
+                    <div style={{ marginLeft: '1rem' }}>
+                      {(() => {
+                        const echoNames = generateEchoNames(current.echoes);
+                        return current.echoes.map((echo, index) => (
+                          <div key={echo.id} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: '#333', borderRadius: '4px' }}>
+                            <div style={{ color: echo.playerId === 'player1' ? 'orange' : '#4ecdc4', fontWeight: 'bold' }}>
+                              {echoNames.get(echo.id) || `Echo ${index + 1}`} ({echo.playerId === 'player1' ? 'Player 1' : 'Player 2'})
+                            </div>
+                            <div><strong>Position:</strong> {getBoardPosition(echo.position.row, echo.position.col)} | <strong>Alive:</strong> {echo.alive ? 'Yes' : 'No'}</div>
+                            <div><strong>Shielded:</strong> {echo.isShielded ? 'Yes' : 'No'}</div>
                           </div>
-                          <div><strong>Position:</strong> {getBoardPosition(echo.position.row, echo.position.col)} | <strong>Alive:</strong> {echo.alive ? 'Yes' : 'No'}</div>
-                          <div><strong>Shielded:</strong> {echo.isShielded ? 'Yes' : 'No'}</div>
+                        ));
+                      })()}
+                    </div>
+                  )}
+                </div>
+                
+                <div style={{ marginBottom: '1rem' }}>
+                  <strong>Projectiles ({current.projectiles.length}):</strong>
+                  {current.projectiles.length === 0 ? (
+                    <div style={{ color: '#888', fontStyle: 'italic' }}>No projectiles</div>
+                  ) : (
+                    <div style={{ marginLeft: '1rem' }}>
+                      {current.projectiles.map((proj, index) => (
+                        <div key={index} style={{ color: '#ccc', fontSize: '0.8rem' }}>
+                          {proj.type}: {getBoardPosition(proj.position.row, proj.position.col)} → {getDirectionName(proj.direction)}
                         </div>
-                      ));
-                    })()}
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                {current.destroyed.length > 0 && (
+                  <div style={{ marginBottom: '1rem' }}>
+                    <strong>Destroyed This Tick ({current.destroyed.length}):</strong>
+                    <div style={{ marginLeft: '1rem' }}>
+                      {(() => {
+                        const echoNames = generateEchoNames(current.echoes);
+                        return current.destroyed.map((destroyed, index) => {
+                          const echoName = echoNames.get(destroyed.echoId) || `Echo ${destroyed.echoId.slice(0, 8)}`;
+                          return (
+                            <div key={index} style={{ color: 'orange', fontSize: '0.8rem' }}>
+                              {echoName} by {destroyed.by || 'collision'}
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+                )}
+                
+                {current.collisions.length > 0 && (
+                  <div style={{ marginBottom: '1rem' }}>
+                    <strong>Collisions ({current.collisions.length}):</strong>
+                    <div style={{ marginLeft: '1rem' }}>
+                      {current.collisions.map((collision, index) => (
+                        <div key={index} style={{ color: '#ffd93d', fontSize: '0.8rem' }}>
+                          {getBoardPosition(collision.row, collision.col)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {current.shieldBlocks.length > 0 && (
+                  <div style={{ marginBottom: '1rem' }}>
+                    <strong>Shield Blocks ({current.shieldBlocks.length}):</strong>
+                    <div style={{ marginLeft: '1rem' }}>
+                      {current.shieldBlocks.map((shieldBlock, index) => (
+                        <div key={index} style={{ color: '#4CAF50', fontSize: '0.8rem' }}>
+                          {getBoardPosition(shieldBlock.row, shieldBlock.col)} → {getDirectionName(shieldBlock.projectileDirection)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {state.turnHistory.length > 0 && (
+                  <div style={{ marginBottom: '1rem' }}>
+                    <strong>Turn History ({state.turnHistory.length} turns):</strong>
+                    <div style={{ marginLeft: '1rem', maxHeight: '300px', overflowY: 'auto' }}>
+                      {state.turnHistory.slice().reverse().map((entry, _index) => (
+                        <div key={entry.turnNumber} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: '#333', borderRadius: '4px', fontSize: '0.8rem' }}>
+                          <div style={{ fontWeight: 'bold', color: '#4CAF50' }}>Turn {entry.turnNumber}</div>
+                          <div><strong>Scores:</strong> P1: {entry.scores.player1} | P2: {entry.scores.player2}</div>
+                          <div><strong>Echoes:</strong> P1: {entry.player1Echoes.length} | P2: {entry.player2Echoes.length}</div>
+                          {entry.destroyedEchoes.length > 0 && (
+                            <div><strong>Destroyed:</strong> {entry.destroyedEchoes.length} echoes</div>
+                          )}
+                          {entry.destroyedProjectiles && entry.destroyedProjectiles.length > 0 && (
+                            <div><strong>Destroyed Projectiles:</strong> {entry.destroyedProjectiles.length} projectiles</div>
+                          )}
+                          {entry.collisions.length > 0 && (
+                            <div><strong>Collisions:</strong> {entry.collisions.length} events</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
-              
-              <div style={{ marginBottom: '1rem' }}>
-                <strong>Projectiles ({current.projectiles.length}):</strong>
-                {current.projectiles.length === 0 ? (
-                  <div style={{ color: '#888', fontStyle: 'italic' }}>No projectiles</div>
-                ) : (
-                  <div style={{ marginLeft: '1rem' }}>
-                    {current.projectiles.map((proj, index) => (
-                      <div key={index} style={{ color: '#ccc', fontSize: '0.8rem' }}>
-                        {proj.type}: {getBoardPosition(proj.position.row, proj.position.col)} → {getDirectionName(proj.direction)}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              
-              {current.destroyed.length > 0 && (
-                <div style={{ marginBottom: '1rem' }}>
-                  <strong>Destroyed This Tick ({current.destroyed.length}):</strong>
-                  <div style={{ marginLeft: '1rem' }}>
-                    {(() => {
-                      const echoNames = generateEchoNames(current.echoes);
-                      return current.destroyed.map((destroyed, index) => {
-                        const echoName = echoNames.get(destroyed.echoId) || `Echo ${destroyed.echoId.slice(0, 8)}`;
-                        return (
-                          <div key={index} style={{ color: 'orange', fontSize: '0.8rem' }}>
-                            {echoName} by {destroyed.by || 'collision'}
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                </div>
-              )}
-              
-              {current.collisions.length > 0 && (
-                <div style={{ marginBottom: '1rem' }}>
-                  <strong>Collisions ({current.collisions.length}):</strong>
-                  <div style={{ marginLeft: '1rem' }}>
-                    {current.collisions.map((collision, index) => (
-                      <div key={index} style={{ color: '#ffd93d', fontSize: '0.8rem' }}>
-                        {getBoardPosition(collision.row, collision.col)}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {current.shieldBlocks.length > 0 && (
-                <div style={{ marginBottom: '1rem' }}>
-                  <strong>Shield Blocks ({current.shieldBlocks.length}):</strong>
-                  <div style={{ marginLeft: '1rem' }}>
-                    {current.shieldBlocks.map((shieldBlock, index) => (
-                      <div key={index} style={{ color: '#4CAF50', fontSize: '0.8rem' }}>
-                        {getBoardPosition(shieldBlock.row, shieldBlock.col)} → {getDirectionName(shieldBlock.projectileDirection)}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {state.turnHistory.length > 0 && (
-                <div style={{ marginBottom: '1rem' }}>
-                  <strong>Turn History ({state.turnHistory.length} turns):</strong>
-                  <div style={{ marginLeft: '1rem', maxHeight: '300px', overflowY: 'auto' }}>
-                    {state.turnHistory.slice().reverse().map((entry, _index) => (
-                      <div key={entry.turnNumber} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: '#333', borderRadius: '4px', fontSize: '0.8rem' }}>
-                        <div style={{ fontWeight: 'bold', color: '#4CAF50' }}>Turn {entry.turnNumber}</div>
-                        <div><strong>Scores:</strong> P1: {entry.scores.player1} | P2: {entry.scores.player2}</div>
-                        <div><strong>Echoes:</strong> P1: {entry.player1Echoes.length} | P2: {entry.player2Echoes.length}</div>
-                        {entry.destroyedEchoes.length > 0 && (
-                          <div><strong>Destroyed:</strong> {entry.destroyedEchoes.length} echoes</div>
-                        )}
-                        {entry.destroyedProjectiles && entry.destroyedProjectiles.length > 0 && (
-                          <div><strong>Destroyed Projectiles:</strong> {entry.destroyedProjectiles.length} projectiles</div>
-                        )}
-                        {entry.collisions.length > 0 && (
-                          <div><strong>Collisions:</strong> {entry.collisions.length} events</div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
         
@@ -1677,46 +1783,76 @@ const GamePage: React.FC = () => {
             </div>
           )}
           {/* Home button */}
-          <button
-            onClick={handleLeaveGame}
-            style={{
-              position: 'absolute',
-              top: 20,
-              left: 20,
-              background: 'linear-gradient(145deg, #333, #444)',
-              color: 'white',
-              border: '2px solid #666',
-              padding: '10px 20px',
-              fontSize: '1rem',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              fontFamily: 'Orbitron, monospace',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
-              zIndex: 1000
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
-              e.currentTarget.style.borderColor = '#2196F3';
-              e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.textShadow = '0 0 8px #2196F3';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(145deg, #333, #444)';
-              e.currentTarget.style.borderColor = '#666';
-              e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.textShadow = 'none';
-            }}
-          >
-            Home
-          </button>
+          {isMobile ? (
+            <button
+              onClick={handleLeaveGame}
+              style={{
+                position: 'absolute',
+                top: 4,
+                left: 4,
+                width: 28,
+                height: 28,
+                background: 'linear-gradient(145deg, #333, #444)',
+                color: 'white',
+                border: '2px solid #666',
+                borderRadius: '50%',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontFamily: 'Orbitron, monospace',
+                fontSize: 18,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+                zIndex: 1000
+              }}
+              aria-label="Home"
+            >
+              🏠
+            </button>
+          ) : (
+            <button
+              onClick={handleLeaveGame}
+              style={{
+                position: 'absolute',
+                top: 20,
+                left: 20,
+                background: 'linear-gradient(145deg, #333, #444)',
+                color: 'white',
+                border: '2px solid #666',
+                padding: '10px 20px',
+                fontSize: '1rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontFamily: 'Orbitron, monospace',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+                zIndex: 1000
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
+                e.currentTarget.style.borderColor = '#2196F3';
+                e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.textShadow = '0 0 8px #2196F3';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(145deg, #333, #444)';
+                e.currentTarget.style.borderColor = '#666';
+                e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.textShadow = 'none';
+              }}
+            >
+              Home
+            </button>
+          )}
           
           {/* Mode indicator for debugging/clarity */}
+          {!isMobile && (
           <div style={{ position: 'absolute', top: 10, right: 10, background: '#222', color: '#fff', padding: '6px 16px', borderRadius: 8, zIndex: 1000, opacity: 0.85, fontWeight: 600 }}>
             {gameMode === 'ai' && 'AI vs Human Mode'}
             {gameMode === 'hotseat' && 'Hotseat Mode'}
@@ -1724,7 +1860,8 @@ const GamePage: React.FC = () => {
             {gameMode === 'training' && 'AI Training Mode'}
             {!['ai', 'hotseat', 'tournament', 'training'].includes(gameMode) && `Mode: ${gameMode}`}
           </div>
-          
+        )}
+
           {/* Main game content - centered container */}
           <div style={{ 
             display: 'flex', 
@@ -1906,53 +2043,86 @@ const GamePage: React.FC = () => {
           </div>
         )}
         {/* Home button */}
-        <button
-          onClick={handleLeaveGame}
-          style={{
-            position: 'absolute',
-            top: 20,
-            left: 20,
-            background: 'linear-gradient(145deg, #333, #444)',
-            color: 'white',
-            border: '2px solid #666',
-            padding: '10px 20px',
-            fontSize: '1rem',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            fontFamily: 'Orbitron, monospace',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
-            zIndex: 1000
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
-            e.currentTarget.style.borderColor = '#2196F3';
-            e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.textShadow = '0 0 8px #2196F3';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'linear-gradient(145deg, #333, #444)';
-            e.currentTarget.style.borderColor = '#666';
-            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.textShadow = 'none';
-          }}
-        >
-          Home
-        </button>
+        {isMobile ? (
+          <button
+            onClick={handleLeaveGame}
+            style={{
+              position: 'absolute',
+              top: 4,
+              left: 4,
+              width: 28,
+              height: 28,
+              background: 'linear-gradient(145deg, #333, #444)',
+              color: 'white',
+              border: '2px solid #666',
+              borderRadius: '50%',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontFamily: 'Orbitron, monospace',
+              fontSize: 18,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 0,
+              zIndex: 1000
+            }}
+            aria-label="Home"
+          >
+            🏠
+          </button>
+        ) : (
+          <button
+            onClick={handleLeaveGame}
+            style={{
+              position: 'absolute',
+              top: 20,
+              left: 20,
+              background: 'linear-gradient(145deg, #333, #444)',
+              color: 'white',
+              border: '2px solid #666',
+              padding: '10px 20px',
+              fontSize: '1rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontFamily: 'Orbitron, monospace',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+              zIndex: 1000
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
+              e.currentTarget.style.borderColor = '#2196F3';
+              e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.textShadow = '0 0 8px #2196F3';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(145deg, #333, #444)';
+              e.currentTarget.style.borderColor = '#666';
+              e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.textShadow = 'none';
+            }}
+          >
+            Home
+          </button>
+        )}
         
-        {/* Mode indicator for debugging/clarity */}
-        <div style={{ position: 'absolute', top: 10, right: 10, background: '#222', color: '#fff', padding: '6px 16px', borderRadius: 8, zIndex: 1000, opacity: 0.85, fontWeight: 600 }}>
-          {gameMode === 'ai' && 'AI vs Human Mode'}
-          {gameMode === 'hotseat' && 'Hotseat Mode'}
-          {gameMode === 'tournament' && 'Tournament Mode'}
-          {gameMode === 'training' && 'AI Training Mode'}
-          {!['ai', 'hotseat', 'tournament', 'training'].includes(gameMode) && `Mode: ${gameMode}`}
-        </div>
+        {/* Mode indicator for debugging/clarity - hidden on mobile */}
+        {!isMobile && (
+          <div style={{ position: 'absolute', top: 10, right: 10, background: '#222', color: '#fff', padding: '6px 16px', borderRadius: 8, zIndex: 1000, opacity: 0.85, fontWeight: 600 }}>
+            {gameMode === 'ai' && 'AI vs Human Mode'}
+            {gameMode === 'hotseat' && 'Hotseat Mode'}
+            {gameMode === 'tournament' && 'Tournament Mode'}
+            {gameMode === 'training' && 'AI Training Mode'}
+            {!['ai', 'hotseat', 'tournament', 'training'].includes(gameMode) && `Mode: ${gameMode}`}
+            <br />
+            SelectionMode: {selectionMode} | PlayerEchoes: {playerEchoes.length}
+          </div>
+        )}
         
         {/* Main game content - centered container */}
         <div style={{ 
@@ -1961,29 +2131,69 @@ const GamePage: React.FC = () => {
           alignItems: 'center', 
           maxWidth: '100%',
           margin: '0 auto',
+          marginTop: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '-30px' : 0,
+          paddingTop: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? 0 : 0,
           transform: `scale(${layoutScale})`,
           transformOrigin: 'center top',
           minHeight: layoutScale < 1 ? `${100 / layoutScale}vh` : 'auto'
         }}>
           
           {/* Game info panels - centered */}
-          <div style={{ width: '100%', maxWidth: getBoardWidth(), marginBottom: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, paddingLeft: gameMode === 'multiplayer' ? 30 : 0 }}>
+          <div style={{ 
+            width: '100%', 
+            maxWidth: getBoardWidth(), 
+            marginBottom: '1rem',
+            paddingLeft: isMobile && gameMode !== 'multiplayer' ? 32 : 0,
+            paddingTop: isMobile ? 10 : 0
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              marginBottom: 8, 
+              paddingLeft: gameMode === 'multiplayer' ? 30 : 0 
+            }}
+              className={isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? 'scoreboard-mobile' : ''}>
               {gameMode === 'multiplayer' ? (
                 <>
-                  <div style={{ color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'left', fontSize: 28 }}>{playerNames.player1}: <b>{state.scores.player1}</b></div>
-                  <div style={{ color: 'blue', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'right', fontSize: 28 }}>{playerNames.player2}: <b>{state.scores.player2}</b></div>
+                  <div style={{ 
+                    color: '#ff9800', 
+                    fontWeight: 'bold', 
+                    textShadow: '0 0 1px #fff', 
+                    textAlign: 'left', 
+                    fontSize: isMobile ? 16 : 28 
+                  }}>{playerNames.player1}: <b>{state.scores.player1}</b></div>
+                  <div style={{ 
+                    color: 'blue', 
+                    fontWeight: 'bold', 
+                    textShadow: '0 0 1px #fff', 
+                    textAlign: 'right', 
+                    fontSize: isMobile ? 16 : 28 
+                  }}>{playerNames.player2}: <b>{state.scores.player2}</b></div>
                 </>
               ) : (
                 <>
-                  <div style={{ color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'left', fontSize: 28 }}>Player 1 (Orange): <b>{state.scores.player1}</b></div>
-                  <div style={{ color: 'blue', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'right', fontSize: 28 }}>Player 2 (Blue): <b>{state.scores.player2}</b></div>
+                  <div style={{ 
+                    color: '#ff9800', 
+                    fontWeight: 'bold', 
+                    textShadow: '0 0 1px #fff', 
+                    textAlign: 'left', 
+                    fontSize: isMobile ? 16 : 28 
+                  }}>Player 1{isMobile ? '' : ' (Orange)'}: <b>{state.scores.player1}</b></div>
+                  <div style={{ 
+                    color: 'blue', 
+                    fontWeight: 'bold', 
+                    textShadow: '0 0 1px #fff', 
+                    textAlign: 'right', 
+                    fontSize: isMobile ? 16 : 28 
+                  }}>Player 2{isMobile ? '' : ' (Blue)'}: <b>{state.scores.player2}</b></div>
                 </>
               )}
             </div>
             {/* Remove Current Turn title in multiplayer mode */}
             {gameMode !== 'multiplayer' && (
-              <div style={{ textAlign: 'center', marginBottom: 0 }}>
+              <div style={{ textAlign: 'center', marginBottom: 0 }}
+                className={isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? 'turn-title-mobile' : ''}>
                 <h2 style={{ color: currentPlayer === 'player1' ? '#ff9800' : 'blue', textShadow: '0 0 1px #fff', margin: 0, fontSize: 28, textDecoration: 'underline' }}>
                   Current Turn: {currentPlayer === 'player1' ? 'Player 1 (Orange)' : 'Player 2 (Blue)'}
                 </h2>
@@ -1992,7 +2202,12 @@ const GamePage: React.FC = () => {
           </div>
           
           {/* Game board and controls - centered */}
-          <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            width: '100%',
+            marginTop: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '-20px' : 0
+          }}>
             {state.pendingEcho ? (
               <div style={{ position: 'relative' }}>
                 <GameInfoPanel
@@ -2017,13 +2232,15 @@ const GamePage: React.FC = () => {
                   replayStates={[]}
                   turnHistory={state.turnHistory}
                 />
-                <EchoSelection 
-                  currentPlayer={currentPlayer}
-                  existingEchoes={state.echoes}
-                  onNewEcho={handleNewEcho}
-                  onExtendEcho={handleExtendEcho}
-                  disabled={gameMode === 'multiplayer' && waitingForOpponent}
-                />
+                {!(gameMode === 'multiplayer' && waitingForOpponent) && (
+                  <EchoSelection 
+                    currentPlayer={currentPlayer}
+                    existingEchoes={state.echoes}
+                    onNewEcho={handleNewEcho}
+                    onExtendEcho={handleExtendEcho}
+                    disabled={gameMode === 'multiplayer' && waitingForOpponent}
+                  />
+                )}
                 {gameMode === 'multiplayer' && waitingForOpponent && (
                   <div style={{
                     background: 'rgba(255, 193, 7, 0.2)',
@@ -2069,8 +2286,8 @@ const GamePage: React.FC = () => {
                         background: 'linear-gradient(145deg, #66620, #66640)',
                         color: 'white',
                         border: '2px solid #666',
-                        padding: '10px 20px',
-                        fontSize: '1rem',
+                        padding: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '4px 8px' : '10px 20px',
+                        fontSize: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '0.7rem' : '1rem',
                         borderRadius: '8px',
                         cursor: 'pointer',
                         fontWeight: 'bold',
@@ -2104,155 +2321,226 @@ const GamePage: React.FC = () => {
             )}
           </div>
           
-          {/* Reset button - centered */}
-          <div style={{ textAlign: 'center', marginTop: '1rem', marginBottom: '1rem' }}>
-            <button 
-              onClick={handleReset}
-              style={{
-                position: 'relative',
-                background: 'linear-gradient(145deg, #f4433620, #f4433640)',
-                color: 'white',
-                border: '2px solid #f44336',
-                padding: '10px 20px',
-                fontSize: '1rem',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                fontFamily: 'Orbitron, monospace',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
-                zIndex: 1000
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-                e.currentTarget.style.boxShadow = '0 4px 16px #f4433660, inset 0 1px 0 #f4433680';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                e.currentTarget.style.boxShadow = '0 0 8px #f4433640, inset 0 1px 0 #f4433660';
-              }}
-            >
-              🔄 Reset Game
-            </button>
-          </div>
+          {/* Reset button - centered - hidden in main game flow */}
+          {false && gameMode !== 'multiplayer' && (
+            <div style={{ 
+              textAlign: 'center', 
+              marginTop: (selectionMode === 'new-echo' && playerEchoes.length === 0) ? '-20px' : 
+                         (selectionMode === 'new-echo' || selectionMode === 'extend-echo') ? '0px' : 
+                         (isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '0.25rem' : '1rem'), 
+              marginBottom: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '0.5rem' : '1rem' 
+            }}>
+              <button 
+                onClick={handleReset}
+                style={{
+                  position: 'relative',
+                  background: 'linear-gradient(145deg, #f4433620, #f4433640)',
+                  color: 'white',
+                  border: '2px solid #f44336',
+                  padding: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '6px 12px' : '10px 20px',
+                  fontSize: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '0.8rem' : '1rem',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontFamily: 'Orbitron, monospace',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+                  zIndex: 1000
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px #f4433660, inset 0 1px 0 #f4433680';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                  e.currentTarget.style.boxShadow = '0 0 8px #f4433640, inset 0 1px 0 #f4433660';
+                }}
+              >
+                🔄 Reset
+              </button>
+              <button 
+                onClick={handleReplay}
+                style={{
+                  position: 'relative',
+                  background: 'linear-gradient(145deg, #2196F320, #2196F340)',
+                  color: 'white',
+                  border: '2px solid #2196F3',
+                  padding: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '6px 12px' : '10px 20px',
+                  fontSize: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '0.8rem' : '1rem',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontFamily: 'Orbitron, monospace',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 0 8px #2196F340, inset 0 1px 0 #2196F360',
+                  textShadow: '0 0 4px #2196F3',
+                  marginRight: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '4px' : '8px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px #2196F360, inset 0 1px 0 #2196F380';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                  e.currentTarget.style.boxShadow = '0 0 8px #2196F340, inset 0 1px 0 #2196F360';
+                }}
+              >
+                ▶️ Replay
+              </button>
+              <button 
+                onClick={handleNextTurn}
+                style={{
+                  position: 'relative',
+                  background: 'linear-gradient(145deg, #4CAF5020, #4CAF5040)',
+                  color: 'white',
+                  border: '2px solid #4CAF50',
+                  padding: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '6px 12px' : '10px 20px',
+                  fontSize: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '0.8rem' : '1rem',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontFamily: 'Orbitron, monospace',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 0 8px #4CAF5040, inset 0 1px 0 #4CAF5060',
+                  textShadow: '0 0 4px #4CAF50'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px #4CAF5060, inset 0 1px 0 #4CAF5080';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                  e.currentTarget.style.boxShadow = '0 0 8px #4CAF5040, inset 0 1px 0 #4CAF5060';
+                }}
+              >
+                ⏭️ Next
+              </button>
+            </div>
+          )}
           
           {/* Debug output - centered */}
-          <div style={{ 
-            background: '#222', 
-            color: '#eee', 
-            padding: '1rem', 
-            marginTop: '2rem', 
-            borderRadius: '8px', 
-            fontSize: '0.9rem',
-            width: '100%',
-            maxWidth: getBoardWidth()
-          }}>
-            <h3 style={{ margin: '0 0 1rem 0', color: '#4CAF50' }}>Debug Info - Turn {state.turnNumber}</h3>
-            
-            <div style={{ marginBottom: '1rem' }}>
-              <strong>Phase:</strong> {state.phase} | <strong>Current Player:</strong> {state.currentPlayer === 'player1' ? 'Player 1 (Orange)' : 'Player 2 (Blue)'}
-            </div>
-            
-            <div style={{ marginBottom: '1rem' }}>
-              <strong>Scores:</strong> Player 1: {state.scores.player1} | Player 2: {state.scores.player2}
-            </div>
-            
-            <div style={{ marginBottom: '1rem' }}>
-              <strong>Echoes ({state.echoes.length}):</strong>
-              {state.echoes.length === 0 ? (
-                <div style={{ color: '#888', fontStyle: 'italic' }}>No echoes</div>
-              ) : (
-                <div style={{ marginLeft: '1rem' }}>
-                  {(() => {
-                    const echoNames = generateEchoNames(state.echoes);
-                    return state.echoes.map((echo, index) => (
-                      <div key={echo.id} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: '#333', borderRadius: '4px' }}>
-                        <div style={{ color: echo.playerId === 'player1' ? 'orange' : '#4ecdc4', fontWeight: 'bold' }}>
-                          {echoNames.get(echo.id) || `Echo ${index + 1}`} ({echo.playerId === 'player1' ? 'Player 1' : 'Player 2'})
+          {gameMode !== 'multiplayer' && !(isMobile && (gameMode === 'hotseat' || gameMode === 'ai')) && (
+            <div style={{ 
+              background: '#222', 
+              color: '#eee', 
+              padding: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '4px 8px' : '1rem',
+              fontSize: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '0.7rem' : '0.9rem',
+              marginTop: '2rem', 
+              borderRadius: '8px', 
+              width: '100%',
+              maxWidth: getBoardWidth()
+            }}>
+              <h3 style={{ margin: '0 0 1rem 0', color: '#4CAF50' }}>Debug Info - Turn {state.turnNumber}</h3>
+              
+              <div style={{ marginBottom: '1rem' }}>
+                <strong>Phase:</strong> {state.phase} | <strong>Current Player:</strong> {state.currentPlayer === 'player1' ? 'Player 1 (Orange)' : 'Player 2 (Blue)'}
+              </div>
+              
+              <div style={{ marginBottom: '1rem' }}>
+                <strong>Scores:</strong> Player 1: {state.scores.player1} | Player 2: {state.scores.player2}
+              </div>
+              
+              <div style={{ marginBottom: '1rem' }}>
+                <strong>Echoes ({state.echoes.length}):</strong>
+                {state.echoes.length === 0 ? (
+                  <div style={{ color: '#888', fontStyle: 'italic' }}>No echoes</div>
+                ) : (
+                  <div style={{ marginLeft: '1rem' }}>
+                    {(() => {
+                      const echoNames = generateEchoNames(state.echoes);
+                      return state.echoes.map((echo, index) => (
+                        <div key={echo.id} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: '#333', borderRadius: '4px' }}>
+                          <div style={{ color: echo.playerId === 'player1' ? 'orange' : '#4ecdc4', fontWeight: 'bold' }}>
+                            {echoNames.get(echo.id) || `Echo ${index + 1}`} ({echo.playerId === 'player1' ? 'Player 1' : 'Player 2'})
+                          </div>
+                          <div><strong>Position:</strong> {getBoardPosition(echo.position.row, echo.position.col)} | <strong>Alive:</strong> {echo.alive ? 'Yes' : 'No'}</div>
+                          <div><strong>Actions ({echo.instructionList.length}):</strong></div>
+                          <div style={{ marginLeft: '1rem', fontSize: '0.8rem' }}>
+                            {(() => {
+                              let currentPos = { ...echo.position };
+                              return echo.instructionList.map((action, actionIndex) => {
+                                // Calculate position for this tick
+                                let tickPosition = currentPos;
+                                if (action.type === 'walk') {
+                                  tickPosition = { 
+                                    row: currentPos.row + action.direction.y, 
+                                    col: currentPos.col + action.direction.x 
+                                  };
+                                } else if (action.type === 'dash') {
+                                  tickPosition = { 
+                                    row: currentPos.row + action.direction.y * 2, 
+                                    col: currentPos.col + action.direction.x * 2 
+                                  };
+                                }
+                                
+                                // Update current position for next iteration
+                                if (action.type === 'walk' || action.type === 'dash') {
+                                  currentPos = tickPosition;
+                                }
+                                
+                                return (
+                                  <div key={actionIndex} style={{ color: '#ccc' }}>
+                                    Tick {action.tick}: {action.type.toUpperCase()} ({getDirectionName(action.direction)}) [Cost: {action.cost}] at {getBoardPosition(tickPosition.row, tickPosition.col)}
+                                  </div>
+                                );
+                              });
+                            })()}
+                          </div>
                         </div>
-                        <div><strong>Position:</strong> {getBoardPosition(echo.position.row, echo.position.col)} | <strong>Alive:</strong> {echo.alive ? 'Yes' : 'No'}</div>
-                        <div><strong>Actions ({echo.instructionList.length}):</strong></div>
-                        <div style={{ marginLeft: '1rem', fontSize: '0.8rem' }}>
-                          {(() => {
-                            let currentPos = { ...echo.position };
-                            return echo.instructionList.map((action, actionIndex) => {
-                              // Calculate position for this tick
-                              let tickPosition = currentPos;
-                              if (action.type === 'walk') {
-                                tickPosition = { 
-                                  row: currentPos.row + action.direction.y, 
-                                  col: currentPos.col + action.direction.x 
-                                };
-                              } else if (action.type === 'dash') {
-                                tickPosition = { 
-                                  row: currentPos.row + action.direction.y * 2, 
-                                  col: currentPos.col + action.direction.x * 2 
-                                };
-                              }
-                              
-                              // Update current position for next iteration
-                              if (action.type === 'walk' || action.type === 'dash') {
-                                currentPos = tickPosition;
-                              }
-                              
-                              return (
-                                <div key={actionIndex} style={{ color: '#ccc' }}>
-                                  Tick {action.tick}: {action.type.toUpperCase()} ({getDirectionName(action.direction)}) [Cost: {action.cost}] at {getBoardPosition(tickPosition.row, tickPosition.col)}
-                                </div>
-                              );
-                            });
-                          })()}
-                        </div>
+                      ));
+                    })()}
+                  </div>
+                )}
+              </div>
+              
+              {state.pendingEcho && (
+                <div style={{ marginBottom: '1rem' }}>
+                  <strong>Pending Echo:</strong>
+                  <div style={{ marginLeft: '1rem', padding: '0.5rem', background: '#333', borderRadius: '4px' }}>
+                    <div style={{ color: state.pendingEcho.playerId === 'player1' ? 'orange' : '#4ecdc4', fontWeight: 'bold' }}>
+                      {state.pendingEcho.playerId === 'player1' ? 'Player 1' : 'Player 2'} - {state.pendingEcho.actionPoints} Action Points
+                    </div>
+                    <div><strong>Position:</strong> {getBoardPosition(state.pendingEcho.position.row, state.pendingEcho.position.col)}</div>
+                    <div><strong>Actions:</strong> {state.pendingEcho.instructionList.length}</div>
+                  </div>
+                </div>
+              )}
+              
+              <div style={{ fontSize: '0.8rem', color: '#888' }}>
+                <strong>Submitted Players:</strong> {state.submittedPlayers.join(', ') || 'None'}
+              </div>
+              
+              {state.turnHistory.length > 0 && (
+                <div style={{ marginTop: '1rem' }}>
+                  <strong>Turn History ({state.turnHistory.length} turns):</strong>
+                  <div style={{ marginLeft: '1rem', maxHeight: '300px', overflowY: 'auto' }}>
+                    {state.turnHistory.slice().reverse().map((entry, _index) => (
+                      <div key={entry.turnNumber} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: '#333', borderRadius: '4px', fontSize: '0.8rem' }}>
+                        <div style={{ fontWeight: 'bold', color: '#4CAF50' }}>Turn {entry.turnNumber}</div>
+                        <div><strong>Scores:</strong> P1: {entry.scores.player1} | P2: {entry.scores.player2}</div>
+                        <div><strong>Echoes:</strong> P1: {entry.player1Echoes.length} | P2: {entry.player2Echoes.length}</div>
+                        {entry.destroyedEchoes.length > 0 && (
+                          <div><strong>Destroyed:</strong> {entry.destroyedEchoes.length} echoes</div>
+                        )}
+                        {entry.destroyedProjectiles && entry.destroyedProjectiles.length > 0 && (
+                          <div><strong>Destroyed Projectiles:</strong> {entry.destroyedProjectiles.length} projectiles</div>
+                        )}
+                        {entry.collisions.length > 0 && (
+                          <div><strong>Collisions:</strong> {entry.collisions.length} events</div>
+                        )}
                       </div>
-                    ));
-                  })()}
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
-            
-            {state.pendingEcho && (
-              <div style={{ marginBottom: '1rem' }}>
-                <strong>Pending Echo:</strong>
-                <div style={{ marginLeft: '1rem', padding: '0.5rem', background: '#333', borderRadius: '4px' }}>
-                  <div style={{ color: state.pendingEcho.playerId === 'player1' ? 'orange' : '#4ecdc4', fontWeight: 'bold' }}>
-                    {state.pendingEcho.playerId === 'player1' ? 'Player 1' : 'Player 2'} - {state.pendingEcho.actionPoints} Action Points
-                  </div>
-                  <div><strong>Position:</strong> {getBoardPosition(state.pendingEcho.position.row, state.pendingEcho.position.col)}</div>
-                  <div><strong>Actions:</strong> {state.pendingEcho.instructionList.length}</div>
-                </div>
-              </div>
-            )}
-            
-            <div style={{ fontSize: '0.8rem', color: '#888' }}>
-              <strong>Submitted Players:</strong> {state.submittedPlayers.join(', ') || 'None'}
-            </div>
-            
-            {state.turnHistory.length > 0 && (
-              <div style={{ marginTop: '1rem' }}>
-                <strong>Turn History ({state.turnHistory.length} turns):</strong>
-                <div style={{ marginLeft: '1rem', maxHeight: '300px', overflowY: 'auto' }}>
-                  {state.turnHistory.slice().reverse().map((entry, _index) => (
-                    <div key={entry.turnNumber} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: '#333', borderRadius: '4px', fontSize: '0.8rem' }}>
-                      <div style={{ fontWeight: 'bold', color: '#4CAF50' }}>Turn {entry.turnNumber}</div>
-                      <div><strong>Scores:</strong> P1: {entry.scores.player1} | P2: {entry.scores.player2}</div>
-                      <div><strong>Echoes:</strong> P1: {entry.player1Echoes.length} | P2: {entry.player2Echoes.length}</div>
-                      {entry.destroyedEchoes.length > 0 && (
-                        <div><strong>Destroyed:</strong> {entry.destroyedEchoes.length} echoes</div>
-                      )}
-                      {entry.destroyedProjectiles && entry.destroyedProjectiles.length > 0 && (
-                        <div><strong>Destroyed Projectiles:</strong> {entry.destroyedProjectiles.length} projectiles</div>
-                      )}
-                      {entry.collisions.length > 0 && (
-                        <div><strong>Collisions:</strong> {entry.collisions.length} events</div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
       

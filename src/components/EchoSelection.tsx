@@ -16,6 +16,8 @@ const EchoSelection: React.FC<EchoSelectionProps> = ({
   onExtendEcho,
   disabled = false
 }) => {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+  
   // Filter to only show current player's alive echoes
   const playerEchoes = existingEchoes.filter(
     echo => echo.playerId === currentPlayer && echo.alive
@@ -27,32 +29,43 @@ const EchoSelection: React.FC<EchoSelectionProps> = ({
   return (
     <div style={{ 
       position: 'absolute',
-      right: 'calc(100% + 60px)',
-      top: '64px',
+      ...(isMobile ? {
+        left: '50%',
+        transform: 'translateX(-50%)',
+        top: 'calc(100% + 20px)',
+        width: '95vw',
+        maxWidth: '430px',
+        height: 'auto',
+        maxHeight: '60vh'
+      } : {
+        right: 'calc(100% + 60px)',
+        top: '64px',
+        width: '430px',
+        height: '640px'
+      }),
       color: 'white', 
       background: '#222', 
-      padding: '1rem', 
+      padding: isMobile ? '0.5rem' : '1rem', 
       borderRadius: 12, 
-      width: '430px', 
-      height: '640px', 
       minWidth: 240, 
-      maxWidth: 430, 
       overflowY: 'auto',
-      zIndex: 10
+      zIndex: 10,
+      fontSize: isMobile ? '0.8rem' : '1rem'
     }}>
-      <h2>Choose Echo Action</h2>
+      <h2 style={{ fontSize: isMobile ? '1.2rem' : '1.5rem' }}>Choose Echo Action</h2>
       <p style={{
-        marginBottom: '2rem',
+        marginBottom: isMobile ? '1rem' : '2rem',
         color: currentPlayer === 'player1' ? '#ff9800' : 'blue',
         fontWeight: 'bold',
-        textShadow: '0 0 1px #fff'
+        textShadow: '0 0 1px #fff',
+        fontSize: isMobile ? '0.9rem' : '1rem'
       }}>
         {currentPlayer === 'player1' ? 'Player 1 (Orange)' : 'Player 2 (Blue)'}'s Turn
       </p>
       
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '0.5rem' : '1rem' }}>
         {canCreateNewEcho && (
-          <button
+                      <button
             onClick={disabled ? undefined : onNewEcho}
             disabled={disabled}
             style={{
@@ -62,8 +75,8 @@ const EchoSelection: React.FC<EchoSelectionProps> = ({
                 : 'linear-gradient(145deg, #4CAF5020, #4CAF5040)',
               color: disabled ? '#888' : 'white',
               border: `2px solid ${disabled ? '#666' : '#4CAF50'}`,
-              padding: '1rem 2rem',
-              fontSize: '1.2rem',
+              padding: isMobile ? '0.75rem 1.5rem' : '1rem 2rem',
+              fontSize: isMobile ? '1rem' : '1.2rem',
               borderRadius: '8px',
               cursor: disabled ? 'not-allowed' : 'pointer',
               fontWeight: 'bold',
@@ -78,7 +91,7 @@ const EchoSelection: React.FC<EchoSelectionProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '8px',
+              gap: isMobile ? '4px' : '8px',
               opacity: disabled ? 0.6 : 1
             }}
             onMouseEnter={disabled ? undefined : (e) => {
@@ -90,7 +103,7 @@ const EchoSelection: React.FC<EchoSelectionProps> = ({
               e.currentTarget.style.boxShadow = '0 0 8px #4CAF5040, inset 0 1px 0 #4CAF5060';
             }}
           >
-            <span style={{ fontSize: '1.4rem' }}>✨</span>
+            <span style={{ fontSize: isMobile ? '1rem' : '1.4rem' }}>✨</span>
             <span>Create New Echo (5 Action Points)</span>
           </button>
         )}
@@ -106,8 +119,8 @@ const EchoSelection: React.FC<EchoSelectionProps> = ({
                 : 'linear-gradient(145deg, #2196F320, #2196F340)',
               color: disabled ? '#888' : 'white',
               border: `2px solid ${disabled ? '#666' : '#2196F3'}`,
-              padding: '1rem 2rem',
-              fontSize: '1.2rem',
+              padding: isMobile ? '0.75rem 1.5rem' : '1rem 2rem',
+              fontSize: isMobile ? '1rem' : '1.2rem',
               borderRadius: '8px',
               cursor: disabled ? 'not-allowed' : 'pointer',
               fontWeight: 'bold',
@@ -122,7 +135,7 @@ const EchoSelection: React.FC<EchoSelectionProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '8px',
+              gap: isMobile ? '4px' : '8px',
               opacity: disabled ? 0.6 : 1
             }}
             onMouseEnter={disabled ? undefined : (e) => {
@@ -134,7 +147,7 @@ const EchoSelection: React.FC<EchoSelectionProps> = ({
               e.currentTarget.style.boxShadow = '0 0 8px #2196F340, inset 0 1px 0 #2196F360';
             }}
           >
-            <span style={{ fontSize: '1.4rem' }}>⚡</span>
+            <span style={{ fontSize: isMobile ? '1rem' : '1.4rem' }}>⚡</span>
             <span>Extend Existing Echo (3 Action Points)</span>
           </button>
         )}
@@ -142,8 +155,8 @@ const EchoSelection: React.FC<EchoSelectionProps> = ({
       
       {hasExistingEchoes && (
         <p style={{ 
-          marginTop: '1rem', 
-          fontSize: '0.9rem', 
+          marginTop: isMobile ? '0.5rem' : '1rem', 
+          fontSize: isMobile ? '0.7rem' : '0.9rem', 
           color: '#ccc',
           fontStyle: 'italic'
         }}>

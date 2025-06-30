@@ -254,21 +254,34 @@ const GameInfoPanel: React.FC<GameInfoPanelProps> = ({
     return events;
   };
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+
   return (
     <div style={{ 
       position: 'absolute',
-      left: 'calc(100% + 60px)',
-      top: '64px',
+      ...(isMobile && phase === 'replay' ? {
+        left: '50%',
+        transform: 'translateX(-50%)',
+        top: 'calc(100% + 60px)',
+        width: '95vw',
+        maxWidth: '430px',
+        height: 'auto',
+        maxHeight: '40vh'
+      } : {
+        left: 'calc(100% + 60px)',
+        top: '64px',
+        width: '430px',
+        height: '640px'
+      }),
       color: 'white', 
       background: '#222', 
-      padding: '1rem', 
+      padding: isMobile && phase === 'replay' ? '0.5rem' : '1rem', 
       borderRadius: 12, 
-      width: '430px', 
-      height: '640px', 
       minWidth: 240, 
       maxWidth: 430, 
       overflowY: 'auto',
-      zIndex: 10
+      zIndex: 10,
+      fontSize: isMobile && phase === 'replay' ? '0.8rem' : '1rem'
     }}>
       {/* Turn Number and Phase */}
       <div style={{ marginBottom: '1rem' }}>
