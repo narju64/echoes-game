@@ -13,7 +13,9 @@ class SocketService {
       return this.socket;
     }
 
-    this.socket = io(SOCKET_URL);
+    this.socket = io(SOCKET_URL, {
+      transports: ['websocket'],
+    });
     
     this.socket.on('connect', () => {
       console.log('Connected to server');

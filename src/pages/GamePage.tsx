@@ -942,6 +942,34 @@ const GamePage: React.FC = () => {
     return () => {};
   }, [gameMode, navigate, searchParams]);
 
+  // Add at the top, after other useState declarations
+  const [isReconnecting, setIsReconnecting] = useState(false);
+
+  // Add this useEffect after multiplayer socket event useEffect
+  useEffect(() => {
+    if (gameMode === 'multiplayer') {
+      const socket = socketService.getSocket();
+      if (!socket) return;
+
+      const handleDisconnect = () => {
+        setIsReconnecting(true);
+      };
+      const handleReconnect = () => {
+        setIsReconnecting(false);
+        // Attempt to rejoin the room
+        if (roomId && playerName && playerId) {
+          socket.emit('joinRoom', { roomId, playerName, isHost, playerId });
+        }
+      };
+      socket.on('disconnect', handleDisconnect);
+      socket.on('reconnect', handleReconnect);
+      return () => {
+        socket.off('disconnect', handleDisconnect);
+        socket.off('reconnect', handleReconnect);
+      };
+    }
+  }, [gameMode, roomId, playerName, playerId, isHost]);
+
   // Find unoccupied home row tiles
   const highlightedTiles = Array.from({ length: 8 })
     .map((_, col) => ({ row: homeRow, col }))
@@ -1236,6 +1264,24 @@ const GamePage: React.FC = () => {
           padding: '20px',
           boxSizing: 'border-box'
         }}>
+          {isReconnecting && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              background: '#ffc107',
+              color: '#222',
+              textAlign: 'center',
+              padding: '0.5rem',
+              zIndex: 2000,
+              fontWeight: 'bold',
+              letterSpacing: '1px',
+              boxShadow: '0 2px 8px #0002'
+            }}>
+              Reconnecting to game server...
+            </div>
+          )}
           {/* Home button */}
           <button
             onClick={handleLeaveGame}
@@ -1582,6 +1628,24 @@ const GamePage: React.FC = () => {
           padding: '20px',
           boxSizing: 'border-box'
         }}>
+          {isReconnecting && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              background: '#ffc107',
+              color: '#222',
+              textAlign: 'center',
+              padding: '0.5rem',
+              zIndex: 2000,
+              fontWeight: 'bold',
+              letterSpacing: '1px',
+              boxShadow: '0 2px 8px #0002'
+            }}>
+              Reconnecting to game server...
+            </div>
+          )}
           {/* Home button */}
           <button
             onClick={handleLeaveGame}
@@ -1793,6 +1857,24 @@ const GamePage: React.FC = () => {
         padding: '20px',
         boxSizing: 'border-box'
       }}>
+        {isReconnecting && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            background: '#ffc107',
+            color: '#222',
+            textAlign: 'center',
+            padding: '0.5rem',
+            zIndex: 2000,
+            fontWeight: 'bold',
+            letterSpacing: '1px',
+            boxShadow: '0 2px 8px #0002'
+          }}>
+            Reconnecting to game server...
+          </div>
+        )}
         {/* Home button */}
         <button
           onClick={handleLeaveGame}
