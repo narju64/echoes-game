@@ -137,6 +137,14 @@ const LobbyPage: React.FC = () => {
         
         setPlayers(updatedPlayers);
         
+        // Store both player names in sessionStorage for multiplayer display
+        const p1 = updatedPlayers.find((p: Player) => p.gamePlayerId === 'player1');
+        const p2 = updatedPlayers.find((p: Player) => p.gamePlayerId === 'player2');
+        if (roomId && p1 && p2) {
+          sessionStorage.setItem(`room_${roomId}_player1_name`, p1.name);
+          sessionStorage.setItem(`room_${roomId}_player2_name`, p2.name);
+        }
+        
         // Auto-start game when second player joins
         if (updatedPlayers.length === 2) {
           setTimeout(() => {
@@ -163,6 +171,14 @@ const LobbyPage: React.FC = () => {
         }
         
         setPlayers(updatedPlayers);
+        
+        // Store both player names in sessionStorage for multiplayer display
+        const p1 = updatedPlayers.find((p: Player) => p.gamePlayerId === 'player1');
+        const p2 = updatedPlayers.find((p: Player) => p.gamePlayerId === 'player2');
+        if (roomId && p1 && p2) {
+          sessionStorage.setItem(`room_${roomId}_player1_name`, p1.name);
+          sessionStorage.setItem(`room_${roomId}_player2_name`, p2.name);
+        }
         
         // Auto-start game when second player joins
         if (updatedPlayers.length === 2) {
@@ -197,6 +213,14 @@ const LobbyPage: React.FC = () => {
         
         setPlayers(updatedPlayers);
         
+        // Store both player names in sessionStorage for multiplayer display
+        const p1 = updatedPlayers.find((p: Player) => p.gamePlayerId === 'player1');
+        const p2 = updatedPlayers.find((p: Player) => p.gamePlayerId === 'player2');
+        if (roomId && p1 && p2) {
+          sessionStorage.setItem(`room_${roomId}_player1_name`, p1.name);
+          sessionStorage.setItem(`room_${roomId}_player2_name`, p2.name);
+        }
+        
         // Auto-start game when both players are present
         if (updatedPlayers.length === 2) {
           setTimeout(() => {
@@ -229,6 +253,13 @@ const LobbyPage: React.FC = () => {
     const handleGameStart = () => {
       console.log('handleGameStart called with playerId:', playerId);
       setGameStarted(true);
+      // Store both player names in sessionStorage for multiplayer display
+      const p1 = players.find((p: Player) => p.gamePlayerId === 'player1');
+      const p2 = players.find((p: Player) => p.gamePlayerId === 'player2');
+      if (roomId && p1 && p2) {
+        sessionStorage.setItem(`room_${roomId}_player1_name`, p1.name);
+        sessionStorage.setItem(`room_${roomId}_player2_name`, p2.name);
+      }
       const currentPlayer = players.find((p: Player) => p.name === playerName);
       const gamePlayerIdParam = currentPlayer?.gamePlayerId ? `&gamePlayerId=${currentPlayer.gamePlayerId}` : '';
       const playerIdParam = playerId ? `&playerId=${playerId}` : '';

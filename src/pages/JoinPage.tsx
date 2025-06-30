@@ -320,6 +320,7 @@ const JoinPage: React.FC = () => {
                   className="menu-input"
                   placeholder="Enter your name"
                   disabled={isJoining}
+                  maxLength={12}
                 />
               </div>
 

@@ -251,6 +251,7 @@ const HostPage: React.FC = () => {
                 className="menu-input"
                 placeholder="Enter your name"
                 disabled={isCreating}
+                maxLength={12}
               />
             </div>
 

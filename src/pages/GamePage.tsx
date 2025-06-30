@@ -709,6 +709,24 @@ const GamePage: React.FC = () => {
   const playerName = searchParams.get('playerName');
   const isHost = searchParams.get('isHost') === 'true';
   
+  // --- Multiplayer player names state ---
+  const [playerNames, setPlayerNames] = useState<{ player1: string; player2: string }>({ player1: 'Player 1', player2: 'Player 2' });
+
+  // Set player names in multiplayer mode
+  useEffect(() => {
+    if (gameMode === 'multiplayer') {
+      // Try to get both player names from sessionStorage (set in Lobby/Host/Join)
+      const p1 = sessionStorage.getItem(`room_${roomId}_player1_name`);
+      const p2 = sessionStorage.getItem(`room_${roomId}_player2_name`);
+      if (p1 && p2) {
+        setPlayerNames({ player1: p1, player2: p2 });
+      } else if (playerName && gamePlayerId) {
+        // Fallback: set local player name, keep default for opponent
+        setPlayerNames(prev => ({ ...prev, [gamePlayerId]: playerName }));
+      }
+    }
+  }, [gameMode, roomId, playerName, gamePlayerId]);
+  
   const [state, dispatch] = useReducer(gameReducer, initialGameState) as [GameState, React.Dispatch<GameAction>];
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('choosing');
   const [layoutScale, setLayoutScale] = useState(1);
@@ -1345,15 +1363,27 @@ const GamePage: React.FC = () => {
             
             {/* Game info panels - centered */}
             <div style={{ width: '100%', maxWidth: getBoardWidth(), marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <div style={{ color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'left', fontSize: 22 }}>Player 1 (Orange): <b>{state.scores.player1}</b></div>
-                <div style={{ color: 'blue', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'right', fontSize: 22 }}>Player 2 (Blue): <b>{state.scores.player2}</b></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, paddingLeft: gameMode === 'multiplayer' ? 30 : 0 }}>
+                {gameMode === 'multiplayer' ? (
+                  <>
+                    <div style={{ color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'left', fontSize: 28 }}>{playerNames.player1}: <b>{state.scores.player1}</b></div>
+                    <div style={{ color: 'blue', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'right', fontSize: 28 }}>{playerNames.player2}: <b>{state.scores.player2}</b></div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'left', fontSize: 28 }}>Player 1 (Orange): <b>{state.scores.player1}</b></div>
+                    <div style={{ color: 'blue', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'right', fontSize: 28 }}>Player 2 (Blue): <b>{state.scores.player2}</b></div>
+                  </>
+                )}
               </div>
-              <div style={{ textAlign: 'center', marginBottom: 0 }}>
-                <h2 style={{ color: currentPlayer === 'player1' ? '#ff9800' : 'blue', textShadow: '0 0 1px #fff', margin: 0, fontSize: 28, textDecoration: 'underline' }}>
-                  Current Turn: {currentPlayer === 'player1' ? 'Player 1 (Orange)' : 'Player 2 (Blue)'}
-                </h2>
-              </div>
+              {/* Remove Current Turn title in multiplayer mode */}
+              {gameMode !== 'multiplayer' && (
+                <div style={{ textAlign: 'center', marginBottom: 0 }}>
+                  <h2 style={{ color: currentPlayer === 'player1' ? '#ff9800' : 'blue', textShadow: '0 0 1px #fff', margin: 0, fontSize: 28, textDecoration: 'underline' }}>
+                    Current Turn: {currentPlayer === 'player1' ? 'Player 1 (Orange)' : 'Player 2 (Blue)'}
+                  </h2>
+                </div>
+              )}
             </div>
             
             {/* Game board and controls - centered */}
@@ -1938,15 +1968,27 @@ const GamePage: React.FC = () => {
           
           {/* Game info panels - centered */}
           <div style={{ width: '100%', maxWidth: getBoardWidth(), marginBottom: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <div style={{ color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'left', fontSize: 22 }}>Player 1 (Orange): <b>{state.scores.player1}</b></div>
-              <div style={{ color: 'blue', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'right', fontSize: 22 }}>Player 2 (Blue): <b>{state.scores.player2}</b></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, paddingLeft: gameMode === 'multiplayer' ? 30 : 0 }}>
+              {gameMode === 'multiplayer' ? (
+                <>
+                  <div style={{ color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'left', fontSize: 28 }}>{playerNames.player1}: <b>{state.scores.player1}</b></div>
+                  <div style={{ color: 'blue', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'right', fontSize: 28 }}>{playerNames.player2}: <b>{state.scores.player2}</b></div>
+                </>
+              ) : (
+                <>
+                  <div style={{ color: '#ff9800', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'left', fontSize: 28 }}>Player 1 (Orange): <b>{state.scores.player1}</b></div>
+                  <div style={{ color: 'blue', fontWeight: 'bold', textShadow: '0 0 1px #fff', textAlign: 'right', fontSize: 28 }}>Player 2 (Blue): <b>{state.scores.player2}</b></div>
+                </>
+              )}
             </div>
-            <div style={{ textAlign: 'center', marginBottom: 0 }}>
-              <h2 style={{ color: currentPlayer === 'player1' ? '#ff9800' : 'blue', textShadow: '0 0 1px #fff', margin: 0, fontSize: 28, textDecoration: 'underline' }}>
-                Current Turn: {currentPlayer === 'player1' ? 'Player 1 (Orange)' : 'Player 2 (Blue)'}
-              </h2>
-            </div>
+            {/* Remove Current Turn title in multiplayer mode */}
+            {gameMode !== 'multiplayer' && (
+              <div style={{ textAlign: 'center', marginBottom: 0 }}>
+                <h2 style={{ color: currentPlayer === 'player1' ? '#ff9800' : 'blue', textShadow: '0 0 1px #fff', margin: 0, fontSize: 28, textDecoration: 'underline' }}>
+                  Current Turn: {currentPlayer === 'player1' ? 'Player 1 (Orange)' : 'Player 2 (Blue)'}
+                </h2>
+              </div>
+            )}
           </div>
           
           {/* Game board and controls - centered */}
