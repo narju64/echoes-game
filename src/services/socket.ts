@@ -2,7 +2,7 @@ import { io, Socket } from 'socket.io-client';
 
 const SOCKET_URL = import.meta.env.DEV 
   ? 'http://localhost:3000' 
-  : 'https://your-backend-url.com';
+  : 'https://echoesbackend.narju.net';
 
 class SocketService {
   private socket: Socket | null = null;
