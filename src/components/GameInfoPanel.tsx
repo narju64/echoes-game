@@ -262,7 +262,7 @@ const GameInfoPanel: React.FC<GameInfoPanelProps> = ({
       ...(isMobile && phase === 'replay' ? {
         left: '50%',
         transform: 'translateX(-50%)',
-        top: 'calc(100% + 60px)',
+        top: typeof window !== 'undefined' && window.innerWidth === 320 ? 'calc(100% + 20px)' : 'calc(100% + 60px)',
         width: '95vw',
         maxWidth: '430px',
         height: 'auto',
@@ -285,22 +285,30 @@ const GameInfoPanel: React.FC<GameInfoPanelProps> = ({
     }}>
       {/* Turn Number and Phase */}
       <div style={{ marginBottom: '1rem' }}>
-        <h2 style={{ margin: '0 0 0.5rem 0', color: '#4CAF50' }}>Turn {turnNumber}</h2>
-        <p style={{ margin: '0 0 0.5rem 0', color: '#ccc' }}>
-          {phase === 'input' ? 'Input Phase' : phase === 'replay' ? 'Replay Phase' : phase}
-        </p>
-        {phase === 'replay' && currentTick !== undefined && (
-          <p style={{ margin: '0 0 0.5rem 0', color: '#ccc' }}>Current Tick: {currentTick}</p>
+        {isMobile ? (
+          <p style={{ margin: '0 0 0.5rem 0', color: '#4CAF50', fontWeight: 600, fontSize: '0.8rem' }}>
+            Turn {turnNumber} ({phase === 'input' ? 'Input Phase' : phase === 'replay' ? 'Replay Phase' : phase}){phase === 'replay' && currentTick !== undefined ? ` Tick: ${currentTick}` : ''}
+          </p>
+        ) : (
+          <>
+            <h2 style={{ margin: '0 0 0.5rem 0', color: '#4CAF50' }}>Turn {turnNumber}</h2>
+            <p style={{ margin: '0 0 0.5rem 0', color: '#ccc' }}>
+              {phase === 'input' ? 'Input Phase' : phase === 'replay' ? 'Replay Phase' : phase}
+            </p>
+            {phase === 'replay' && currentTick !== undefined && (
+              <p style={{ margin: '0 0 0.5rem 0', color: '#ccc' }}>Current Tick: {currentTick}</p>
+            )}
+          </>
         )}
       </div>
 
       {/* Turn Event Log */}
       {(phase === 'replay' || (turnHistory && turnHistory.length > 0)) && (
         <div style={{ marginBottom: '1rem' }}>
-          <h3 style={{ margin: '0 0 0.5rem 0', color: '#4CAF50' }}>
+          <h3 style={{ margin: '0 0 0.5rem 0', color: '#4CAF50', fontSize: isMobile ? '0.8rem' : undefined }}>
             {phase === 'replay' ? 'Event Log' : `Event Log (Turn ${turnHistory && turnHistory.length > 0 ? turnHistory[turnHistory.length - 1].turnNumber : '?'})`}
           </h3>
-          <div style={{ fontSize: '0.9rem', lineHeight: '1.4' }}>
+          <div style={{ fontSize: isMobile ? '0.7rem' : '0.9rem', lineHeight: '1.4' }}>
             {generateEventLog().map((event, index) => {
               // Determine color based on event content
               let color = '#ccc'; // default color

@@ -36,17 +36,13 @@ interface BoardProps {
   echoes: Echo[];
   highlightedTiles?: { row: number; col: number }[];
   onTileClick?: (row: number, col: number) => void;
-  // For direction selection mode:
   origin?: { row: number; col: number };
   onDirectionSelect?: (dir: Direction) => void;
   projectiles?: ProjectilePreview[];
-  // For collision animations:
   collisions?: { row: number; col: number }[];
   shieldBlocks?: { row: number; col: number; projectileDirection: Direction }[];
-  // For ally previews:
   previewEchoes?: Echo[];
   previewProjectiles?: ProjectilePreview[];
-  fullWidth?: boolean;
 }
 
 // Helper functions for board position formatting
@@ -140,7 +136,7 @@ const EchoActionPopup: React.FC<{ echo: Echo; position: { row: number; col: numb
   );
 };
 
-const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClick, origin, onDirectionSelect, projectiles = [], collisions = [], shieldBlocks = [], previewEchoes = [], previewProjectiles = [], fullWidth = false }) => {
+const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClick, origin, onDirectionSelect, projectiles = [], collisions = [], shieldBlocks = [], previewEchoes = [], previewProjectiles = [] }) => {
   const [activeExplosions, setActiveExplosions] = React.useState<Set<string>>(new Set());
   const [activeShieldBlocks, setActiveShieldBlocks] = React.useState<Map<string, Direction>>(new Map());
   const [hoveredEcho, setHoveredEcho] = React.useState<Echo | null>(null);
@@ -158,6 +154,14 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
   // Get current responsive sizes
   const tileSize = getTileSize();
   const rowLabelWidth = getRowLabelWidth();
+
+  // Calculate total board width (8 tiles + 1 label column + padding)
+  const boardPixelWidth = (tileSize * 8) + rowLabelWidth + (windowSize.width <= 768 ? 16 : 32); // padding matches board container
+  // Calculate scale factor for mobile
+  let scale = 1;
+  if (windowSize.width <= 768 && boardPixelWidth > windowSize.width) {
+    scale = (windowSize.width - 8) / boardPixelWidth; // 8px margin
+  }
 
   // Helper to check if a tile is highlighted
   const isHighlighted = (row: number, col: number) =>
@@ -220,8 +224,28 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: fullWidth ? '95vw' : 'auto', paddingTop: 10 }}>
-      <div style={{ display: 'inline-block', background: 'black', padding: windowSize.width <= 768 ? 8 : 16, borderRadius: 12, position: 'relative' }}>
+    <div
+      className="game-board-responsive-container"
+      style={{
+        margin: '0 auto',
+        position: 'relative',
+        width: windowSize.width <= 400 ? '100vw' : 'auto',
+        display: 'flex',
+        justifyContent: 'center',
+      }}
+    >
+      <div
+        style={{
+          display: 'inline-block',
+          background: 'black',
+          padding: windowSize.width <= 768 ? 8 : 16,
+          borderRadius: 12,
+          position: 'relative',
+          transform: scale !== 1 ? `scale(${scale})` : undefined,
+          transformOrigin: 'top center',
+          height: windowSize.width === 320 ? '320px' : undefined,
+        }}
+      >
         {/* Column labels */}
         <div style={{ display: 'flex', marginBottom: 4 }}>
           <div style={{ width: rowLabelWidth }} /> {/* Empty cell for row label alignment */}
@@ -551,6 +575,15 @@ const Board: React.FC<BoardProps> = ({ echoes, highlightedTiles = [], onTileClic
           <EchoActionPopup echo={hoveredEcho} position={hoveredEcho.position} />
         )}
       </div>
+      <style>{`
+        @media (max-width: 400px) {
+          .game-board-responsive-container {
+            width: auto !important;
+            max-width: 100vw !important;
+            overflow-x: visible !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

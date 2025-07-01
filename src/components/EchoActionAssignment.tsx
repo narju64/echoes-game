@@ -55,7 +55,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({ action, onClick, disabled =
         background: disabled ? '#333' : selected ? `linear-gradient(145deg, ${color}40, ${color}60)` : `linear-gradient(145deg, ${color}20, ${color}40)`,
         color: disabled ? '#666' : 'white',
         border: `2px solid ${disabled ? '#444' : selected ? `${color}80` : color}`,
-        padding: isMobile ? '4px 6px' : '8px 10px',
+        padding: isMobile ? '2px 4px' : '8px 10px',
         borderRadius: '8px',
         cursor: disabled ? 'not-allowed' : 'pointer',
         fontSize: isMobile ? '0.6rem' : '0.7rem',
@@ -63,13 +63,15 @@ const ActionButton: React.FC<ActionButtonProps> = ({ action, onClick, disabled =
         fontFamily: 'Orbitron, monospace',
         textTransform: 'uppercase',
         letterSpacing: '0.5px',
-        minWidth: isMobile ? '50px' : '50px',
-        width: isMobile ? '70px' : '76px',
+        minWidth: isMobile ? '48px' : '50px',
+        width: isMobile ? '56px' : '76px',
+        maxWidth: isMobile ? '64px' : '90px',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         boxShadow: disabled ? 'none' : selected ? `0 0 16px ${color}80, inset 0 1px 0 ${color}90` : `0 0 8px ${color}40, inset 0 1px 0 ${color}60`,
         textShadow: disabled ? 'none' : selected ? `0 0 8px ${color}` : `0 0 4px ${color}`,
         overflow: 'hidden',
         transform: selected ? 'scale(1.05)' : 'scale(1)',
+        margin: isMobile ? '2px' : '0',
       }}
       onMouseEnter={(e) => {
         if (!disabled) {
@@ -101,11 +103,11 @@ const ActionButton: React.FC<ActionButtonProps> = ({ action, onClick, disabled =
       />
       
       {/* Content */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isMobile ? '2px' : '4px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isMobile ? '1px' : '4px' }}>
         <span style={{ fontSize: isMobile ? '0.9rem' : '1.2rem' }}>{icon}</span>
         <span style={{ fontSize: isMobile ? '0.6rem' : '0.7rem' }}>{action.label}</span>
         <span style={{ 
-          fontSize: isMobile ? '0.6rem' : '0.8rem', 
+          fontSize: isMobile ? '0.6rem' : '0.8rem',
           opacity: 0.8,
           background: disabled ? '#444' : `${color}40`,
           padding: isMobile ? '1px 4px' : '2px 6px',
@@ -116,7 +118,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({ action, onClick, disabled =
         </span>
       </div>
 
-      {/* CSS for glow animation */}
+      {/* CSS for glow animation and responsive tweaks */}
       <style>
         {`
           @keyframes action-button-pulse {
@@ -126,6 +128,36 @@ const ActionButton: React.FC<ActionButtonProps> = ({ action, onClick, disabled =
           }
           .action-button-glow {
             animation: action-button-pulse 2s infinite;
+          }
+          @media (max-width: 399px) {
+            .echo-action-buttons-container button {
+              font-size: 2.8vw !important;
+              min-width: 14vw !important;
+              width: 16vw !important;
+              max-width: 20vw !important;
+              padding: 1vw 1.5vw !important;
+            }
+            .echo-action-buttons-container span {
+              font-size: 2.8vw !important;
+            }
+            .echo-action-buttons-container span:first-child {
+              font-size: 4vw !important;
+            }
+          }
+          @media (max-width: 340px) {
+            .echo-action-buttons-container button {
+              font-size: 2.2vw !important;
+              min-width: 12vw !important;
+              width: 14vw !important;
+              max-width: 18vw !important;
+              padding: 0.5vw 1vw !important;
+            }
+            .echo-action-buttons-container span {
+              font-size: 2.2vw !important;
+            }
+            .echo-action-buttons-container span:first-child {
+              font-size: 3vw !important;
+            }
           }
         `}
       </style>
@@ -180,6 +212,7 @@ interface EchoActionAssignmentProps {
   pendingEcho: Echo;
   onComplete: (finalEcho: Echo) => void;
   allEchoes: Echo[];
+  gameMode: string;
 }
 
 interface SimulatedProjectile {
@@ -189,7 +222,7 @@ interface SimulatedProjectile {
   spawnedTick: number;
 }
 
-const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho, onComplete, allEchoes }) => {
+const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho, onComplete, allEchoes, gameMode }) => {
   const [actions, setActions] = useState<Action[]>([]);
   const [selectingDirection, setSelectingDirection] = useState<ActionType | null>(null);
   const [selectedActionType, setSelectedActionType] = useState<ActionType | null>(null);
@@ -374,7 +407,15 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
       <div style={{ position: 'relative' }}>
         <div style={{ 
           position: 'absolute',
-          ...(isMobile ? {
+          ...(isMobile && gameMode === 'multiplayer' ? {
+            left: '50%',
+            transform: 'translateX(-50%)',
+            top: 'calc(100% + 4px)',
+            width: '95vw',
+            maxWidth: '430px',
+            height: 'auto',
+            maxHeight: '60vh'
+          } : isMobile ? {
             left: '50%',
             transform: 'translateX(-50%)',
             top: 'calc(100% + 20px)',
@@ -383,8 +424,8 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
             height: 'auto',
             maxHeight: '60vh'
           } : {
-            right: 'calc(100% + 60px)',
-            top: '64px',
+          right: 'calc(100% + 60px)',
+          top: '64px',
             width: '430px',
             height: '640px'
           }),
@@ -395,7 +436,7 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
           minWidth: 240, 
           overflowY: 'auto',
           zIndex: 10,
-          fontSize: isMobile ? '0.8rem' : '1rem'
+          fontSize: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? '0.7rem' : (isMobile ? '0.8rem' : '1rem')
         }}>
           {isMobile ? (
             <div style={{ 
@@ -405,12 +446,21 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
               marginBottom: '0.5rem'
             }}>
               <div>
-                <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.2rem' }}>Assign Actions to Echo</h2>
-                <p style={{ color: isNewEcho ? '#4CAF50' : '#2196F3', fontWeight: 'bold', margin: '0 0 0.5rem 0', fontSize: '0.9rem' }}>
+                <h2 style={{ margin: '0 0 0.5rem 0', fontSize: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? '0.8rem' : '1.5rem' }}>Assign Actions to Echo</h2>
+                <p style={{ color: isNewEcho ? '#4CAF50' : '#2196F3', fontWeight: 'bold', margin: '0 0 0.5rem 0', fontSize: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? '0.7rem' : '1rem' }}>
                   {isNewEcho ? 'New Echo' : 'Extended Echo'} ({maxActionPoints} Action Points)
                 </p>
-                <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem' }}>Current Tick: {displayTick}</p>
-                <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem' }}>Remaining Action Points: {remainingPoints}</p>
+                {/* Current Tick and Remaining Action Points */}
+                {isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? (
+                  <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.7rem', textAlign: 'center' }}>
+                    Current Tick: {displayTick} | Remaining AP: {remainingPoints}
+                  </p>
+                ) : (
+                  <>
+                    <p style={{ margin: '0 0 0.5rem 0', fontSize: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? '0.7rem' : '1rem' }}>Current Tick: {displayTick}</p>
+                    <p style={{ margin: '0 0 0.5rem 0', fontSize: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? '0.7rem' : '1rem' }}>Remaining Action Points: {remainingPoints}</p>
+                  </>
+                )}
               </div>
               {/* Undo button - positioned in top right on mobile */}
               {(actions.length > 0 || selectingDirection) && (
@@ -452,50 +502,59 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
             </div>
           ) : (
             <>
-              <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem' }}>Assign Actions to Echo</h2>
-              <p style={{ color: isNewEcho ? '#4CAF50' : '#2196F3', fontWeight: 'bold', margin: '0 0 0.5rem 0', fontSize: '1rem' }}>
-                {isNewEcho ? 'New Echo' : 'Extended Echo'} ({maxActionPoints} Action Points)
-              </p>
-              <p style={{ margin: '0 0 0.5rem 0', fontSize: '1rem' }}>Current Tick: {displayTick}</p>
-              <p style={{ margin: '0 0 0.5rem 0', fontSize: '1rem' }}>Remaining Action Points: {remainingPoints}</p>
+              <h2 style={{ margin: '0 0 0.5rem 0', fontSize: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? '0.8rem' : '1.5rem' }}>Assign Actions to Echo</h2>
+              <p style={{ color: isNewEcho ? '#4CAF50' : '#2196F3', fontWeight: 'bold', margin: '0 0 0.5rem 0', fontSize: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? '0.7rem' : '1rem' }}>
+            {isNewEcho ? 'New Echo' : 'Extended Echo'} ({maxActionPoints} Action Points)
+          </p>
+              {/* Current Tick and Remaining Action Points */}
+              {isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? (
+                <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.7rem', textAlign: 'center' }}>
+                  Current Tick: {displayTick} | Remaining AP: {remainingPoints}
+                </p>
+              ) : (
+                <>
+                  <p style={{ margin: '0 0 0.5rem 0', fontSize: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? '0.7rem' : '1rem' }}>Current Tick: {displayTick}</p>
+                  <p style={{ margin: '0 0 0.5rem 0', fontSize: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? '0.7rem' : '1rem' }}>Remaining Action Points: {remainingPoints}</p>
+                </>
+              )}
               {/* Undo button - original position for desktop */}
-              {(actions.length > 0 || selectingDirection) && (
-                <div style={{ marginBottom: '0.5rem' }}>
-                  <button 
-                    onClick={handleUndoLastAction}
-                    style={{
-                      position: 'relative',
-                      background: 'linear-gradient(145deg, #ff572220, #ff572240)',
-                      color: 'white',
-                      border: '2px solid #ff5722',
-                      padding: '10px 16px',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontSize: '0.9rem',
-                      fontWeight: 'bold',
-                      fontFamily: 'Orbitron, monospace',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      boxShadow: '0 0 8px #ff572240, inset 0 1px 0 #ff572260',
-                      textShadow: '0 0 4px #ff5722',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-                      e.currentTarget.style.boxShadow = '0 4px 16px #ff572260, inset 0 1px 0 #ff572280';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                      e.currentTarget.style.boxShadow = '0 0 8px #ff572240, inset 0 1px 0 #ff572260';
-                    }}
-                  >
-                    <span style={{ fontSize: '1.1rem' }}>↩</span>
-                    <span>Undo Last Action</span>
-                  </button>
-                </div>
+          {(actions.length > 0 || selectingDirection) && (
+            <div style={{ marginBottom: '0.5rem' }}>
+              <button 
+                onClick={handleUndoLastAction}
+                style={{
+                  position: 'relative',
+                  background: 'linear-gradient(145deg, #ff572220, #ff572240)',
+                  color: 'white',
+                  border: '2px solid #ff5722',
+                  padding: '10px 16px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  fontWeight: 'bold',
+                  fontFamily: 'Orbitron, monospace',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 0 8px #ff572240, inset 0 1px 0 #ff572260',
+                  textShadow: '0 0 4px #ff5722',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px #ff572260, inset 0 1px 0 #ff572280';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                  e.currentTarget.style.boxShadow = '0 0 8px #ff572240, inset 0 1px 0 #ff572260';
+                }}
+              >
+                <span style={{ fontSize: '1.1rem' }}>↩</span>
+                <span>Undo Last Action</span>
+              </button>
+            </div>
               )}
             </>
           )}
@@ -511,7 +570,15 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
             </div>
           )}
           {!isMobile && <p style={{ fontSize: '1rem' }}>Select an action:</p>}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: isMobile ? 2 : 4 }}>
+          <div className="echo-action-buttons-container" style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: isMobile ? 4 : 4,
+            justifyContent: 'center',
+            width: isMobile ? '100%' : 'auto',
+            margin: isMobile ? '0 auto 0 auto' : undefined,
+            maxWidth: isMobile ? '100vw' : 'none',
+          }}>
             {availableActions.map(a => (
               <ActionButton 
                 key={a.type} 
@@ -522,12 +589,6 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
               />
             ))}
           </div>
-          {selectingDirection && (
-            <p style={{ marginTop: '1rem', color: '#ff9800', fontWeight: 'bold', fontSize: isMobile ? '0.8rem' : '1rem' }}>
-              Select direction by clicking a highlighted adjacent tile:
-            </p>
-          )}
-          
           {/* Show new actions being assigned - moved to bottom */}
           {actions.length > 0 && (
             <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>

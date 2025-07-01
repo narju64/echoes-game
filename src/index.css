@@ -170,8 +170,8 @@ body, html, #root {
   
   /* Increase touch targets */
   button, a {
-    min-height: 44px !important;
-    min-width: 44px !important;
+    min-height: 24px !important;
+    min-width: 24px !important;
   }
 }
 

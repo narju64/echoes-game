@@ -52,20 +52,11 @@ const EchoSelection: React.FC<EchoSelectionProps> = ({
       zIndex: 10,
       fontSize: isMobile ? '0.8rem' : '1rem'
     }}>
-      <h2 style={{ fontSize: isMobile ? '1.2rem' : '1.5rem' }}>Choose Echo Action</h2>
-      <p style={{
-        marginBottom: isMobile ? '1rem' : '2rem',
-        color: currentPlayer === 'player1' ? '#ff9800' : 'blue',
-        fontWeight: 'bold',
-        textShadow: '0 0 1px #fff',
-        fontSize: isMobile ? '0.9rem' : '1rem'
-      }}>
-        {currentPlayer === 'player1' ? 'Player 1 (Orange)' : 'Player 2 (Blue)'}'s Turn
-      </p>
+      <h2 style={{ fontSize: isMobile ? '0.8rem' : '1.5rem' }}>Choose Echo Action</h2>
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '0.5rem' : '1rem' }}>
         {canCreateNewEcho && (
-                      <button
+          <button
             onClick={disabled ? undefined : onNewEcho}
             disabled={disabled}
             style={{
@@ -75,9 +66,9 @@ const EchoSelection: React.FC<EchoSelectionProps> = ({
                 : 'linear-gradient(145deg, #4CAF5020, #4CAF5040)',
               color: disabled ? '#888' : 'white',
               border: `2px solid ${disabled ? '#666' : '#4CAF50'}`,
-              padding: isMobile ? '0.75rem 1.5rem' : '1rem 2rem',
-              fontSize: isMobile ? '1rem' : '1.2rem',
-              borderRadius: '8px',
+              padding: isMobile ? '1px 4px' : '1rem 2rem',
+              fontSize: isMobile ? '0.7rem' : '1.2rem',
+              borderRadius: isMobile ? '4px' : '8px',
               cursor: disabled ? 'not-allowed' : 'pointer',
               fontWeight: 'bold',
               fontFamily: 'Orbitron, monospace',
@@ -119,9 +110,9 @@ const EchoSelection: React.FC<EchoSelectionProps> = ({
                 : 'linear-gradient(145deg, #2196F320, #2196F340)',
               color: disabled ? '#888' : 'white',
               border: `2px solid ${disabled ? '#666' : '#2196F3'}`,
-              padding: isMobile ? '0.75rem 1.5rem' : '1rem 2rem',
-              fontSize: isMobile ? '1rem' : '1.2rem',
-              borderRadius: '8px',
+              padding: isMobile ? '1px 4px' : '1rem 2rem',
+              fontSize: isMobile ? '0.7rem' : '1.2rem',
+              borderRadius: isMobile ? '4px' : '8px',
               cursor: disabled ? 'not-allowed' : 'pointer',
               fontWeight: 'bold',
               fontFamily: 'Orbitron, monospace',
