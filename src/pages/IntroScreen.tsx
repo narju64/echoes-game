@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import './IntroScreen.css';
 
 const introLines = [
   'All is an echo - ',
@@ -582,8 +583,11 @@ const IntroScreen: React.FC = () => {
           }
         `}</style>
       </div>
-      <div style={{ maxWidth: 800, textAlign: 'center', zIndex: 1, position: 'relative', pointerEvents: 'none' }}>
+      <div className="intro-text-container">
         {introLines.map((line, i) => {
+          if (line === '') {
+            return <div key={`stanza-break-${i}`} className="intro-stanza-break" />;
+          }
           const stanzaIdx = getStanzaIndex(i);
           const stanzaColor = STANZA_COLORS[stanzaIdx % 2];
           const isLastLine = i === introLines.length - 1;
@@ -598,17 +602,8 @@ const IntroScreen: React.FC = () => {
             return (
               <div
                 key={i}
-                style={{
-                  marginBottom: line === '' ? '1.5rem' : '0.2rem',
-                  whiteSpace: 'pre-line',
-                  color: '#fff',
-                  fontWeight: 600,
-                  fontFamily: "'Orbitron', 'Rajdhani', 'Share Tech Mono', Arial, sans-serif",
-                  fontSize: '2rem',
-                  letterSpacing: '0.02em',
-                  lineHeight: 2.1,
-                  display: 'inline-block',
-                }}
+                className="intro-text-line"
+                style={{ display: 'block' }}
               >
                 {/* Before 'always' fades in with the line */}
                 <span
@@ -621,16 +616,8 @@ const IntroScreen: React.FC = () => {
                 </span>
                 {/* 'always' fades in immediately on mount */}
                 <span
+                  className="intro-text-always"
                   style={{
-                    color: '#fb8c00',
-                    textShadow: '0 0 8px #fff, 0 0 16px #fff, 0 0 24px #fff',
-                    fontWeight: 600,
-                    fontFamily: "'Orbitron', 'Rajdhani', 'Share Tech Mono', Arial, sans-serif",
-                    fontSize: '2rem',
-                    letterSpacing: '0.02em',
-                    lineHeight: 2.1,
-                    pointerEvents: 'none',
-                    whiteSpace: 'nowrap',
                     opacity: alwaysVisible ? 1 : 0.4,
                     transition: 'opacity 15s cubic-bezier(0.2,0,0.6,1)',
                   }}
@@ -654,16 +641,11 @@ const IntroScreen: React.FC = () => {
             return (
               <div
                 key={i}
+                className="intro-text-line"
                 style={{
                   opacity: isVisible ? 1 : 0,
-                  marginBottom: line === '' ? '1.5rem' : '0.2rem',
-                  whiteSpace: 'nowrap',
-                  color: '#fff',
-                  fontWeight: 600,
-                  fontFamily: "'Orbitron', 'Rajdhani', 'Share Tech Mono', Arial, sans-serif",
-                  display: 'inline-block',
-                  maxWidth: 'none',
                   animation: isVisible ? 'intro-fade-pulse 5600ms linear forwards' : undefined,
+                  display: 'block',
                 }}
               >
                 {highlightWords(line, stanzaColor, fadeOutFades, isLastLine ? hideDeathWord : false)}
@@ -674,13 +656,9 @@ const IntroScreen: React.FC = () => {
           return (
             <div
               key={i}
+              className="intro-text-line"
               style={{
                 opacity: isVisible ? 1 : 0,
-                marginBottom: line === '' ? '1.5rem' : '0.2rem',
-                whiteSpace: 'pre-line',
-                color: line === '' ? undefined : '#fff',
-                fontWeight: 600,
-                fontFamily: "'Orbitron', 'Rajdhani', 'Share Tech Mono', Arial, sans-serif",
                 animation: isVisible ? 'intro-fade-pulse 5600ms linear forwards' : undefined,
               }}
             >

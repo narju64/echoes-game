@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './HomePage.css';
+import './LeaderboardPage.css';
 
 // Echo animation constants (same as HomePage)
 const ECHO_COUNT = 48;
@@ -62,6 +62,16 @@ const mockLeaderboardData = [
   { rank: 10, player: "TFink", score: 1260, wins: 7, losses: 43, winRate: "14%" },
 ];
 
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 480);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 480);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return isMobile;
+};
+
 const LeaderboardPage: React.FC = () => {
   const navigate = useNavigate();
   const startTime = useRef(performance.now());
@@ -70,6 +80,7 @@ const LeaderboardPage: React.FC = () => {
   const SPEED = 0.00008;
   const [echoes, _setEchoes] = useState(() => generateEchoes());
   const [foregroundEchoes, _setForegroundEchoes] = useState(() => generateEchoes(FOREGROUND_ECHO_COUNT, 1.2));
+  const isMobile = useIsMobile();
 
   // Animation loop (same as HomePage)
   useEffect(() => {
@@ -258,89 +269,59 @@ const LeaderboardPage: React.FC = () => {
         <h1>Leaderboard</h1>
         
         {/* Leaderboard Table */}
-        <div style={{
-          background: 'rgba(34, 34, 34, 0.9)',
-          borderRadius: '12px',
-          padding: '2rem',
-          marginBottom: '2rem',
-          maxWidth: '800px',
-          width: '90%',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
-        }}>
-          {/* Table Header */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '60px 1fr 100px 80px 80px 100px',
-            gap: '1rem',
-            padding: '1rem',
-            background: 'linear-gradient(145deg,rgb(44, 82, 143), #2196f3)',
-            borderRadius: '8px',
-            marginBottom: '1rem',
-            fontWeight: 'bold',
-            color: 'white',
-            textShadow: '0 0 4px rgba(0,0,0,0.5)'
-          }}>
-            <div>Rank</div>
-            <div>Player</div>
-            <div>Score</div>
-            <div>Wins</div>
-            <div>Losses</div>
-            <div>Win Rate</div>
-          </div>
-          
-          {/* Table Rows */}
-          {mockLeaderboardData.map((entry, index) => (
-            <div
-              key={entry.rank}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '60px 1fr 100px 80px 80px 100px',
-                gap: '1rem',
-                padding: '1rem',
-                background: index % 2 === 0 ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.02)',
-                borderRadius: '8px',
-                marginBottom: '0.5rem',
-                transition: 'all 0.3s ease',
-                cursor: 'pointer',
-                border: '1px solid transparent'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = index % 2 === 0 ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.07)';
-                e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.2)';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = index % 2 === 0 ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.02)';
-                e.currentTarget.style.border = '1px solid transparent';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            >
-              <div style={{ 
-                fontWeight: 'bold', 
-                color: entry.rank === 1
-                  ? '#FFD700'
-                  : entry.rank >= 2 && entry.rank <= 5
-                  ? '#2196f3'
-                  : '#fff',
-                textShadow: entry.rank === 1
-                  ? '0 0 8px #FFD700'
-                  : entry.rank >= 2 && entry.rank <= 5
-                  ? '0 0 8px #2196f3'
-                  : 'none'
-              }}>
-                #{entry.rank}
+        <div className="leaderboard-table">
+          {isMobile ? (
+            <>
+              <div className="leaderboard-header grouped">
+                <div className="leaderboard-header-group">Player</div>
+                <div className="leaderboard-header-group">Record</div>
+                <div className="leaderboard-header-group">Score</div>
               </div>
-              <div style={{ fontWeight: 'bold', color: '#fff' }}>{entry.player}</div>
-              <div style={{ color: '#ff9800', fontWeight: 'bold' }}>{entry.score}</div>
-              <div style={{ color: '#4CAF50' }}>{entry.wins}</div>
-              <div style={{ color: '#f44336' }}>{entry.losses}</div>
-              <div style={{ color: '#2196F3', fontWeight: 'bold' }}>{entry.winRate}</div>
-            </div>
-          ))}
+              {mockLeaderboardData.map((entry, index) => (
+                <div
+                  key={entry.rank}
+                  className={`leaderboard-row grouped ${index % 2 === 0 ? 'even' : 'odd'}`}
+                >
+                  <div className="leaderboard-group rank-player">
+                    <span className={`leaderboard-rank ${entry.rank === 1 ? 'gold' : entry.rank >= 2 && entry.rank <= 5 ? 'blue' : ''}`}>#{entry.rank}</span>
+                    <span className="leaderboard-player">{entry.player}</span>
+                  </div>
+                  <div className="leaderboard-group wins-losses">
+                    <span className="leaderboard-wins">{entry.wins}</span>
+                    -
+                    <span className="leaderboard-losses">{entry.losses}</span>
+                  </div>
+                  <div className="leaderboard-group score">
+                    <span className="leaderboard-score">{entry.score}</span>
+                  </div>
+                </div>
+              ))}
+            </>
+          ) : (
+            <>
+              <div className="leaderboard-header">
+                <div className="leaderboard-header-rank">Rank</div>
+                <div className="leaderboard-header-player">Player</div>
+                <div className="leaderboard-header-score">Score</div>
+                <div className="leaderboard-header-wins">Wins</div>
+                <div className="leaderboard-header-losses">Losses</div>
+                <div className="leaderboard-header-winrate">Win Rate</div>
+              </div>
+              {mockLeaderboardData.map((entry, index) => (
+                <div
+                  key={entry.rank}
+                  className={`leaderboard-row ${index % 2 === 0 ? 'even' : 'odd'}`}
+                >
+                  <div className={`leaderboard-rank ${entry.rank === 1 ? 'gold' : entry.rank >= 2 && entry.rank <= 5 ? 'blue' : ''}`}>#{entry.rank}</div>
+                  <div className="leaderboard-player">{entry.player}</div>
+                  <div className="leaderboard-score">{entry.score}</div>
+                  <div className="leaderboard-wins">{entry.wins}</div>
+                  <div className="leaderboard-losses">{entry.losses}</div>
+                  <div className="leaderboard-winrate">{entry.winRate}</div>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       </div>
     </div>
