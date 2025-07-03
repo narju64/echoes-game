@@ -8,6 +8,8 @@ import EchoSelection from '../components/EchoSelection';
 import GameInfoPanel from '../components/GameInfoPanel';
 import LeaveConfirmationModal from '../components/LeaveConfirmationModal';
 import { socketService } from '../services/socket';
+import { playSound } from '../assets/sounds/playSound';
+import { playClickSound } from '../assets/sounds/playSound';
 
 const getHomeRow = (playerId: PlayerId) => (playerId === 'player1' ? 0 : 7);
 
@@ -707,6 +709,14 @@ function useIsMobile() {
   return isMobile;
 }
 
+// Wrap click handlers to ensure playClickSound is called for all user-initiated clicks
+const withClickSound = <T extends any[]>(fn: (...args: T) => void) => {
+  return (...args: T) => {
+    playClickSound();
+    fn(...args);
+  };
+};
+
 const GamePage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -1201,6 +1211,77 @@ const GamePage: React.FC = () => {
     return () => { if (replayTimer.current) clearInterval(replayTimer.current); };
   }, [state.phase, state.echoes, gameMode, receivedOpponentEchoes]);
 
+  useEffect(() => {
+    if (state.phase !== 'replay' || replayTick <= 0) return;
+    const prev = replayStates[replayTick - 1] || { projectiles: [], shieldBlocks: [], collisions: [] };
+    const curr = replayStates[replayTick] || { projectiles: [], shieldBlocks: [], collisions: [] };
+    // Projectile firing sounds
+    const prevIds = new Set(prev.projectiles.map(p => p.id));
+    const newProjectiles = curr.projectiles.filter(p => p.type === 'projectile' && !prevIds.has(p.id));
+    if (newProjectiles.length > 0) {
+      playSound('/src/assets/sounds/Audio/laserSmall_004.ogg');
+      newProjectiles.slice(1).forEach((_, i) => {
+        setTimeout(() => {
+          playSound('/src/assets/sounds/Audio/laserSmall_001.ogg');
+        }, (i + 1) * 100);
+      });
+    }
+    // Shield block and collision sounds
+    const prevShieldBlocks = prev.shieldBlocks || [];
+    const currShieldBlocks = curr.shieldBlocks || [];
+    const newShieldBlocks = currShieldBlocks.filter(
+      sb => !prevShieldBlocks.some(psb => psb.row === sb.row && psb.col === sb.col && psb.projectileDirection.x === sb.projectileDirection.x && psb.projectileDirection.y === sb.projectileDirection.y)
+    );
+    newShieldBlocks.forEach((_, i) => {
+      setTimeout(() => {
+        playSound('/src/assets/sounds/Audio/laserLarge_004.ogg');
+      }, i * 80);
+    });
+    // Collision sounds (play for every collision in the current tick)
+    const currCollisions = curr.collisions || [];
+    currCollisions.forEach((_, i) => {
+      setTimeout(() => {
+        playSound('/src/assets/sounds/Audio/laser3.ogg');
+      }, i * 80);
+    });
+    // Echo destroyed sounds
+    const prevDestroyed = prev.destroyed || [];
+    const currDestroyed = curr.destroyed || [];
+    const prevDestroyedIds = new Set(prevDestroyed.map(d => d.echoId));
+    const newDestroyed = currDestroyed.filter(d => !prevDestroyedIds.has(d.echoId));
+    newDestroyed.forEach((_, i) => {
+      setTimeout(() => {
+        playSound('/src/assets/sounds/Audio/lowFrequency_explosion_000.ogg', 1.0);
+        playSound('/src/assets/sounds/Audio/impactMetal_003.ogg', 1.0);
+      }, i * 120);
+    });
+    // Shield activation sounds
+    const prevEchoes = prev.echoes || [];
+    const currEchoes = curr.echoes || [];
+    currEchoes.forEach((echo, i) => {
+      const prevEcho = prevEchoes.find(e => e.id === echo.id);
+      if (prevEcho && !prevEcho.isShielded && echo.isShielded) {
+        setTimeout(() => {
+          playSound('/src/assets/sounds/Audio/forceField_000.ogg', 0.8);
+        }, i * 80);
+      }
+    });
+    // Dash action sounds
+    currEchoes.forEach((echo, i) => {
+      const prevEcho = prevEchoes.find(e => e.id === echo.id);
+      if (
+        prevEcho &&
+        prevEcho.alive && echo.alive &&
+        ((Math.abs(echo.position.row - prevEcho.position.row) === 2 && echo.position.col === prevEcho.position.col) ||
+         (Math.abs(echo.position.col - prevEcho.position.col) === 2 && echo.position.row === prevEcho.position.row))
+      ) {
+        setTimeout(() => {
+          playSound('/src/assets/sounds/Audio/doorOpen_002.ogg', 0.7);
+        }, i * 80);
+      }
+    });
+  }, [replayTick, state.phase, replayStates]);
+
   const handleNextTurn = () => {
     // Record turn history before moving to next turn
     if (replayStates.length > 0) {
@@ -1316,7 +1397,7 @@ const GamePage: React.FC = () => {
           {/* Home button */}
           {isMobile ? (
             <button
-              onClick={handleLeaveGame}
+              onClick={() => { playClickSound(); handleLeaveGame(); }}
               style={{
                 position: 'absolute',
                 top: 4,
@@ -1343,7 +1424,7 @@ const GamePage: React.FC = () => {
             </button>
           ) : (
           <button
-            onClick={handleLeaveGame}
+            onClick={() => { playClickSound(); handleLeaveGame(); }}
             style={{
               position: 'absolute',
               top: 20,
@@ -1364,6 +1445,7 @@ const GamePage: React.FC = () => {
               zIndex: 1000
             }}
             onMouseEnter={(e) => {
+              playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
               e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
               e.currentTarget.style.borderColor = '#2196F3';
               e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
@@ -1514,7 +1596,7 @@ const GamePage: React.FC = () => {
                 marginBottom: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '0.5rem' : (isMobile && gameMode === 'multiplayer' && state.phase === 'replay' ? '0.3rem' : '1rem') 
               }}>
               <button 
-                onClick={handleReset}
+                onClick={() => { playClickSound(); handleReset(); }}
                 style={{
                   position: 'relative',
                   background: 'linear-gradient(145deg, #f4433620, #f4433640)',
@@ -1535,6 +1617,7 @@ const GamePage: React.FC = () => {
                   minWidth: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? 0 : undefined,
                 }}
                 onMouseEnter={(e) => {
+                  playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
                   e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
                   e.currentTarget.style.boxShadow = '0 4px 16px #f4433660, inset 0 1px 0 #f4433680';
                 }}
@@ -1546,7 +1629,7 @@ const GamePage: React.FC = () => {
                   🔄 Reset
               </button>
               <button 
-                onClick={handleReplay}
+                onClick={() => { playClickSound(); handleReplay(); }}
                 style={{
                   position: 'relative',
                   background: 'linear-gradient(145deg, #2196F320, #2196F340)',
@@ -1568,6 +1651,7 @@ const GamePage: React.FC = () => {
                   minWidth: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? 0 : undefined,
                 }}
                 onMouseEnter={(e) => {
+                  playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
                   e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
                   e.currentTarget.style.boxShadow = '0 4px 16px #2196F360, inset 0 1px 0 #2196F380';
                 }}
@@ -1579,7 +1663,7 @@ const GamePage: React.FC = () => {
                 ▶️ Replay
               </button>
               <button 
-                onClick={handleNextTurn}
+                onClick={() => { playClickSound(); handleNextTurn(); }}
                 style={{
                   position: 'relative',
                   background: 'linear-gradient(145deg, #4CAF5020, #4CAF5040)',
@@ -1600,6 +1684,7 @@ const GamePage: React.FC = () => {
                   minWidth: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? 0 : undefined,
                 }}
                 onMouseEnter={(e) => {
+                  playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
                   e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
                   e.currentTarget.style.boxShadow = '0 4px 16px #4CAF5060, inset 0 1px 0 #4CAF5080';
                 }}
@@ -1794,7 +1879,7 @@ const GamePage: React.FC = () => {
           {/* Home button */}
           {isMobile ? (
             <button
-              onClick={handleLeaveGame}
+              onClick={() => { playClickSound(); handleLeaveGame(); }}
               style={{
                 position: 'absolute',
                 top: 4,
@@ -1821,7 +1906,7 @@ const GamePage: React.FC = () => {
             </button>
           ) : (
           <button
-            onClick={handleLeaveGame}
+            onClick={() => { playClickSound(); handleLeaveGame(); }}
             style={{
               position: 'absolute',
               top: 20,
@@ -1842,6 +1927,7 @@ const GamePage: React.FC = () => {
               zIndex: 1000
             }}
             onMouseEnter={(e) => {
+              playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
               e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
               e.currentTarget.style.borderColor = '#2196F3';
               e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
@@ -1950,7 +2036,7 @@ const GamePage: React.FC = () => {
                 */}
                 
                 <button 
-                  onClick={handleReset}
+                  onClick={() => { playClickSound(); handleReset(); }}
                   style={{
                     padding: '1rem 2rem',
                     fontSize: '1.2rem',
@@ -2054,7 +2140,7 @@ const GamePage: React.FC = () => {
         {/* Home button */}
         {isMobile ? (
           <button
-            onClick={handleLeaveGame}
+            onClick={() => { playClickSound(); handleLeaveGame(); }}
             style={{
               position: 'absolute',
               top: 4,
@@ -2081,7 +2167,7 @@ const GamePage: React.FC = () => {
           </button>
         ) : (
         <button
-          onClick={handleLeaveGame}
+          onClick={() => { playClickSound(); handleLeaveGame(); }}
           style={{
             position: 'absolute',
             top: 20,
@@ -2102,6 +2188,7 @@ const GamePage: React.FC = () => {
             zIndex: 1000
           }}
           onMouseEnter={(e) => {
+            playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
             e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
             e.currentTarget.style.borderColor = '#2196F3';
             e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
@@ -2251,8 +2338,8 @@ const GamePage: React.FC = () => {
                   <EchoSelection 
                     currentPlayer={currentPlayer}
                     existingEchoes={state.echoes}
-                    onNewEcho={handleNewEcho}
-                    onExtendEcho={handleExtendEcho}
+                    onNewEcho={withClickSound(handleNewEcho)}
+                    onExtendEcho={withClickSound(handleExtendEcho)}
                     disabled={gameMode === 'multiplayer' && waitingForOpponent}
                   />
                   )}
@@ -2273,7 +2360,7 @@ const GamePage: React.FC = () => {
                   <Board 
                     echoes={state.echoes} 
                     highlightedTiles={boardHighlightedTiles}
-                    onTileClick={boardOnTileClick}
+                    onTileClick={boardOnTileClick ? withClickSound(boardOnTileClick) : undefined}
                   />
                 </div>
               ) : (
@@ -2288,12 +2375,12 @@ const GamePage: React.FC = () => {
                   <Board 
                     echoes={state.echoes} 
                     highlightedTiles={boardHighlightedTiles}
-                    onTileClick={boardOnTileClick}
+                    onTileClick={boardOnTileClick ? withClickSound(boardOnTileClick) : undefined}
                   />
                   <div style={{ marginTop: '2rem', textAlign: 'center' }}>
                     {playerEchoes.length > 0 && (
                       <button
-                        onClick={handleBackFromTileSelection}
+                        onClick={() => { playClickSound(); handleBackFromTileSelection(); }}
                         style={{
                           position: 'relative',
                           background: 'linear-gradient(145deg, #66620, #66640)',
@@ -2312,6 +2399,7 @@ const GamePage: React.FC = () => {
                           zIndex: 1000
                         }}
                         onMouseEnter={(e) => {
+                          playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
                           e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
                           e.currentTarget.style.borderColor = '#2196F3';
                           e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
@@ -2345,7 +2433,7 @@ const GamePage: React.FC = () => {
               marginBottom: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '0.5rem' : '1rem' 
             }}>
             <button 
-              onClick={handleReset}
+              onClick={() => { playClickSound(); handleReset(); }}
               style={{
                 position: 'relative',
                 background: 'linear-gradient(145deg, #f4433620, #f4433640)',
@@ -2375,14 +2463,14 @@ const GamePage: React.FC = () => {
                 🔄 Reset
               </button>
               <button 
-                onClick={handleReplay}
+                onClick={() => { playClickSound(); handleReplay(); }}
                 style={{
                   position: 'relative',
                   background: 'linear-gradient(145deg, #2196F320, #2196F340)',
                   color: 'white',
                   border: '2px solid #2196F3',
-                  padding: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '6px 12px' : '10px 20px',
-                  fontSize: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '0.8rem' : '1rem',
+                  padding: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? '4px 8px' : (isMobile ? '6px 12px' : '10px 20px'),
+                  fontSize: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? '0.7rem' : (isMobile ? '0.8rem' : '1rem'),
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontWeight: 'bold',
@@ -2392,11 +2480,12 @@ const GamePage: React.FC = () => {
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   boxShadow: '0 0 8px #2196F340, inset 0 1px 0 #2196F360',
                   textShadow: '0 0 4px #2196F3',
-                  marginRight: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '4px' : '8px',
+                  marginRight: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? '2px' : (isMobile ? '4px' : '8px'),
                   minHeight: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? 0 : undefined,
                   minWidth: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? 0 : undefined,
                 }}
                 onMouseEnter={(e) => {
+                  playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
                   e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
                   e.currentTarget.style.boxShadow = '0 4px 16px #2196F360, inset 0 1px 0 #2196F380';
                 }}
@@ -2408,14 +2497,14 @@ const GamePage: React.FC = () => {
                 ▶️ Replay
               </button>
               <button 
-                onClick={handleNextTurn}
+                onClick={() => { playClickSound(); handleNextTurn(); }}
                 style={{
                   position: 'relative',
                   background: 'linear-gradient(145deg, #4CAF5020, #4CAF5040)',
                   color: 'white',
                   border: '2px solid #4CAF50',
-                  padding: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '6px 12px' : '10px 20px',
-                  fontSize: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '0.8rem' : '1rem',
+                  padding: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? '4px 8px' : (isMobile ? '6px 12px' : '10px 20px'),
+                  fontSize: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? '0.7rem' : (isMobile ? '0.8rem' : '1rem'),
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontWeight: 'bold',
@@ -2429,6 +2518,7 @@ const GamePage: React.FC = () => {
                   minWidth: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? 0 : undefined,
                 }}
                 onMouseEnter={(e) => {
+                  playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
                   e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
                   e.currentTarget.style.boxShadow = '0 4px 16px #4CAF5060, inset 0 1px 0 #4CAF5080';
                 }}

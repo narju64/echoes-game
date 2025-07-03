@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './IntroScreen.css';
+import { playSound } from '../assets/sounds/playSound';
 
 const introLines = [
   'All is an echo - ',
@@ -183,6 +184,13 @@ const IntroScreen: React.FC = () => {
           };
         })
       ]);
+      const totalExplosions = echoes.length + foregroundEchoes.length;
+      const soundCount = Math.min(10, totalExplosions);
+      for (let i = 0; i < soundCount; i++) {
+        setTimeout(() => {
+          playSound('/src/assets/sounds/audio/impactMetal_003.ogg');
+        }, i * 20);
+      }
       setEchoes([]);
       setForegroundEchoes([]);
       setTimeout(() => {
@@ -223,6 +231,13 @@ const IntroScreen: React.FC = () => {
           };
         })
       ]);
+      const totalExplosions2 = echoes.length + foregroundEchoes.length;
+      const soundCount2 = Math.min(10, totalExplosions2);
+      for (let i = 0; i < soundCount2; i++) {
+        setTimeout(() => {
+          playSound('/src/assets/sounds/audio/impactMetal_003.ogg');
+        }, i * 20);
+      }
       setEchoes([]);
       setForegroundEchoes([]);
       setTimeout(() => {
@@ -324,6 +339,7 @@ const IntroScreen: React.FC = () => {
                       }
                     ]);
                     setEchoes(prev => prev.filter((_, idx) => idx !== i));
+                    playSound('/src/assets/sounds/audio/impactMetal_003.ogg');
                   }}
                 >
                   <div style={{ position: 'relative', width: e.size, height: e.size }}>
@@ -377,6 +393,7 @@ const IntroScreen: React.FC = () => {
                       }
                     ]);
                     setForegroundEchoes(prev => prev.filter((_, idx) => idx !== i));
+                    playSound('/src/assets/sounds/audio/impactMetal_003.ogg');
                   }}
                 >
                   <div style={{ position: 'relative', width: e.size, height: e.size }}>

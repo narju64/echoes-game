@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import './HomePage.css';
+import { playSound, playClickSound } from '../assets/sounds/playSound';
 
 // Echo animation constants
 const ECHO_COUNT = 48; // More echoes for menu
@@ -77,6 +78,10 @@ const HomePage: React.FC = () => {
 
   const t = (now - startTime.current) * SPEED;
   const tFast = t * 1.15;
+
+  const handleMenuButtonHover = () => {
+    playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+  };
 
   return (
     <div className="home-page">
@@ -209,26 +214,26 @@ const HomePage: React.FC = () => {
         <div className="menu">
           {menuState === 'main' && (
             <>
-              <button className="menu-button" onClick={() => setMenuState('aiTraining')}>AI Training</button>
-              <Link to="/game?mode=ai" className="menu-button">Single Player</Link>
-              <button className="menu-button" onClick={() => setMenuState('multiplayer')}>Multiplayer</button>
-              <Link to="/rules" className="menu-button">Rules</Link>
-              <Link to="/leaderboard" className="menu-button">Leaderboard</Link>
+              <button className="menu-button" onClick={() => { playClickSound(); setMenuState('aiTraining'); }} onMouseEnter={handleMenuButtonHover}>AI Training</button>
+              <Link to="/game?mode=ai" className="menu-button" onClick={() => { playClickSound(); }} onMouseEnter={handleMenuButtonHover}>Single Player</Link>
+              <button className="menu-button" onClick={() => { playClickSound(); setMenuState('multiplayer'); }} onMouseEnter={handleMenuButtonHover}>Multiplayer</button>
+              <Link to="/rules" className="menu-button" onClick={() => { playClickSound(); }} onMouseEnter={handleMenuButtonHover}>Rules</Link>
+              <Link to="/leaderboard" className="menu-button" onClick={() => { playClickSound(); }} onMouseEnter={handleMenuButtonHover}>Leaderboard</Link>
             </>
           )}
           {menuState === 'aiTraining' && (
             <>
-              <Link to="/ai-training" className="menu-button">Training</Link>
-              <Link to="/ai-tournament" className="menu-button">Tournament</Link>
-              <button className="menu-button" onClick={() => setMenuState('main')}>Back</button>
+              <Link to="/ai-training" className="menu-button" onClick={() => { playClickSound(); }} onMouseEnter={handleMenuButtonHover}>Training</Link>
+              <Link to="/ai-tournament" className="menu-button" onClick={() => { playClickSound(); }} onMouseEnter={handleMenuButtonHover}>Tournament</Link>
+              <button className="menu-button" onClick={() => { playClickSound(); setMenuState('main'); }} onMouseEnter={handleMenuButtonHover}>Back</button>
             </>
           )}
           {menuState === 'multiplayer' && (
             <>
-              <Link to="/game?mode=hotseat" className="menu-button">Hotseat</Link>
-              <Link to="/host" className="menu-button">Host Game</Link>
-              <Link to="/join" className="menu-button">Join Game</Link>
-              <button className="menu-button" onClick={() => setMenuState('main')}>Back</button>
+              <Link to="/game?mode=hotseat" className="menu-button" onClick={() => { playClickSound(); }} onMouseEnter={handleMenuButtonHover}>Hotseat</Link>
+              <Link to="/host" className="menu-button" onClick={() => { playClickSound(); }} onMouseEnter={handleMenuButtonHover}>Host Game</Link>
+              <Link to="/join" className="menu-button" onClick={() => { playClickSound(); }} onMouseEnter={handleMenuButtonHover}>Join Game</Link>
+              <button className="menu-button" onClick={() => { playClickSound(); setMenuState('main'); }} onMouseEnter={handleMenuButtonHover}>Back</button>
             </>
           )}
         </div>

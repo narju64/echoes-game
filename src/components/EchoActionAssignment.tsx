@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { Echo, Action, ActionType, Direction } from '../types/gameTypes';
 import Board from './Board';
 import { simulateAllyPreviewAtTick } from '../pages/GamePage';
+import { playSound, playClickSound } from '../assets/sounds/playSound';
 
 const ACTIONS: { type: ActionType; label: string; cost: number; needsDirection: boolean }[] = [
   { type: 'walk', label: 'Walk', cost: 1, needsDirection: true },
@@ -17,9 +18,10 @@ interface ActionButtonProps {
   onClick: () => void;
   disabled?: boolean;
   selected?: boolean;
+  onMouseEnter?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
-const ActionButton: React.FC<ActionButtonProps> = ({ action, onClick, disabled = false, selected = false }) => {
+const ActionButton: React.FC<ActionButtonProps> = ({ action, onClick, disabled = false, selected = false, onMouseEnter }) => {
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
   const getActionColor = (type: ActionType) => {
     switch (type) {
@@ -74,6 +76,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({ action, onClick, disabled =
         margin: isMobile ? '2px' : '0',
       }}
       onMouseEnter={(e) => {
+        if (onMouseEnter) onMouseEnter(e);
         if (!disabled) {
           e.currentTarget.style.transform = selected ? 'scale(1.05) translateY(-2px)' : 'translateY(-2px) scale(1.02)';
           e.currentTarget.style.boxShadow = selected ? `0 4px 20px ${color}90, inset 0 1px 0 ${color}90` : `0 4px 16px ${color}60, inset 0 1px 0 ${color}80`;
@@ -339,6 +342,7 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
 
   // Handle direction selection via board
   const handleDirectionSelect = (dir: Direction) => {
+    playClickSound();
     if (!selectedActionType) return;
     const cost = ACTIONS.find(a => a.type === selectedActionType)!.cost;
     
@@ -488,6 +492,7 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
                     flexShrink: 0
                   }}
                   onMouseEnter={(e) => {
+                    playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
                     e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
                     e.currentTarget.style.boxShadow = '0 4px 16px #ff572260, inset 0 1px 0 #ff572280';
                   }}
@@ -543,6 +548,7 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
                   gap: '8px'
                 }}
                 onMouseEnter={(e) => {
+                  playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
                   e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
                   e.currentTarget.style.boxShadow = '0 4px 16px #ff572260, inset 0 1px 0 #ff572280';
                 }}
@@ -580,10 +586,14 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
             maxWidth: isMobile ? '100vw' : 'none',
           }}>
             {availableActions.map(a => (
-              <ActionButton 
-                key={a.type} 
-                action={a} 
-                onClick={() => handleActionSelect(a.type, a.cost)}
+              <ActionButton
+                key={a.type}
+                action={a}
+                onClick={() => {
+                  if (a.type === selectedActionType) return;
+                  playClickSound();
+                  handleActionSelect(a.type, a.cost);
+                }}
                 disabled={a.cost > remainingPoints}
                 selected={a.type === selectedActionType}
               />

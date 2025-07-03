@@ -4,6 +4,7 @@ import { apiService } from '../services/api';
 import type { Room } from '../services/api';
 import { socketService } from '../services/socket';
 import '../pages/HomePage.css';
+import { playSound, playClickSound } from '../assets/sounds/playSound';
 
 // Echo animation constants (same as HomePage)
 const ECHO_COUNT = 24; // Fewer echoes for sub-pages
@@ -50,6 +51,23 @@ function generateEchoes(count = ECHO_COUNT, sizeMultiplier = 1) {
     };
   });
 }
+
+const handleButtonHover = (e: React.MouseEvent<HTMLButtonElement>) => {
+  playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+  e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
+  e.currentTarget.style.borderColor = '#2196F3';
+  e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
+  e.currentTarget.style.transform = 'translateY(-2px)';
+  e.currentTarget.style.textShadow = '0 0 8px #2196F3';
+};
+
+const handleButtonLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
+  e.currentTarget.style.background = 'linear-gradient(145deg, #333, #444)';
+  e.currentTarget.style.borderColor = '#666';
+  e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+  e.currentTarget.style.transform = 'translateY(0)';
+  e.currentTarget.style.textShadow = 'none';
+};
 
 const JoinPage: React.FC = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -277,7 +295,7 @@ const JoinPage: React.FC = () => {
           ) : rooms.length === 0 ? (
             <div className="no-rooms-message">
               No rooms available. <button 
-                onClick={() => navigate('/host')}
+                onClick={() => { playClickSound(); navigate('/host'); }}
                 className="link-button"
               >
                 Create one instead?
@@ -290,7 +308,7 @@ const JoinPage: React.FC = () => {
                 {rooms.map((room) => (
                   <div
                     key={room.id}
-                    onClick={() => setSelectedRoom(room)}
+                    onClick={() => { playClickSound(); setSelectedRoom(room); }}
                     className={`room-item ${selectedRoom?.id === room.id ? 'selected' : ''}`}
                   >
                     <div className="room-info">
@@ -316,7 +334,7 @@ const JoinPage: React.FC = () => {
                   type="text"
                   id="playerName"
                   value={playerName}
-                  onChange={(e) => setPlayerName(e.target.value)}
+                  onChange={(e) => { playClickSound(); setPlayerName(e.target.value); }}
                   className="menu-input"
                   placeholder="Enter your name"
                   disabled={isJoining}
@@ -334,6 +352,9 @@ const JoinPage: React.FC = () => {
                 type="submit"
                 disabled={isJoining}
                 className="menu-button"
+                onMouseEnter={handleButtonHover}
+                onMouseLeave={handleButtonLeave}
+                onClick={() => { if (!isJoining) playClickSound(); }}
               >
                 {isJoining ? 'Joining Room...' : `Join Room ${selectedRoom.id}`}
               </button>
@@ -342,14 +363,18 @@ const JoinPage: React.FC = () => {
 
           <div className="menu-actions">
             <button
-              onClick={() => navigate('/home')}
+              onClick={() => { playClickSound(); navigate('/home'); }}
               className="menu-button secondary"
+              onMouseEnter={handleButtonHover}
+              onMouseLeave={handleButtonLeave}
             >
               ← Back to Menu
             </button>
             <button
-              onClick={loadRooms}
+              onClick={() => { playClickSound(); loadRooms(); }}
               className="menu-button secondary"
+              onMouseEnter={handleButtonHover}
+              onMouseLeave={handleButtonLeave}
             >
               ↻ Refresh
             </button>

@@ -4,6 +4,7 @@ import { socketService } from '../services/socket';
 import LeaveConfirmationModal from '../components/LeaveConfirmationModal';
 import type { PlayerId } from '../types/gameTypes';
 import '../pages/HomePage.css';
+import { playSound, playClickSound } from '../assets/sounds/playSound';
 
 // Echo animation constants (same as HomePage)
 const ECHO_COUNT = 24;
@@ -379,6 +380,23 @@ const LobbyPage: React.FC = () => {
     }
   };
 
+  const handleButtonHover = (e: React.MouseEvent<HTMLButtonElement>) => {
+    playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+    e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
+    e.currentTarget.style.borderColor = '#2196F3';
+    e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
+    e.currentTarget.style.transform = 'translateY(-2px)';
+    e.currentTarget.style.textShadow = '0 0 8px #2196F3';
+  };
+
+  const handleButtonLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.style.background = 'linear-gradient(145deg, #333, #444)';
+    e.currentTarget.style.borderColor = '#666';
+    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+    e.currentTarget.style.transform = 'translateY(0)';
+    e.currentTarget.style.textShadow = 'none';
+  };
+
   return (
     <>
       <div className="home-page">
@@ -540,9 +558,11 @@ const LobbyPage: React.FC = () => {
                   {roomId}
                 </code>
                 <button 
-                  onClick={copyRoomCode}
+                  onClick={() => { playClickSound(); copyRoomCode(); }}
                   className="menu-button"
                   style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                  onMouseEnter={handleButtonHover}
+                  onMouseLeave={handleButtonLeave}
                 >
                   Copy
                 </button>
@@ -630,9 +650,11 @@ const LobbyPage: React.FC = () => {
             )}
 
             <button
-              onClick={handleLeaveRoom}
+              onClick={() => { playClickSound(); handleLeaveRoom(); }}
               className="menu-button secondary"
               disabled={gameStarted}
+              onMouseEnter={handleButtonHover}
+              onMouseLeave={handleButtonLeave}
             >
               Leave Room
             </button>

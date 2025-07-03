@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './LeaderboardPage.css';
+import { playSound, playClickSound } from '../assets/sounds/playSound';
 
 // Echo animation constants (same as HomePage)
 const ECHO_COUNT = 48;
@@ -99,11 +100,27 @@ const LeaderboardPage: React.FC = () => {
   const t = (now - startTime.current) * SPEED;
   const tFast = t * 1.15;
 
+  const handleButtonHover = (e: React.MouseEvent<HTMLButtonElement>) => {
+    playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+    e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
+    e.currentTarget.style.borderColor = '#2196F3';
+    e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
+    e.currentTarget.style.transform = 'translateY(-2px)';
+    e.currentTarget.style.textShadow = '0 0 8px #2196F3';
+  };
+  const handleButtonLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.style.background = 'linear-gradient(145deg, #333, #444)';
+    e.currentTarget.style.borderColor = '#666';
+    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+    e.currentTarget.style.transform = 'translateY(0)';
+    e.currentTarget.style.textShadow = 'none';
+  };
+
   return (
     <div className="home-page">
       {/* Home button */}
       <button
-        onClick={() => navigate('/home')}
+        onClick={() => { playClickSound(); navigate('/home'); }}
         style={{
           position: 'absolute',
           top: 20,
@@ -123,20 +140,8 @@ const LeaderboardPage: React.FC = () => {
           boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
           zIndex: 1000
         }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
-          e.currentTarget.style.borderColor = '#2196F3';
-          e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
-          e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.textShadow = '0 0 8px #2196F3';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'linear-gradient(145deg, #333, #444)';
-          e.currentTarget.style.borderColor = '#666';
-          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.textShadow = 'none';
-        }}
+        onMouseEnter={handleButtonHover}
+        onMouseLeave={handleButtonLeave}
       >
         Home
       </button>
