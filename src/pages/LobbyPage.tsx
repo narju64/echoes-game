@@ -374,11 +374,7 @@ const LobbyPage: React.FC = () => {
     setShowLeaveModal(false);
   };
 
-  const copyRoomCode = () => {
-    if (roomId) {
-      navigator.clipboard.writeText(roomId);
-    }
-  };
+
 
   const handleButtonHover = (e: React.MouseEvent<HTMLButtonElement>) => {
     playGlassImpact();
@@ -534,43 +530,7 @@ const LobbyPage: React.FC = () => {
               </div>
             )}
 
-            <div style={{ 
-              background: 'rgba(0, 0, 0, 0.3)', 
-              padding: '2rem', 
-              borderRadius: '12px', 
-              marginBottom: '2rem',
-              minWidth: '300px'
-            }}>
-              <h2 style={{ marginTop: 0, marginBottom: '1rem', textAlign: 'center' }}>Room Code</h2>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '1rem',
-                marginBottom: '1rem'
-              }}>
-                <code style={{ 
-                  background: 'rgba(255, 255, 255, 0.1)', 
-                  padding: '0.5rem 1rem', 
-                  borderRadius: '6px',
-                  fontSize: '1.2rem',
-                  fontFamily: 'monospace'
-                }}>
-                  {roomId}
-                </code>
-                <button 
-                  onClick={() => { playClickSound(); copyRoomCode(); }}
-                  className="menu-button"
-                  style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
-                  onMouseEnter={handleButtonHover}
-                  onMouseLeave={handleButtonLeave}
-                >
-                  Copy
-                </button>
-              </div>
-              <p style={{ textAlign: 'center', margin: 0, opacity: 0.8 }}>
-                Share this code with your friend to join the game
-              </p>
-            </div>
+
 
             <div style={{ 
               background: 'rgba(0, 0, 0, 0.3)', 

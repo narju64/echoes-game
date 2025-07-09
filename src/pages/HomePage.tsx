@@ -62,6 +62,15 @@ const HomePage: React.FC = () => {
   const [foregroundEchoes, _setForegroundEchoes] = useState(() => generateEchoes(FOREGROUND_ECHO_COUNT, 1.2));
   const [menuState, setMenuState] = useState<'main' | 'aiTraining' | 'multiplayer'>('main');
 
+  // Check if we're in development mode
+  const isDevelopment = import.meta.env.DEV;
+  console.log('Is development mode:', isDevelopment);
+
+  // Update document title based on development mode
+  useEffect(() => {
+    document.title = isDevelopment ? 'Echoes - Alpha v1 (dev mode)' : 'Echoes - Alpha v1';
+  }, [isDevelopment]);
+
   // Animation loop
   useEffect(() => {
     let running = true;
@@ -211,11 +220,29 @@ const HomePage: React.FC = () => {
         width: '100%'
       }}>
         <h1>Echoes</h1>
+        <div style={{ 
+          fontSize: '1.5rem', 
+          color: '#2196f3', 
+          marginTop: '-35px', 
+          marginBottom: '20px',
+          fontFamily: "'Orbitron', 'Rajdhani', 'Share Tech Mono', Arial, sans-serif",
+          textShadow: '0 0 2px #ffffff, 0 0 4px #ffffff',
+          fontWeight: 'bold',
+          letterSpacing: '2px',
+          animation: 'alpha-glow 3s ease-in-out infinite alternate',
+          textAlign: 'center'
+        }}>
+          Alpha v1
+        </div>
         <div className="menu">
           {menuState === 'main' && (
             <>
-              <button className="menu-button" onClick={() => { playClickSound(); setMenuState('aiTraining'); }} onMouseEnter={handleMenuButtonHover}>AI Training</button>
-              <Link to="/game?mode=ai" className="menu-button" onClick={() => { playClickSound(); }} onMouseEnter={handleMenuButtonHover}>Single Player</Link>
+              {isDevelopment && (
+                <button className="menu-button" onClick={() => { playClickSound(); setMenuState('aiTraining'); }} onMouseEnter={handleMenuButtonHover}>AI Training</button>
+              )}
+              {isDevelopment && (
+                <Link to="/game?mode=ai" className="menu-button" onClick={() => { playClickSound(); }} onMouseEnter={handleMenuButtonHover}>Single Player</Link>
+              )}
               <button className="menu-button" onClick={() => { playClickSound(); setMenuState('multiplayer'); }} onMouseEnter={handleMenuButtonHover}>Multiplayer</button>
               <Link to="/rules" className="menu-button" onClick={() => { playClickSound(); }} onMouseEnter={handleMenuButtonHover}>Rules</Link>
               <Link to="/leaderboard" className="menu-button" onClick={() => { playClickSound(); }} onMouseEnter={handleMenuButtonHover}>Leaderboard</Link>

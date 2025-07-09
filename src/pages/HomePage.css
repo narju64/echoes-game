@@ -31,6 +31,15 @@
   }
 }
 
+@keyframes alpha-glow {
+  from {
+    text-shadow: 0 0 2px #ffffff, 0 0 10px #ffffff;
+  }
+  to {
+    text-shadow: 0 0 1px #ffffff, 0 0 5px #ffffff;
+  }
+}
+
 .home-page .menu {
   display: flex;
   flex-direction: column;

@@ -272,6 +272,18 @@ const LeaderboardPage: React.FC = () => {
         width: '100%'
       }}>
         <h1>Leaderboard</h1>
+        {!import.meta.env.DEV && (
+          <div style={{ 
+            fontSize: '1.2rem', 
+            color: '#888', 
+            marginTop: '-10px', 
+            marginBottom: '20px',
+            fontFamily: "'Orbitron', 'Rajdhani', 'Share Tech Mono', Arial, sans-serif",
+            textAlign: 'center'
+          }}>
+            (Coming in Alpha v3)
+          </div>
+        )}
         
         {/* Leaderboard Table */}
         <div className="leaderboard-table">
