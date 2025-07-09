@@ -16,6 +16,9 @@ Sentry.init({
   replaysOnErrorSampleRate: 1.0,
 });
 
+// Test Sentry initialization
+console.log('Sentry initialized successfully');
+
 import HomePage from './pages/HomePage.tsx';
 import GamePage from './pages/GamePage.tsx';
 import RulesPage from './pages/RulesPage.tsx';

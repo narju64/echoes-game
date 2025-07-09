@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './HomePage.css';
 import { playGlassImpact, playClickSound } from '../assets/sounds/playSound';
-import { captureGameError } from '../services/sentry';
+
 
 // Echo animation constants
 const ECHO_COUNT = 48; // More echoes for menu
@@ -66,7 +66,6 @@ const HomePage: React.FC = () => {
 
   // Check if we're in development mode
   const isDevelopment = import.meta.env.DEV;
-  console.log('Is development mode:', isDevelopment);
 
   // Update document title based on development mode
   useEffect(() => {
@@ -278,43 +277,7 @@ const HomePage: React.FC = () => {
                 Join Game
               </button>
 
-              {/* Sentry Test Button - Remove after testing */}
-              {import.meta.env.DEV && (
-                <button
-                  onClick={() => {
-                    playClickSound();
-                    throw new Error("This is a test error for Sentry!");
-                  }}
-                  className="menu-button"
-                  style={{ background: 'linear-gradient(145deg, #f44336, #d32f2f)', borderColor: '#f44336' }}
-                  onMouseEnter={handleButtonHover}
-                  onMouseLeave={handleButtonLeave}
-                >
-                  🧪 Test Sentry Error
-                </button>
-              )}
 
-              {/* Manual Sentry Test Button - Remove after testing */}
-              {import.meta.env.DEV && (
-                <button
-                  onClick={() => {
-                    playClickSound();
-                    const testError = new Error("Manual Sentry test error");
-                    captureGameError(testError, {
-                      gameMode: 'test',
-                      action: 'manual_test',
-                      gameState: { test: true }
-                    });
-                    alert("Manual error sent to Sentry! Check your dashboard.");
-                  }}
-                  className="menu-button"
-                  style={{ background: 'linear-gradient(145deg, #ff9800, #f57c00)', borderColor: '#ff9800' }}
-                  onMouseEnter={handleButtonHover}
-                  onMouseLeave={handleButtonLeave}
-                >
-                  📊 Test Manual Error
-                </button>
-              )}
               <button className="menu-button" onClick={() => { playClickSound(); setMenuState('main'); }} onMouseEnter={handleMenuButtonHover}>Back</button>
             </>
           )}
