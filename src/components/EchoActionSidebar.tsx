@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Action, ActionType, Echo } from '../types/gameTypes';
-import { playSound } from '../assets/sounds/playSound';
+import { playGlassImpact } from '../assets/sounds/playSound';
 
 interface EchoActionSidebarProps {
   isNewEcho: boolean;
@@ -82,7 +82,7 @@ const EchoActionSidebar: React.FC<EchoActionSidebarProps> = ({
           <button
             key={a.type}
             onClick={() => handleActionSelect(a.type, a.cost)}
-            onMouseEnter={() => playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg')}
+            onMouseEnter={() => playGlassImpact()}
           >
             {a.label} ({a.cost})
           </button>

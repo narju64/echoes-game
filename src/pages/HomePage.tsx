@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import './HomePage.css';
-import { playSound, playClickSound } from '../assets/sounds/playSound';
+import { playGlassImpact, playClickSound } from '../assets/sounds/playSound';
 
 // Echo animation constants
 const ECHO_COUNT = 48; // More echoes for menu
@@ -80,7 +80,7 @@ const HomePage: React.FC = () => {
   const tFast = t * 1.15;
 
   const handleMenuButtonHover = () => {
-    playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+    playGlassImpact();
   };
 
   return (

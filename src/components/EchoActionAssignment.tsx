@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { Echo, Action, ActionType, Direction } from '../types/gameTypes';
 import Board from './Board';
 import { simulateAllyPreviewAtTick } from '../pages/GamePage';
-import { playSound, playClickSound } from '../assets/sounds/playSound';
+import { playGlassImpact, playClickSound } from '../assets/sounds/playSound';
 
 const ACTIONS: { type: ActionType; label: string; cost: number; needsDirection: boolean }[] = [
   { type: 'walk', label: 'Walk', cost: 1, needsDirection: true },
@@ -492,7 +492,7 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
                     flexShrink: 0
                   }}
                   onMouseEnter={(e) => {
-                    playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+                    playGlassImpact();
                     e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
                     e.currentTarget.style.boxShadow = '0 4px 16px #ff572260, inset 0 1px 0 #ff572280';
                   }}
@@ -548,7 +548,7 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
                   gap: '8px'
                 }}
                 onMouseEnter={(e) => {
-                  playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+                  playGlassImpact();
                   e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
                   e.currentTarget.style.boxShadow = '0 4px 16px #ff572260, inset 0 1px 0 #ff572280';
                 }}

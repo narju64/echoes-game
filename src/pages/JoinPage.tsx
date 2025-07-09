@@ -4,7 +4,7 @@ import { apiService } from '../services/api';
 import type { Room } from '../services/api';
 import { socketService } from '../services/socket';
 import '../pages/HomePage.css';
-import { playSound, playClickSound } from '../assets/sounds/playSound';
+import { playGlassImpact, playClickSound } from '../assets/sounds/playSound';
 
 // Echo animation constants (same as HomePage)
 const ECHO_COUNT = 24; // Fewer echoes for sub-pages
@@ -53,7 +53,7 @@ function generateEchoes(count = ECHO_COUNT, sizeMultiplier = 1) {
 }
 
 const handleButtonHover = (e: React.MouseEvent<HTMLButtonElement>) => {
-  playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+  playGlassImpact();
   e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
   e.currentTarget.style.borderColor = '#2196F3';
   e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';

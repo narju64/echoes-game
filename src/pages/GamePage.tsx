@@ -8,8 +8,8 @@ import EchoSelection from '../components/EchoSelection';
 import GameInfoPanel from '../components/GameInfoPanel';
 import LeaveConfirmationModal from '../components/LeaveConfirmationModal';
 import { socketService } from '../services/socket';
-import { playSound } from '../assets/sounds/playSound';
-import { playClickSound } from '../assets/sounds/playSound';
+import { playSound, playClickSound, playGlassImpact, playLaserSound, playExplosion } from '../assets/sounds/playSound';
+import { audioSounds } from '../assets/sounds/soundAssets';
 
 const getHomeRow = (playerId: PlayerId) => (playerId === 'player1' ? 0 : 7);
 
@@ -1219,10 +1219,10 @@ const GamePage: React.FC = () => {
     const prevIds = new Set(prev.projectiles.map(p => p.id));
     const newProjectiles = curr.projectiles.filter(p => p.type === 'projectile' && !prevIds.has(p.id));
     if (newProjectiles.length > 0) {
-      playSound('/src/assets/sounds/Audio/laserSmall_004.ogg');
+      playLaserSound();
       newProjectiles.slice(1).forEach((_, i) => {
         setTimeout(() => {
-          playSound('/src/assets/sounds/Audio/laserSmall_001.ogg');
+                      playLaserSound();
         }, (i + 1) * 100);
       });
     }
@@ -1234,14 +1234,14 @@ const GamePage: React.FC = () => {
     );
     newShieldBlocks.forEach((_, i) => {
       setTimeout(() => {
-        playSound('/src/assets/sounds/Audio/laserLarge_004.ogg');
+        playLaserSound();
       }, i * 80);
     });
     // Collision sounds (play for every collision in the current tick)
     const currCollisions = curr.collisions || [];
     currCollisions.forEach((_, i) => {
       setTimeout(() => {
-        playSound('/src/assets/sounds/Audio/laser3.ogg');
+        playLaserSound();
       }, i * 80);
     });
     // Echo destroyed sounds
@@ -1251,8 +1251,7 @@ const GamePage: React.FC = () => {
     const newDestroyed = currDestroyed.filter(d => !prevDestroyedIds.has(d.echoId));
     newDestroyed.forEach((_, i) => {
       setTimeout(() => {
-        playSound('/src/assets/sounds/Audio/lowFrequency_explosion_000.ogg', 1.0);
-        playSound('/src/assets/sounds/Audio/impactMetal_003.ogg', 1.0);
+            playExplosion();
       }, i * 120);
     });
     // Shield activation sounds
@@ -1262,7 +1261,7 @@ const GamePage: React.FC = () => {
       const prevEcho = prevEchoes.find(e => e.id === echo.id);
       if (prevEcho && !prevEcho.isShielded && echo.isShielded) {
         setTimeout(() => {
-          playSound('/src/assets/sounds/Audio/forceField_000.ogg', 0.8);
+          playSound(audioSounds.forceField_000, 0.8);
         }, i * 80);
       }
     });
@@ -1276,7 +1275,7 @@ const GamePage: React.FC = () => {
          (Math.abs(echo.position.col - prevEcho.position.col) === 2 && echo.position.row === prevEcho.position.row))
       ) {
         setTimeout(() => {
-          playSound('/src/assets/sounds/Audio/doorOpen_002.ogg', 0.7);
+          playSound(audioSounds.doorOpen_002, 0.7);
         }, i * 80);
       }
     });
@@ -1445,7 +1444,7 @@ const GamePage: React.FC = () => {
               zIndex: 1000
             }}
             onMouseEnter={(e) => {
-              playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+              playGlassImpact();
               e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
               e.currentTarget.style.borderColor = '#2196F3';
               e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
@@ -1617,7 +1616,7 @@ const GamePage: React.FC = () => {
                   minWidth: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? 0 : undefined,
                 }}
                 onMouseEnter={(e) => {
-                  playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+                  playGlassImpact();
                   e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
                   e.currentTarget.style.boxShadow = '0 4px 16px #f4433660, inset 0 1px 0 #f4433680';
                 }}
@@ -1651,7 +1650,7 @@ const GamePage: React.FC = () => {
                   minWidth: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? 0 : undefined,
                 }}
                 onMouseEnter={(e) => {
-                  playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+                  playGlassImpact();
                   e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
                   e.currentTarget.style.boxShadow = '0 4px 16px #2196F360, inset 0 1px 0 #2196F380';
                 }}
@@ -1684,7 +1683,7 @@ const GamePage: React.FC = () => {
                   minWidth: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? 0 : undefined,
                 }}
                 onMouseEnter={(e) => {
-                  playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+                  playGlassImpact();
                   e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
                   e.currentTarget.style.boxShadow = '0 4px 16px #4CAF5060, inset 0 1px 0 #4CAF5080';
                 }}
@@ -1927,7 +1926,7 @@ const GamePage: React.FC = () => {
               zIndex: 1000
             }}
             onMouseEnter={(e) => {
-              playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+              playGlassImpact();
               e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
               e.currentTarget.style.borderColor = '#2196F3';
               e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
@@ -2188,7 +2187,7 @@ const GamePage: React.FC = () => {
             zIndex: 1000
           }}
           onMouseEnter={(e) => {
-            playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+            playGlassImpact();
             e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
             e.currentTarget.style.borderColor = '#2196F3';
             e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
@@ -2399,7 +2398,7 @@ const GamePage: React.FC = () => {
                           zIndex: 1000
                         }}
                         onMouseEnter={(e) => {
-                          playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+                          playGlassImpact();
                           e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
                           e.currentTarget.style.borderColor = '#2196F3';
                           e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
@@ -2485,7 +2484,7 @@ const GamePage: React.FC = () => {
                   minWidth: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? 0 : undefined,
                 }}
                 onMouseEnter={(e) => {
-                  playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+                  playGlassImpact();
                   e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
                   e.currentTarget.style.boxShadow = '0 4px 16px #2196F360, inset 0 1px 0 #2196F380';
                 }}
@@ -2518,7 +2517,7 @@ const GamePage: React.FC = () => {
                   minWidth: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? 0 : undefined,
                 }}
                 onMouseEnter={(e) => {
-                  playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+                  playGlassImpact();
                   e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
                   e.currentTarget.style.boxShadow = '0 4px 16px #4CAF5060, inset 0 1px 0 #4CAF5080';
                 }}

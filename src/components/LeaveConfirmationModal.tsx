@@ -1,5 +1,5 @@
 import React from 'react';
-import { playSound } from '../assets/sounds/playSound';
+import { playGlassImpact } from '../assets/sounds/playSound';
 
 interface LeaveConfirmationModalProps {
   isOpen: boolean;
@@ -81,7 +81,7 @@ const LeaveConfirmationModal: React.FC<LeaveConfirmationModalProps> = ({
               minWidth: '100px'
             }}
             onMouseEnter={(e) => {
-              playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+              playGlassImpact();
               e.currentTarget.style.background = 'linear-gradient(135deg, #5a5a5a 0%, #7a7a7a 100%)';
               e.currentTarget.style.borderColor = '#888';
             }}
@@ -108,7 +108,7 @@ const LeaveConfirmationModal: React.FC<LeaveConfirmationModalProps> = ({
               fontWeight: 'bold'
             }}
             onMouseEnter={(e) => {
-              playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+              playGlassImpact();
               e.currentTarget.style.background = 'linear-gradient(135deg, #e33e3e 0%, #f55a4a 100%)';
               e.currentTarget.style.borderColor = '#e33e3e';
             }}

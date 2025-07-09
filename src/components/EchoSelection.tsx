@@ -1,6 +1,6 @@
 import React from 'react';
 import type { PlayerId, Echo } from '../types/gameTypes';
-import { playSound } from '../assets/sounds/playSound';
+import { playGlassImpact } from '../assets/sounds/playSound';
 
 interface EchoSelectionProps {
   currentPlayer: PlayerId;
@@ -87,7 +87,7 @@ const EchoSelection: React.FC<EchoSelectionProps> = ({
               opacity: disabled ? 0.6 : 1
             }}
             onMouseEnter={disabled ? undefined : (e) => {
-              playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+              playGlassImpact();
               e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
               e.currentTarget.style.boxShadow = '0 4px 16px #4CAF5060, inset 0 1px 0 #4CAF5080';
             }}
@@ -132,7 +132,7 @@ const EchoSelection: React.FC<EchoSelectionProps> = ({
               opacity: disabled ? 0.6 : 1
             }}
             onMouseEnter={disabled ? undefined : (e) => {
-              playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+              playGlassImpact();
               e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
               e.currentTarget.style.boxShadow = '0 4px 16px #2196F360, inset 0 1px 0 #2196F380';
             }}

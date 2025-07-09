@@ -1,12 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { playSound, playClickSound } from '../assets/sounds/playSound';
+import { playGlassImpact, playClickSound } from '../assets/sounds/playSound';
 
 const RulesPage: React.FC = () => {
   const navigate = useNavigate();
 
   const handleButtonHover = (e: React.MouseEvent<HTMLButtonElement>) => {
-    playSound('/src/assets/sounds/audio/impactGlass_heavy_004.ogg');
+    playGlassImpact();
     e.currentTarget.style.background = 'linear-gradient(145deg, #2196F3, #1976D2)';
     e.currentTarget.style.borderColor = '#2196F3';
     e.currentTarget.style.boxShadow = '0 0 20px #2196F3, 0 8px 16px rgba(33, 150, 243, 0.3)';
