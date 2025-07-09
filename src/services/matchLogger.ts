@@ -117,19 +117,26 @@ class MatchLogger {
     if (!this.currentMatch) return;
 
     try {
-      // For now, just log to console. You'll replace this with your backend API call
-      console.log('Match Log:', JSON.stringify(this.currentMatch, null, 2));
+      console.log('Sending match log to backend:', this.currentMatch.matchId);
       
-      // TODO: Send to your backend API
-      // const response = await fetch('/api/matches', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(this.currentMatch)
-      // });
+      // Send to backend API
+      const response = await fetch('/api/matches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(this.currentMatch)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('Match logged successfully:', result);
       
       this.currentMatch = null;
     } catch (error) {
       console.error('Failed to send match log:', error);
+      // Don't clear currentMatch on error so it can be retried if needed
     }
   }
 
