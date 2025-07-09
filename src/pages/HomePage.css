@@ -3,17 +3,18 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  height: 100vh;
   background-color: #000000;
   color: white;
   font-family: 'Orbitron', 'Rajdhani', 'Share Tech Mono', Arial, sans-serif;
   padding: 20px;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .home-page h1 {
-  font-size: 4rem;
-  margin-bottom: 2rem;
+  font-size: 3.5rem;
+  margin-bottom: 1.5rem;
   color: #ff9800;
   text-shadow: 0 0 10px #ffffff, 0 0 20px #ffffff;
   font-weight: bold;
@@ -43,7 +44,7 @@
 .home-page .menu {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.2rem;
   width: 100%;
   max-width: 400px;
   align-items: center;
@@ -129,6 +130,35 @@
   }
 }
 
+/* Desktop responsive adjustments */
+@media (max-width: 1200px) {
+  .community-section {
+    max-width: 500px;
+  }
+  
+  .community-links {
+    max-width: 500px;
+  }
+  
+  .community-link {
+    max-width: 240px;
+  }
+}
+
+@media (max-width: 1000px) {
+  .community-section {
+    max-width: 400px;
+  }
+  
+  .community-links {
+    max-width: 400px;
+  }
+  
+  .community-link {
+    max-width: 190px;
+  }
+}
+
 /* Landscape mobile adjustments */
 @media (max-width: 768px) and (orientation: landscape) {
   .home-page {
@@ -166,6 +196,114 @@
     transform: translateY(1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
+}
+
+/* Community Section Styles */
+.community-section {
+  margin-top: 3rem;
+  width: 100%;
+  max-width: 650px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.community-title {
+  font-size: 1.2rem;
+  color: #2196f3;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 0 0 5px #2196f3;
+  text-align: center;
+}
+
+.community-links {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  width: 100%;
+  justify-content: center;
+  max-width: 650px;
+}
+
+.community-link {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(145deg, #222, #333);
+  border: 2px solid #555;
+  border-radius: 12px;
+  text-decoration: none;
+  color: white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 320px;
+}
+
+.community-link::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.community-link:hover::before {
+  left: 100%;
+}
+
+.community-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+.discord-link:hover,
+.kofi-link:hover {
+  background: linear-gradient(145deg, #ff9900d5, #ff9900d5);
+  border-color: #ff9800;
+  box-shadow: 0 0 20px #ff9800, 0 6px 12px rgba(255, 152, 0, 0.3);
+}
+
+.link-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+  width: 50px;
+  text-align: center;
+}
+
+.link-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.kofi-link .link-content {
+  text-align: right;
+}
+
+.link-title {
+  font-size: 1.1rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: white;
+}
+
+.link-description {
+  font-size: 0.85rem;
+  color: #ccc;
+  line-height: 1.3;
+  font-family: 'Rajdhani', 'Share Tech Mono', Arial, sans-serif;
 }
 
 /* Multiplayer component styles */
@@ -370,5 +508,82 @@
   
   .menu-button.secondary {
     width: 100%;
+  }
+} 
+
+/* Mobile adjustments for community section */
+@media (max-width: 768px) {
+  .community-section {
+    margin-top: 2rem;
+    gap: 0.8rem;
+  }
+  
+  .community-title {
+    font-size: 1rem;
+  }
+  
+  .community-links {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .community-link {
+    padding: 0.8rem 1.2rem;
+    gap: 0.8rem;
+    max-width: 300px;
+  }
+  
+  .link-icon {
+    font-size: 1.5rem;
+    width: 40px;
+  }
+  
+  .link-title {
+    font-size: 1rem;
+  }
+  
+  .link-description {
+    font-size: 0.8rem;
+  }
+}
+
+/* Landscape mobile adjustments */
+@media (max-width: 768px) and (orientation: landscape) {
+  .community-section {
+    margin-top: 1.5rem;
+  }
+  
+  .community-link {
+    padding: 0.6rem 1rem;
+  }
+  
+  .link-icon {
+    font-size: 1.3rem;
+    width: 35px;
+  }
+  
+  .link-title {
+    font-size: 0.9rem;
+  }
+  
+  .link-description {
+    font-size: 0.75rem;
+  }
+}
+
+/* Touch-friendly improvements for community links */
+@media (hover: none) and (pointer: coarse) {
+  .community-link {
+    min-height: 44px;
+  }
+  
+  .community-link:hover {
+    transform: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+  
+  .community-link:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
 } 

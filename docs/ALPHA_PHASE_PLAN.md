@@ -12,16 +12,16 @@ This document outlines the complete Alpha development phases for Echoes, from cu
 **Goal**: Prepare Echoes for public recruitment
 
 ### Technical Tasks
-- [ ] Fix any major UI/UX bugs
+- [✅] Fix any major UI/UX bugs
 - [✅] Add version display to main menu
 - [✅] Remove/hide unfinished features (AI Training, Tournament)
-- [ ] Implement match logging system
+- [✅] Implement match logging system
 - [✅] Add error tracking
 
 ### Community Setup
-- [ ] Create Discord server
-- [ ] Add Discord link to main menu
-- [ ] Set up donation links (Ko-Fi/PayPal)
+- [✅] Create Discord server
+- [✅] Add Discord link to main menu
+- [✅] Set up donation links (Ko-Fi/PayPal)
 - [ ] Create game trailer
 - [ ] Set up devlog template
 

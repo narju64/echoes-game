@@ -1,5 +1,5 @@
 .intro-text-container {
-  max-width: 800px;
+  max-width: 1000px;
   margin: 0 auto;
   text-align: center;
   z-index: 1;
@@ -16,8 +16,8 @@
   font-size: 2.2rem;
   letter-spacing: 0.02em;
   line-height: 2.1;
-  white-space: pre-line;
-  word-break: break-word;
+  white-space: nowrap;
+  word-break: normal;
   margin-bottom: 0.2rem;
   display: block;
   transition: font-size 0.2s;
@@ -49,7 +49,7 @@
   .intro-text-line, .intro-text-always {
     font-size: 1.15rem;
     line-height: 1.5;
-    word-break: break-word;
+    word-break: normal;
   }
   .intro-stanza-break {
     height: 3.2rem;
@@ -64,7 +64,7 @@
   .intro-text-line, .intro-text-always {
     font-size: 0.95rem;
     line-height: 1.3;
-    word-break: break-word;
+    word-break: normal;
   }
   .intro-stanza-break {
     height: 2.5rem;

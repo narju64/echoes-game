@@ -110,8 +110,8 @@ const IntroScreen: React.FC = () => {
   // Explosion state: array of { x, y, color, key }
   const [explosions, setExplosions] = useState<{ x: number, y: number, color: string, key: string }[]>([]);
   const [showDeathExplosion, setShowDeathExplosion] = useState(false);
-  const DEATH_EXPLOSION_X = 490;
-  const DEATH_EXPLOSION_Y = 1460;
+  const DEATH_EXPLOSION_X = 445;
+  const DEATH_EXPLOSION_Y = 1515;
   const [hideDeathWord, setHideDeathWord] = useState(false);
   // For 'always' fade-in
   const [alwaysVisible, setAlwaysVisible] = useState(false);
@@ -131,22 +131,23 @@ const IntroScreen: React.FC = () => {
   }, [showEchoes]);
   const t = (now - startTime.current) * SPEED;
 
-  // Fade in lines one by one
+  // Fade in lines one by one with overlapping timing
   useEffect(() => {
     if (visibleLines < introLines.length) {
       if (introLines[visibleLines] === '') {
         setVisibleLines(visibleLines + 1);
         return;
       }
-      const delay = visibleLines === 0 ? 2000 : FADE_IN_DURATION;
+      // Start next line halfway through the current line's duration
+      const delay = visibleLines === 0 ? 2000 : FADE_IN_DURATION / 1.75;
       const timeout = setTimeout(() => setVisibleLines(visibleLines + 1), delay);
       if (visibleLines === 4) {
-        setTimeout(() => setFadeOutFadesActive(true), FADE_IN_DURATION);
+        setTimeout(() => setFadeOutFadesActive(true), FADE_IN_DURATION / 2);
       }
       return () => clearTimeout(timeout);
     } else {
-      // Wait FADE_IN_DURATION before setting ready, so last line is fully rendered
-      const timeout = setTimeout(() => setReady(true), FADE_IN_DURATION);
+      // Wait half duration before setting ready, so last line is fully rendered
+      const timeout = setTimeout(() => setReady(true), FADE_IN_DURATION / 2);
       return () => clearTimeout(timeout);
     }
   }, [visibleLines]);

@@ -105,7 +105,7 @@ const HomePage: React.FC = () => {
     <div className="home-page">
       {/* Floating Echoes Background */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-        <svg width="100vw" height="100vh" viewBox="0 0 2000 2000" style={{ width: '100vw', height: '100vh', display: 'block', position: 'absolute', inset: 0 }}>
+        <svg width="100%" height="100%" viewBox="0 0 2000 2000" style={{ width: '100%', height: '100%', display: 'block', position: 'absolute', inset: 0 }}>
           {/* Background echoes */}
           {echoes.map((e, i) => {
             let cx = e.centerX + Math.cos(e.angle + t * e.freqX + e.phase) * e.radius;
@@ -281,6 +281,42 @@ const HomePage: React.FC = () => {
               <button className="menu-button" onClick={() => { playClickSound(); setMenuState('main'); }} onMouseEnter={handleMenuButtonHover}>Back</button>
             </>
           )}
+        </div>
+
+        {/* Community Section */}
+        <div className="community-section">
+          <div className="community-title">Join the Community</div>
+          <div className="community-links">
+            <a 
+              href="https://discord.gg/UUZ6mRN3" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="community-link discord-link"
+              onClick={() => { playClickSound(); }}
+              onMouseEnter={handleMenuButtonHover}
+            >
+              <div className="link-icon">🎮</div>
+              <div className="link-content">
+                <div className="link-title">Discord Server</div>
+                <div className="link-description">Join our community to connect, receive updates, and help shape the future of Echoes!</div>
+              </div>
+            </a>
+            
+            <a 
+              href="https://ko-fi.com/narju" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="community-link kofi-link"
+              onClick={() => { playClickSound(); }}
+              onMouseEnter={handleMenuButtonHover}
+            >
+              <div className="link-icon">☕</div>
+              <div className="link-content">
+                <div className="link-description">If you are enjoying Echoes and want to help it grow, consider fueling development with your</div>
+                <div className="link-title">Support</div>
+              </div>
+            </a>
+          </div>
         </div>
       </div>
     </div>
