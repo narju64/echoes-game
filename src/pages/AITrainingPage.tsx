@@ -1,12 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HeadlessGameRunner } from '../simulation/HeadlessGameRunner';
 import { RandomAgent } from '../ai/agents/rule-based/RandomAgent';
+import { backgroundMusic, setMenuThemeLoop } from '../assets/sounds/playSound';
 
 const AITrainingPage: React.FC = () => {
   // Remove unused selectedGame state
   // const [selectedGame, setSelectedGame] = useState(null);
   const [showGameViewer, setShowGameViewer] = useState(false);
   const [simulationLog, setSimulationLog] = useState<string[]>([]);
+  const [musicStarted, setMusicStarted] = useState(false);
+
+  // Start background music when component mounts
+  useEffect(() => {
+    // Set custom loop overlap for seamless FL Studio loops
+    setMenuThemeLoop(); // Uses MENU_THEME constant
+    
+    // Try to play menu music
+    backgroundMusic.play('menuTheme', 0.4);
+    return () => {
+      // Don't stop music when leaving AI training page
+    };
+  }, []);
+
+  // Handle user interaction to start music (bypass autoplay restrictions)
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      if (!musicStarted) {
+        console.log('User interaction detected, starting menu music...');
+        backgroundMusic.play('menuTheme', 0.4);
+        setMusicStarted(true);
+        
+        // Remove event listeners after first interaction
+        document.removeEventListener('click', handleUserInteraction);
+        document.removeEventListener('keydown', handleUserInteraction);
+        document.removeEventListener('touchstart', handleUserInteraction);
+      }
+    };
+
+    // Add event listeners for user interaction
+    document.addEventListener('click', handleUserInteraction);
+    document.addEventListener('keydown', handleUserInteraction);
+    document.addEventListener('touchstart', handleUserInteraction);
+
+    return () => {
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('keydown', handleUserInteraction);
+      document.removeEventListener('touchstart', handleUserInteraction);
+    };
+  }, [musicStarted]);
 
   const handleRunTestSimulation = () => {
     const agent1 = new RandomAgent('p1', 'RandomAgent1', 'player1');

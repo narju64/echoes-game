@@ -20,5 +20,18 @@ export const audioSounds = {
   doorOpen_002: new URL('./Audio/doorOpen_002.ogg', import.meta.url).href,
 } as const;
 
+// Music assets
+export const musicAssets = {
+  introTheme: new URL('./Music/Echoes Intro 1.ogg', import.meta.url).href,
+  menuTheme: new URL('./Music/Echoes Menu 1.ogg', import.meta.url).href,
+} as const;
+
+// Loop overlap timing constants (in seconds)
+export const LOOP_OVERLAPS = {
+  INTRO_THEME: 6.7,
+  MENU_THEME: 8.3,
+} as const;
+
 // Type for sound names
-export type AudioSoundName = keyof typeof audioSounds; 
+export type AudioSoundName = keyof typeof audioSounds;
+export type MusicName = keyof typeof musicAssets; 

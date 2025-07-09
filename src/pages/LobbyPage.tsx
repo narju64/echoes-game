@@ -4,7 +4,7 @@ import { socketService } from '../services/socket';
 import LeaveConfirmationModal from '../components/LeaveConfirmationModal';
 import type { PlayerId } from '../types/gameTypes';
 import '../pages/HomePage.css';
-import { playGlassImpact, playClickSound } from '../assets/sounds/playSound';
+import { playGlassImpact, playClickSound, backgroundMusic, setMenuThemeLoop } from '../assets/sounds/playSound';
 
 // Echo animation constants (same as HomePage)
 const ECHO_COUNT = 24;
@@ -71,6 +71,7 @@ const LobbyPage: React.FC = () => {
   const [gameStarted, setGameStarted] = useState(false);
   const [error, setError] = useState('');
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [musicStarted, setMusicStarted] = useState(false);
 
   // Animation setup (same as HomePage)
   const startTime = useRef(performance.now());
@@ -93,6 +94,45 @@ const LobbyPage: React.FC = () => {
     requestAnimationFrame(animate);
     return () => { running = false; };
   }, []);
+
+  // Start background music when component mounts
+  useEffect(() => {
+    // Set custom loop overlap for seamless FL Studio loops
+    setMenuThemeLoop(); // Uses MENU_THEME constant
+    
+    // Try to play menu music
+    backgroundMusic.play('menuTheme', 0.4);
+    return () => {
+      // Don't stop music when leaving lobby page
+    };
+  }, []);
+
+  // Handle user interaction to start music (bypass autoplay restrictions)
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      if (!musicStarted) {
+        console.log('User interaction detected, starting menu music...');
+        backgroundMusic.play('menuTheme', 0.4);
+        setMusicStarted(true);
+        
+        // Remove event listeners after first interaction
+        document.removeEventListener('click', handleUserInteraction);
+        document.removeEventListener('keydown', handleUserInteraction);
+        document.removeEventListener('touchstart', handleUserInteraction);
+      }
+    };
+
+    // Add event listeners for user interaction
+    document.addEventListener('click', handleUserInteraction);
+    document.addEventListener('keydown', handleUserInteraction);
+    document.addEventListener('touchstart', handleUserInteraction);
+
+    return () => {
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('keydown', handleUserInteraction);
+      document.removeEventListener('touchstart', handleUserInteraction);
+    };
+  }, [musicStarted]);
 
   const t = (now - startTime.current) * SPEED;
   const tFast = t * 1.15;

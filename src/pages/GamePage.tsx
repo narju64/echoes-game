@@ -8,7 +8,7 @@ import EchoSelection from '../components/EchoSelection';
 import GameInfoPanel from '../components/GameInfoPanel';
 import LeaveConfirmationModal from '../components/LeaveConfirmationModal';
 import { socketService } from '../services/socket';
-import { playSound, playClickSound, playGlassImpact, playLaserSound, playExplosion } from '../assets/sounds/playSound';
+import { playSound, playClickSound, playGlassImpact, playLaserSound, playExplosion, backgroundMusic } from '../assets/sounds/playSound';
 import { audioSounds } from '../assets/sounds/soundAssets';
 import { setGameContext, captureGameError, clearGameContext } from '../services/sentry';
 import { matchLogger } from '../services/matchLogger';
@@ -823,6 +823,11 @@ const GamePage: React.FC = () => {
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Stop background music when entering game
+  useEffect(() => {
+    backgroundMusic.stop();
   }, []);
 
   // Handle beforeunload event (page refresh, close tab, browser back)

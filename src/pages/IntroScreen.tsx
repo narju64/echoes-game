@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './IntroScreen.css';
-import { playMetalImpact } from '../assets/sounds/playSound';
+import { playMetalImpact, backgroundMusic, testAudio } from '../assets/sounds/playSound';
 
 const introLines = [
   'All is an echo - ',
@@ -115,6 +115,50 @@ const IntroScreen: React.FC = () => {
   const [hideDeathWord, setHideDeathWord] = useState(false);
   // For 'always' fade-in
   const [alwaysVisible, setAlwaysVisible] = useState(false);
+  const [musicStarted, setMusicStarted] = useState(false);
+
+  // Start background music when component mounts
+  useEffect(() => {
+    // Debug audio issues
+    testAudio();
+    
+    // Set custom loop overlap for seamless FL Studio loops
+    // setIntroThemeLoop(); // Uses INTRO_THEME constant - commented out for single play
+    
+    // Try to play intro music (no looping)
+    backgroundMusic.play('introTheme', 1.0, false); // No looping for intro
+    
+    return () => {
+      // Don't stop music when leaving intro - let it continue to home page
+    };
+  }, []);
+
+  // Handle user interaction to start music (bypass autoplay restrictions)
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      if (!musicStarted) {
+        console.log('User interaction detected, starting music...');
+        backgroundMusic.play('introTheme', 1.0, false); // No looping for intro
+        setMusicStarted(true);
+        
+        // Remove event listeners after first interaction
+        document.removeEventListener('click', handleUserInteraction);
+        document.removeEventListener('keydown', handleUserInteraction);
+        document.removeEventListener('touchstart', handleUserInteraction);
+      }
+    };
+
+    // Add event listeners for user interaction
+    document.addEventListener('click', handleUserInteraction);
+    document.addEventListener('keydown', handleUserInteraction);
+    document.addEventListener('touchstart', handleUserInteraction);
+
+    return () => {
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('keydown', handleUserInteraction);
+      document.removeEventListener('touchstart', handleUserInteraction);
+    };
+  }, [musicStarted]);
 
   useEffect(() => {
     if (!showEchoes) return;
@@ -293,6 +337,35 @@ const IntroScreen: React.FC = () => {
       window.removeEventListener('keydown', escHandler);
     };
   }, [forceProceed]);
+
+  // Listen for intro music to trigger automatic transition 6.7 seconds before it ends
+  useEffect(() => {
+    const handleTimeUpdate = () => {
+      const audioElement = backgroundMusic.getAudioElement();
+      if (audioElement && audioElement.duration > 0 && ready && !exiting) {
+        const timeUntilEnd = audioElement.duration - audioElement.currentTime;
+        if (timeUntilEnd <= 6.7) {
+          console.log('Intro music ending soon, triggering automatic transition');
+          proceed();
+          // Remove the event listener to prevent multiple triggers
+          audioElement.removeEventListener('timeupdate', handleTimeUpdate);
+        }
+      }
+    };
+    
+    // Get the audio element and add the timeupdate event listener
+    const audioElement = backgroundMusic.getAudioElement();
+    if (audioElement) {
+      audioElement.addEventListener('timeupdate', handleTimeUpdate);
+    }
+    
+    return () => {
+      // Clean up event listener
+      if (audioElement) {
+        audioElement.removeEventListener('timeupdate', handleTimeUpdate);
+      }
+    };
+  }, [ready, exiting, proceed]);
 
   return (
     <div style={{
@@ -720,6 +793,26 @@ const IntroScreen: React.FC = () => {
             </radialGradient>
           </defs>
         </svg>
+      )}
+      
+      {/* Audio prompt for autoplay restriction */}
+      {!musicStarted && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          color: '#fb8c00',
+          fontSize: '0.9rem',
+          fontFamily: 'Orbitron, monospace',
+          textAlign: 'center',
+          zIndex: 10,
+          opacity: 0.8,
+          textShadow: '0 0 8px #fb8c00',
+          pointerEvents: 'none'
+        }}>
+          Click anywhere to enable audio • Esc to skip intro
+        </div>
       )}
     </div>
   );

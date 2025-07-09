@@ -1,8 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { backgroundMusic, setMenuThemeLoop } from '../assets/sounds/playSound';
 
 const AITournamentPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'standings' | 'bracket'>('standings');
   const [showGameViewer, setShowGameViewer] = useState(false);
+  const [musicStarted, setMusicStarted] = useState(false);
+
+  // Start background music when component mounts
+  useEffect(() => {
+    // Set custom loop overlap for seamless FL Studio loops
+    setMenuThemeLoop(); // Uses MENU_THEME constant
+    
+    // Try to play menu music
+    backgroundMusic.play('menuTheme', 0.4);
+    return () => {
+      // Don't stop music when leaving AI tournament page
+    };
+  }, []);
+
+  // Handle user interaction to start music (bypass autoplay restrictions)
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      if (!musicStarted) {
+        console.log('User interaction detected, starting menu music...');
+        backgroundMusic.play('menuTheme', 0.4);
+        setMusicStarted(true);
+        
+        // Remove event listeners after first interaction
+        document.removeEventListener('click', handleUserInteraction);
+        document.removeEventListener('keydown', handleUserInteraction);
+        document.removeEventListener('touchstart', handleUserInteraction);
+      }
+    };
+
+    // Add event listeners for user interaction
+    document.addEventListener('click', handleUserInteraction);
+    document.addEventListener('keydown', handleUserInteraction);
+    document.addEventListener('touchstart', handleUserInteraction);
+
+    return () => {
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('keydown', handleUserInteraction);
+      document.removeEventListener('touchstart', handleUserInteraction);
+    };
+  }, [musicStarted]);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#14171c' }}>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './HomePage.css';
-import { playGlassImpact, playClickSound } from '../assets/sounds/playSound';
+import { playGlassImpact, playClickSound, backgroundMusic, setMenuThemeLoop } from '../assets/sounds/playSound';
 
 
 // Echo animation constants
@@ -62,6 +62,7 @@ const HomePage: React.FC = () => {
   const [echoes, _setEchoes] = useState(() => generateEchoes());
   const [foregroundEchoes, _setForegroundEchoes] = useState(() => generateEchoes(FOREGROUND_ECHO_COUNT, 1.2));
   const [menuState, setMenuState] = useState<'main' | 'aiTraining' | 'multiplayer'>('main');
+  const [musicStarted, setMusicStarted] = useState(false);
   const navigate = useNavigate();
 
   // Check if we're in development mode
@@ -71,6 +72,46 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     document.title = isDevelopment ? 'Echoes - Alpha v1 (dev mode)' : 'Echoes - Alpha v1';
   }, [isDevelopment]);
+
+  // Start background music when component mounts
+  useEffect(() => {
+    // Set custom loop overlap for seamless FL Studio loops
+    setMenuThemeLoop(); // Uses MENU_THEME constant
+    
+    // Try to play menu music
+    backgroundMusic.play('menuTheme', 0.4); // Increased volume for menu
+    
+    return () => {
+      // Don't stop music when leaving home page - let it continue to other pages
+    };
+  }, []);
+
+  // Handle user interaction to start music (bypass autoplay restrictions)
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      if (!musicStarted) {
+        console.log('User interaction detected, starting menu music...');
+        backgroundMusic.play('menuTheme', 0.4);
+        setMusicStarted(true);
+        
+        // Remove event listeners after first interaction
+        document.removeEventListener('click', handleUserInteraction);
+        document.removeEventListener('keydown', handleUserInteraction);
+        document.removeEventListener('touchstart', handleUserInteraction);
+      }
+    };
+
+    // Add event listeners for user interaction
+    document.addEventListener('click', handleUserInteraction);
+    document.addEventListener('keydown', handleUserInteraction);
+    document.addEventListener('touchstart', handleUserInteraction);
+
+    return () => {
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('keydown', handleUserInteraction);
+      document.removeEventListener('touchstart', handleUserInteraction);
+    };
+  }, [musicStarted]);
 
   // Animation loop
   useEffect(() => {
@@ -295,7 +336,6 @@ const HomePage: React.FC = () => {
               onClick={() => { playClickSound(); }}
               onMouseEnter={handleMenuButtonHover}
             >
-              <div className="link-icon">🎮</div>
               <div className="link-content">
                 <div className="link-title">Discord Server</div>
                 <div className="link-description">Join our community to connect, receive updates, and help shape the future of Echoes!</div>
@@ -310,7 +350,6 @@ const HomePage: React.FC = () => {
               onClick={() => { playClickSound(); }}
               onMouseEnter={handleMenuButtonHover}
             >
-              <div className="link-icon">☕</div>
               <div className="link-content">
                 <div className="link-description">If you are enjoying Echoes and want to help it grow, consider fueling development with your</div>
                 <div className="link-title">Support</div>
@@ -319,6 +358,8 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       </div>
+      
+
     </div>
   );
 };
