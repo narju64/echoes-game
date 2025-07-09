@@ -16,8 +16,7 @@ This document outlines the complete Alpha development phases for Echoes, from cu
 - [✅] Add version display to main menu
 - [✅] Remove/hide unfinished features (AI Training, Tournament)
 - [ ] Implement match logging system
-- [ ] Add analytics tracking
-- [ ] Add error tracking
+- [✅] Add error tracking
 
 ### Community Setup
 - [ ] Create Discord server
@@ -214,6 +213,7 @@ This document outlines the complete Alpha development phases for Echoes, from cu
 
 ### Launch Preparation
 - [ ] Marketing materials
+- [ ] Add analytics tracking
 - [ ] Press kit
 - [ ] Community outreach
 - [ ] Launch event planning

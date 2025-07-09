@@ -3,6 +3,7 @@ import type { Echo, Action, ActionType, Direction } from '../types/gameTypes';
 import Board from './Board';
 import { simulateAllyPreviewAtTick } from '../pages/GamePage';
 import { playGlassImpact, playClickSound } from '../assets/sounds/playSound';
+import { matchLogger } from '../services/matchLogger';
 
 const ACTIONS: { type: ActionType; label: string; cost: number; needsDirection: boolean }[] = [
   { type: 'walk', label: 'Walk', cost: 1, needsDirection: true },
@@ -349,10 +350,16 @@ const EchoActionAssignment: React.FC<EchoActionAssignmentProps> = ({ pendingEcho
     // Calculate the correct tick number for this action
     const actionTick = pendingEcho.instructionList.length + actions.length + 1;
     
-    setActions([...actions, { type: selectedActionType, direction: dir, tick: actionTick, cost }]);
+    const newAction = { type: selectedActionType, direction: dir, tick: actionTick, cost };
+    setActions([...actions, newAction]);
     setCurrentTick(currentTick + 1);
     setSelectingDirection(null);
     setSelectedActionType(null);
+    
+    // Log the action for match logging
+    if (matchLogger.isActive()) {
+      matchLogger.logAction(pendingEcho.playerId, pendingEcho.id, newAction, pendingEcho.position, dir);
+    }
   };
 
   // Handle undoing the last action

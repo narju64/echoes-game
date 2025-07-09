@@ -11,6 +11,7 @@ import { socketService } from '../services/socket';
 import { playSound, playClickSound, playGlassImpact, playLaserSound, playExplosion } from '../assets/sounds/playSound';
 import { audioSounds } from '../assets/sounds/soundAssets';
 import { setGameContext, captureGameError, clearGameContext } from '../services/sentry';
+import { matchLogger } from '../services/matchLogger';
 
 const getHomeRow = (playerId: PlayerId) => (playerId === 'player1' ? 0 : 7);
 
@@ -688,6 +689,37 @@ const withClickSound = <T extends any[]>(fn: (...args: T) => void) => {
   };
 };
 
+// Helper function to determine win condition
+function determineWinCondition(
+  winner: PlayerId, 
+  finalScores: Record<PlayerId, number>, 
+  player1Echoes: Echo[], 
+  player2Echoes: Echo[]
+): string {
+  const SCORE_TO_WIN = 10;
+  const COLUMNS_TO_WIN = 8;
+  
+  // Check score win condition
+  if (finalScores[winner] >= SCORE_TO_WIN) {
+    return `${SCORE_TO_WIN}_points`;
+  }
+  
+  // Check columns win condition
+  const winnerEchoes = winner === 'player1' ? player1Echoes : player2Echoes;
+  const winnerColumns = new Set(winnerEchoes.map(e => e.position.col));
+  if (winnerColumns.size >= COLUMNS_TO_WIN) {
+    return `${COLUMNS_TO_WIN}_columns`;
+  }
+  
+  // Check opponent destruction win condition
+  const opponentEchoes = winner === 'player1' ? player2Echoes : player1Echoes;
+  if (opponentEchoes.length === 0) {
+    return 'opponent_destroyed';
+  }
+  
+  return 'unknown';
+}
+
 const GamePage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -749,6 +781,14 @@ const GamePage: React.FC = () => {
       clearGameContext();
     };
   }, [gameMode, roomId]);
+
+  // Start match logging when game begins
+  useEffect(() => {
+    if (state.echoes.length > 0 && !matchLogger.isActive()) {
+      const matchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      matchLogger.startMatch(matchId, gameMode, ['player1', 'player2'], state);
+    }
+  }, [state.echoes.length, gameMode, state]);
 
   // Debug logging for multiplayer
   useEffect(() => {
@@ -1184,6 +1224,46 @@ const GamePage: React.FC = () => {
       
       console.log('Starting replay simulation with echoes:', state.echoes);
       const sim = simulateReplay(state.echoes.map(e => ({ ...e, startingPosition: { row: e.position.row, col: e.position.col } }) as Echo & { startingPosition: { row: number; col: number } }));
+      
+      // Log replay events for match logging
+      sim.forEach((tickState, index) => {
+        if (index === 0) {
+          // Log initial state
+          matchLogger.logTickStart(0, { ...state, echoes: tickState.echoes });
+        } else {
+          // Log each tick
+          matchLogger.logTickStart(index, { ...state, echoes: tickState.echoes });
+          
+          // Log collisions
+          tickState.collisions.forEach(collision => {
+            matchLogger.logCollision(
+              { id: 'collision', type: 'collision', player: 'unknown' },
+              { id: 'collision', type: 'collision', player: 'unknown' },
+              { row: collision.row, col: collision.col }
+            );
+          });
+          
+          // Log destroyed entities
+          tickState.destroyed.forEach(destroyed => {
+            const echo = state.echoes.find(e => e.id === destroyed.echoId);
+            if (echo) {
+              matchLogger.logEntityDestroyed(echo, 'collision');
+            }
+          });
+          
+          // Log shield blocks
+          tickState.shieldBlocks.forEach(shieldBlock => {
+            matchLogger.logCollision(
+              { id: 'shield', type: 'shield', player: 'unknown' },
+              { id: 'projectile', type: 'projectile', player: 'unknown' },
+              { row: shieldBlock.row, col: shieldBlock.col }
+            );
+          });
+          
+          matchLogger.logTickEnd(index, { ...state, echoes: tickState.echoes });
+        }
+      });
+      
       setReplayStates(sim);
       setReplayTick(0);
       currentTickRef.current = 0; // Reset the ref
@@ -1704,6 +1784,12 @@ const GamePage: React.FC = () => {
     const finalScores = state.scores;
     const player1Echoes = state.echoes.filter(e => e.playerId === 'player1' && e.alive);
     const player2Echoes = state.echoes.filter(e => e.playerId === 'player2' && e.alive);
+    
+    // End match logging when game is over
+    if (winner && matchLogger.isActive()) {
+      const winCondition = determineWinCondition(winner, finalScores, player1Echoes, player2Echoes);
+      matchLogger.endMatch(winner, winCondition, finalScores, state);
+    }
     
     return (
       <>
