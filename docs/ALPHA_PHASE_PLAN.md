@@ -13,8 +13,8 @@ This document outlines the complete Alpha development phases for Echoes, from cu
 
 ### Technical Tasks
 - [ ] Fix any major UI/UX bugs
-- [ ] Add version display to main menu
-- [ ] Remove/hide unfinished features (AI Training, Tournament)
+- [✅] Add version display to main menu
+- [✅] Remove/hide unfinished features (AI Training, Tournament)
 - [ ] Implement match logging system
 - [ ] Add analytics tracking
 - [ ] Add error tracking

@@ -1,6 +1,20 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import * as Sentry from "@sentry/react";
+
+// Initialize Sentry as early as possible
+Sentry.init({
+  dsn: "https://e444a874af004118cd593bcad9ac1788@o4509638989971456.ingest.us.sentry.io/4509638997245952",
+  // Setting this option to true will send default PII data to Sentry.
+  // For example, automatic IP address collection on events
+  sendDefaultPii: true,
+  // Enable performance monitoring
+  tracesSampleRate: 1.0,
+  // Enable session replay
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1.0,
+});
 
 import HomePage from './pages/HomePage.tsx';
 import GamePage from './pages/GamePage.tsx';
@@ -60,6 +74,8 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <Sentry.ErrorBoundary fallback={<div>An error has occurred</div>}>
+      <RouterProvider router={router} />
+    </Sentry.ErrorBoundary>
   </React.StrictMode>
 );

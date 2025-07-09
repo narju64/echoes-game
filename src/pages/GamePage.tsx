@@ -10,6 +10,7 @@ import LeaveConfirmationModal from '../components/LeaveConfirmationModal';
 import { socketService } from '../services/socket';
 import { playSound, playClickSound, playGlassImpact, playLaserSound, playExplosion } from '../assets/sounds/playSound';
 import { audioSounds } from '../assets/sounds/soundAssets';
+import { setGameContext, captureGameError, clearGameContext } from '../services/sentry';
 
 const getHomeRow = (playerId: PlayerId) => (playerId === 'player1' ? 0 : 7);
 
@@ -739,6 +740,16 @@ const GamePage: React.FC = () => {
   const currentPlayer: PlayerId = gameMode === 'multiplayer' && gamePlayerId ? gamePlayerId : state.currentPlayer;
   const homeRow = getHomeRow(currentPlayer);
 
+  // Set Sentry context for error tracking
+  useEffect(() => {
+    setGameContext(gameMode, roomId || undefined);
+    
+    // Cleanup when component unmounts
+    return () => {
+      clearGameContext();
+    };
+  }, [gameMode, roomId]);
+
   // Debug logging for multiplayer
   useEffect(() => {
     if (gameMode === 'multiplayer') {
@@ -1053,12 +1064,13 @@ const GamePage: React.FC = () => {
   };
 
   const handleFinalizeEcho = (finalEcho: Echo) => {
-    console.log('Finalizing echo:', finalEcho);
-    console.log('Current state before finalize:', {
-      echoes: state.echoes.map(e => ({ id: e.id, playerId: e.playerId, alive: e.alive })),
-      currentPlayer: state.currentPlayer,
-      phase: state.phase
-    });
+    try {
+      console.log('Finalizing echo:', finalEcho);
+      console.log('Current state before finalize:', {
+        echoes: state.echoes.map(e => ({ id: e.id, playerId: e.playerId, alive: e.alive })),
+        currentPlayer: state.currentPlayer,
+        phase: state.phase
+      });
     
     // If startingPosition is missing, add it from position
     const echoWithStart = {
@@ -1111,6 +1123,20 @@ const GamePage: React.FC = () => {
     }
     
     setSelectionMode('choosing'); // Reset selection mode
+    } catch (error) {
+      console.error('Error in handleFinalizeEcho:', error);
+      captureGameError(error as Error, {
+        gameMode,
+        gameId: roomId || undefined,
+        playerId: currentPlayer,
+        action: 'finalize_echo',
+        gameState: {
+          echoes: state.echoes.length,
+          phase: state.phase,
+          turnNumber: state.turnNumber
+        }
+      });
+    }
   };
 
   const handleReset = () => {
