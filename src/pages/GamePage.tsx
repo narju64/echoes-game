@@ -1698,6 +1698,15 @@ const GamePage: React.FC = () => {
               >
                   🔄 Reset
               </button>
+              </div>
+            )}
+            
+            {/* Replay and Next buttons - always visible */}
+            <div style={{ 
+              textAlign: 'center', 
+              marginTop: isMobile && gameMode === 'multiplayer' && typeof window !== 'undefined' && window.innerWidth === 320 && state.phase === 'replay' ? '-18px' : (isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '0.25rem' : (isMobile && gameMode === 'multiplayer' && state.phase === 'replay' ? '0.1rem' : '1rem')), 
+              marginBottom: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '0.5rem' : (isMobile && gameMode === 'multiplayer' && state.phase === 'replay' ? '0.3rem' : '1rem') 
+            }}>
               <button 
                 onClick={() => { playClickSound(); handleReplay(); }}
                 style={{
@@ -1766,9 +1775,6 @@ const GamePage: React.FC = () => {
                   ⏭️ Next
               </button>
             </div>
-            )}
-            
-
           </div>
         </div>
         
