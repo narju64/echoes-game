@@ -523,7 +523,7 @@ const GamePage: React.FC = () => {
       const finalMatchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       matchLogger.startMatch(finalMatchId, gameMode, ['player1', 'player2'], state);
     }
-  }, [state.echoes.length, gameMode, state, isHost]);
+  }, [state.echoes.length, gameMode, isHost]);
 
   // Debug logging for multiplayer
   useEffect(() => {
