@@ -51,7 +51,9 @@ const AITournamentPage: React.FC = () => {
       <div style={{ width: '100%', maxWidth: 1600, margin: '0 auto', padding: '1.5rem 2rem 1rem 2rem', background: '#181c22', color: '#fff', display: 'flex', alignItems: 'center', gap: '2rem', borderBottom: '1px solid #222', boxSizing: 'border-box' }}>
         <div style={{ fontWeight: 700, fontSize: '1.3rem', letterSpacing: '0.02em' }}>Tournament Setup</div>
         <button style={{ padding: '0.5rem 1.2rem', borderRadius: 6, border: 'none', background: '#2196f3', color: '#fff', fontWeight: 600, fontSize: '1rem', cursor: 'pointer' }}>Start Tournament</button>
-        <button style={{ padding: '0.5rem 1.2rem', borderRadius: 6, border: 'none', background: '#444', color: '#fff', fontWeight: 600, fontSize: '1rem', cursor: 'pointer' }}>Reset</button>
+        {import.meta.env.DEV && (
+          <button style={{ padding: '0.5rem 1.2rem', borderRadius: 6, border: 'none', background: '#444', color: '#fff', fontWeight: 600, fontSize: '1rem', cursor: 'pointer' }}>Reset</button>
+        )}
         <div style={{ marginLeft: 'auto', color: '#aaa', fontSize: '1rem' }}>[Agent selection & format controls coming soon]</div>
       </div>
       {/* Main Content Area */}

@@ -1659,7 +1659,7 @@ const GamePage: React.FC = () => {
             </div>
             
             {/* Reset button - centered */}
-            {(gameMode !== 'multiplayer' || state.phase === 'replay') && (
+            {import.meta.env.DEV && (gameMode !== 'multiplayer' || state.phase === 'replay') && (
               <div style={{ 
                 textAlign: 'center', 
                 marginTop: isMobile && gameMode === 'multiplayer' && typeof window !== 'undefined' && window.innerWidth === 320 && state.phase === 'replay' ? '-18px' : (isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '0.25rem' : (isMobile && gameMode === 'multiplayer' && state.phase === 'replay' ? '0.1rem' : '1rem')), 
