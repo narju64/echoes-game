@@ -521,14 +521,23 @@ const GamePage: React.FC = () => {
     // For multiplayer: only log if host
     const shouldLog = gameMode !== 'multiplayer' || isHost;
     
-    if (state.echoes.length > 0 && !matchLogger.isActive() && shouldLog) {
+    console.log('Match logging useEffect triggered:', {
+      isActive: matchLogger.isActive(),
+      shouldLog,
+      gameMode,
+      isHost,
+      turnNumber: state.turnNumber
+    });
+    
+    if (!matchLogger.isActive() && shouldLog) {
       // Generate match ID locally
       const finalMatchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log('Starting new match logging session:', finalMatchId);
       matchLogger.startMatch(finalMatchId, gameMode, ['player1', 'player2'], state);
       // Reset match log sent flag for new match
       setMatchLogSent(false);
     }
-  }, [state.echoes.length, gameMode, isHost]);
+  }, [gameMode, isHost, state.turnNumber]); // Include turnNumber to detect game resets
 
   // Debug logging for multiplayer
   useEffect(() => {
@@ -1550,6 +1559,12 @@ const GamePage: React.FC = () => {
       const shouldLog = gameMode !== 'multiplayer' || isHost;
       if (shouldLog) {
         const winCondition = determineWinCondition(winner, finalScores, player1Echoes, player2Echoes);
+        console.log('Ending match logging session:', {
+          winner,
+          winCondition,
+          matchLogSent,
+          isActive: matchLogger.isActive()
+        });
         matchLogger.endMatch(winner, winCondition, finalScores, state);
         setMatchLogSent(true);
       }
