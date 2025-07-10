@@ -77,9 +77,23 @@ class SocketService {
     }
   }
 
+  // New method to trigger game start and get match ID from backend
+  startGame(roomId: string, playerId: string, playerName: string): void {
+    if (this.socket) {
+      this.socket.emit('gameStart', { roomId, playerId, playerName });
+    }
+  }
+
   onPlayerJoined(callback: (data: any) => void): void {
     if (this.socket) {
       this.socket.on('playerJoined', callback);
+    }
+  }
+
+  // New method to listen for match started event
+  onMatchStarted(callback: (data: any) => void): void {
+    if (this.socket) {
+      this.socket.on('matchStarted', callback);
     }
   }
 

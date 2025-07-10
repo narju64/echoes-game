@@ -12,6 +12,7 @@ import { playSound, playClickSound, playGlassImpact, playLaserSound, playExplosi
 import { audioSounds } from '../assets/sounds/soundAssets';
 import { setGameContext, captureGameError, clearGameContext } from '../services/sentry';
 import { matchLogger } from '../services/matchLogger';
+import { simulateReplay, type ReplayState } from '../simulation/ReplaySimulator';
 
 const getHomeRow = (playerId: PlayerId) => (playerId === 'player1' ? 0 : 7);
 
@@ -52,280 +53,7 @@ function deepCopyEcho(e: Echo): Echo {
   };
 }
 
-// Simulate the replay phase, returning an array of { echoes, projectiles, mines, tick, destroyed: { echoId, by: PlayerId|null }[], collisions: { row, col }[] } for each tick
-function simulateReplay(echoes: (Echo & { startingPosition: { row: number; col: number } })[]): { echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null; position: { row: number; col: number }; playerId: PlayerId }[]; destroyedProjectiles: { id: string; type: 'projectile' | 'mine'; position: { row: number; col: number } }[]; collisions: { row: number; col: number }[]; shieldBlocks: { row: number; col: number; projectileDirection: Direction }[] }[] {
-  const states: { echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null; position: { row: number; col: number }; playerId: PlayerId }[]; destroyedProjectiles: { id: string; type: 'projectile' | 'mine'; position: { row: number; col: number } }[]; collisions: { row: number; col: number }[]; shieldBlocks: { row: number; col: number; projectileDirection: Direction }[] }[] = [];
-  
-  let currentEchoes = echoes.map(e => ({
-    ...deepCopyEcho(e),
-    position: { ...e.startingPosition },
-    alive: true,
-  }));
-  let projectiles: SimProjectile[] = [];
-  let mines: SimProjectile[] = [];
-  let nextProjectileId = 1;
-  
-  // Track shield state at the end of each tick
-  const shieldStateAtEndOfTick = new Map<string, { isShielded: boolean; shieldDirection?: Direction }>();
-
-  // Tick 0: initial placement
-  states.push({
-    echoes: currentEchoes.map(deepCopyEcho),
-    projectiles: [],
-    tick: 0,
-    destroyed: [],
-    destroyedProjectiles: [],
-    collisions: [],
-    shieldBlocks: [],
-  });
-
-  // Helper: which approach directions does a shield block?
-  const SHIELD_BLOCKS: Record<string, { x: number; y: number }[]> = {
-    '0,1':   [ {x:-1, y:1}, {x:0, y:1}, {x:1, y:1} ],    // N
-    '1,0':   [ {x:1, y:-1}, {x:1, y:0}, {x:1, y:1} ],    // E
-    '0,-1':  [ {x:-1, y:-1}, {x:0, y:-1}, {x:1, y:-1} ], // S
-    '-1,0':  [ {x:-1, y:-1}, {x:-1, y:0}, {x:-1, y:1} ], // W
-    '1,1':   [ {x:1, y:1}, {x:0, y:1}, {x:1, y:0} ],     // NE
-    '1,-1':  [ {x:1, y:-1}, {x:0, y:-1}, {x:1, y:0} ],   // SE
-    '-1,-1': [ {x:-1, y:-1}, {x:0, y:-1}, {x:-1, y:0} ], // SW
-    '-1,1':  [ {x:-1, y:1}, {x:0, y:1}, {x:-1, y:0} ],   // NW
-  };
-
-  let tick = 1;
-  while (true) {
-    // Calculate maximum remaining actions among alive echoes
-    const maxRemainingActions = Math.max(...currentEchoes.map((e) => {
-      if (!e.alive) return 0;
-      const originalEcho = echoes.find(origEcho => origEcho.id === e.id);
-      if (!originalEcho) return 0;
-      const actionsUsed = tick - 1; // Actions used so far
-      const remainingActions = Math.max(0, originalEcho.instructionList.length - actionsUsed);
-      return remainingActions;
-    }), 0);
-
-    // If no alive echoes have actions remaining, stop the replay
-    if (maxRemainingActions === 0) {
-      break;
-    }
-
-    let destroyedThisTick: { echoId: string; by: PlayerId|null; position: { row: number; col: number }; playerId: PlayerId }[] = [];
-    let destroyedProjectilesThisTick: { id: string; type: 'projectile' | 'mine'; position: { row: number; col: number } }[] = [];
-    let collisionsThisTick: { row: number; col: number }[] = [];
-    let shieldBlocksThisTick: { row: number; col: number; projectileDirection: Direction }[] = [];
-    
-    // 1. Move projectiles
-    projectiles = projectiles
-      .filter(p => p.alive)
-      .map(p => ({ ...p, position: { row: p.position.row + p.direction.y, col: p.position.col + p.direction.x } }));
-    // 2. Move echoes and spawn new projectiles/mines
-    currentEchoes = currentEchoes.map((e) => {
-      // Find the original echo by ID to get the correct action
-      const originalEcho = echoes.find(origEcho => origEcho.id === e.id);
-      if (!originalEcho) return deepCopyEcho(e);
-      
-      const action = originalEcho.instructionList[tick - 1];
-      // If no action for this tick:
-      if (!action) {
-        // Check if shield was active at the end of the previous tick
-        const previousShieldState = shieldStateAtEndOfTick.get(e.id);
-        if (previousShieldState && previousShieldState.isShielded) {
-          return { ...e, isShielded: true, shieldDirection: { ...previousShieldState.shieldDirection! } };
-        } else {
-          return { ...deepCopyEcho(e), isShielded: false, shieldDirection: undefined };
-        }
-      }
-      if (!e.alive) return deepCopyEcho(e);
-      if (action.type === 'walk') {
-        return { ...e, position: { row: e.position.row + action.direction.y, col: e.position.col + action.direction.x }, isShielded: false, shieldDirection: undefined };
-      } else if (action.type === 'dash') {
-        return { ...e, position: { row: e.position.row + action.direction.y * 2, col: e.position.col + action.direction.x * 2 }, isShielded: false, shieldDirection: undefined };
-      } else if (action.type === 'fire') {
-        projectiles.push({
-          id: `p${nextProjectileId++}`,
-          position: { row: e.position.row + action.direction.y, col: e.position.col + action.direction.x },
-          direction: { ...action.direction },
-          type: 'projectile',
-          alive: true,
-        });
-        return { ...deepCopyEcho(e), isShielded: false, shieldDirection: undefined };
-      } else if (action.type === 'mine') {
-        mines.push({
-          id: `m${nextProjectileId++}`,
-          position: { row: e.position.row + action.direction.y, col: e.position.col + action.direction.x },
-          direction: { ...action.direction },
-          type: 'mine',
-          alive: true,
-        });
-        return { ...deepCopyEcho(e), isShielded: false, shieldDirection: undefined };
-      } else if (action.type === 'shield') {
-        return { ...e, isShielded: true, shieldDirection: { ...action.direction } };
-      } else {
-        return { ...deepCopyEcho(e), isShielded: false, shieldDirection: undefined };
-      }
-    });
-    // 3. Add mines to projectiles for collision detection
-    const allProjectiles = [...projectiles, ...mines];
-    // 4. Collision detection (robust, with shield logic):
-    const entityMap = new Map<string, { type: string; id: string }[]>();
-    currentEchoes.forEach(e => {
-      if (!e.alive) return;
-      const key = `${e.position.row},${e.position.col}`;
-      if (!entityMap.has(key)) entityMap.set(key, []);
-      entityMap.get(key)!.push({ type: 'echo', id: e.id });
-    });
-    allProjectiles.forEach(p => {
-      if (!p.alive) return;
-      const key = `${p.position.row},${p.position.col}`;
-      if (!entityMap.has(key)) entityMap.set(key, []);
-      entityMap.get(key)!.push({ type: p.type, id: p.id });
-    });
-    // For each tile with more than one entity, handle shield/projectile logic
-    
-    entityMap.forEach((entities, key) => {
-      if (entities.length > 1) {
-        // Record collision location
-        const [row, col] = key.split(',').map(Number);
-        
-        const echoEnt = entities.find(ent => ent.type === 'echo');
-        const projectileEnts = entities.filter(ent => ent.type === 'projectile' || ent.type === 'mine');
-        if (echoEnt && projectileEnts.length > 0) {
-          const echo = currentEchoes.find(e => e.id === echoEnt.id);
-          if (echo) {
-            // Process each projectile individually, checking shield status for each one
-            projectileEnts.forEach(projEnt => {
-              const proj = projectiles.find(p => p.id === projEnt.id) || mines.find(m => m.id === projEnt.id);
-              if (!proj) return;
-              
-              // Check shield status for this specific projectile
-              if (echo.isShielded && echo.shieldDirection && proj.type === 'projectile') {
-                const approachDir = { x: -proj.direction.x, y: -proj.direction.y };
-                const key = `${echo.shieldDirection.x},${echo.shieldDirection.y}`;
-                const allowed = SHIELD_BLOCKS[key] || [];
-                const blocked = allowed.some(d => d.x === approachDir.x && d.y === approachDir.y);
-                
-                if (blocked) {
-                  proj.alive = false;
-                  // Record destroyed projectile
-                  destroyedProjectilesThisTick.push({
-                    id: proj.id,
-                    type: proj.type,
-                    position: { ...proj.position }
-                  });
-                  // Record shield block for animation
-                  shieldBlocksThisTick.push({ 
-                    row, 
-                    col, 
-                    projectileDirection: { ...proj.direction } 
-                  });
-                  // Deactivate shield after blocking a projectile
-                  echo.isShielded = false;
-                  echo.shieldDirection = undefined;
-                } else {
-                  proj.alive = false;
-                  // Record destroyed projectile
-                  destroyedProjectilesThisTick.push({
-                    id: proj.id,
-                    type: proj.type,
-                    position: { ...proj.position }
-                  });
-                  // Remove echo immediately
-                  currentEchoes = currentEchoes.filter(e => e.id !== echo.id);
-                  // Award point to opponent
-                  const opponent = echo.playerId === 'player1' ? 'player2' : 'player1';
-                  destroyedThisTick.push({ echoId: echo.id, by: opponent, position: { row, col }, playerId: echo.playerId });
-                  // Record regular collision
-                  collisionsThisTick.push({ row, col });
-                }
-              } else {
-                // No shield or mine collision - echo is destroyed
-                proj.alive = false;
-                // Record destroyed projectile
-                destroyedProjectilesThisTick.push({
-                  id: proj.id,
-                  type: proj.type,
-                  position: { ...proj.position }
-                });
-                if (echo) {
-                  // Remove echo immediately
-                  currentEchoes = currentEchoes.filter(e => e.id !== echo.id);
-                  // Award point to opponent
-                  const opponent = echo.playerId === 'player1' ? 'player2' : 'player1';
-                  destroyedThisTick.push({ echoId: echo.id, by: opponent, position: { row, col }, playerId: echo.playerId });
-                  // Record regular collision
-                  collisionsThisTick.push({ row, col });
-                }
-              }
-            });
-          }
-        } else {
-          entities.forEach(ent => {
-            if (ent.type === 'echo') {
-              const echo = currentEchoes.find(e => e.id === ent.id);
-              if (echo) {
-                // Remove echo immediately instead of just marking as dead
-                currentEchoes = currentEchoes.filter(e => e.id !== echo.id);
-                // Award point to opponent
-                const opponent = echo.playerId === 'player1' ? 'player2' : 'player1';
-                destroyedThisTick.push({ echoId: echo.id, by: opponent, position: { row, col }, playerId: echo.playerId });
-                // Record regular collision
-                collisionsThisTick.push({ row, col });
-              }
-            } else {
-              const proj = projectiles.find(p => p.id === ent.id);
-              if (proj) {
-                proj.alive = false;
-                // Record destroyed projectile
-                destroyedProjectilesThisTick.push({
-                  id: proj.id,
-                  type: proj.type,
-                  position: { ...proj.position }
-                });
-              }
-              const mine = mines.find(m => m.id === ent.id);
-              if (mine) {
-                mine.alive = false;
-                // Record destroyed mine
-                destroyedProjectilesThisTick.push({
-                  id: mine.id,
-                  type: mine.type,
-                  position: { ...mine.position }
-                });
-              }
-            }
-          });
-          // If there are 2+ projectiles/mines and no echo, record a collision for animation
-          const onlyProjectilesOrMines = entities.every(ent => ent.type === 'projectile' || ent.type === 'mine');
-          if (onlyProjectilesOrMines && entities.length > 1) {
-            collisionsThisTick.push({ row, col });
-          }
-        }
-      }
-    });
-    
-    states.push({
-      echoes: currentEchoes.map(deepCopyEcho),
-      projectiles: [...projectiles.filter(p => p.alive), ...mines.filter(m => m.alive)].map(p => ({ ...p })),
-      tick,
-      destroyed: destroyedThisTick,
-      destroyedProjectiles: destroyedProjectilesThisTick,
-      collisions: collisionsThisTick,
-      shieldBlocks: shieldBlocksThisTick,
-    });
-    projectiles = projectiles.filter(p => p.alive);
-    mines = mines.filter(m => m.alive);
-    
-    // Record shield state at the end of this tick for next tick's persistence check
-    currentEchoes.forEach(e => {
-      shieldStateAtEndOfTick.set(e.id, {
-        isShielded: e.isShielded,
-        shieldDirection: e.shieldDirection
-      });
-    });
-    
-    tick++;
-  }
-  return states;
-}
+// The simulateReplay function is now imported from ReplaySimulator.ts
 
 // Simulate ally preview at a specific tick (for input phase)
 function simulateAllyPreviewAtTick(
@@ -782,13 +510,18 @@ const GamePage: React.FC = () => {
     };
   }, [gameMode, roomId]);
 
-  // Start match logging when game begins
+  // State to store the backend-generated match ID
+  const [matchId, setMatchId] = useState<string | null>(null);
+
+  // Start match logging when game begins (now using backend-generated match ID)
   useEffect(() => {
     if (state.echoes.length > 0 && !matchLogger.isActive()) {
-      const matchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      matchLogger.startMatch(matchId, gameMode, ['player1', 'player2'], state);
+      // For multiplayer, use backend-generated match ID
+      // For single-player, generate locally as fallback
+      const finalMatchId = matchId || `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      matchLogger.startMatch(finalMatchId, gameMode, ['player1', 'player2'], state);
     }
-  }, [state.echoes.length, gameMode, state]);
+  }, [state.echoes.length, gameMode, state, matchId]);
 
   // Debug logging for multiplayer
   useEffect(() => {
@@ -879,6 +612,21 @@ const GamePage: React.FC = () => {
       const socket = socketService.getSocket();
       
       if (socket) {
+        // Listen for match started event from backend
+        const handleMatchStarted = (data: any) => {
+          console.log('Match started event received:', data);
+          if (data.matchId) {
+            setMatchId(data.matchId);
+            console.log('Backend-generated match ID:', data.matchId);
+          }
+        };
+
+        // Trigger game start to get match ID from backend (only once)
+        if (roomId && playerId && playerName && !matchId) {
+          console.log('Triggering game start to get match ID from backend');
+          socketService.startGame(roomId, playerId, playerName);
+        }
+
         const handlePlayerLeft = (data: any) => {
           console.log('Player left event in GamePage:', data);
           
@@ -983,13 +731,14 @@ const GamePage: React.FC = () => {
           setSubmittedPlayers(new Set());
         };
 
-        socket.on('playerLeft', handlePlayerLeft);
-        socket.on('roomClosed', handleRoomClosed);
-        socket.on('gameAction', handleGameAction);
-        socket.on('playerSubmitted', handlePlayerSubmitted);
-        socket.on('gameStateUpdate', handleGameStateUpdate);
-        socket.on('opponentEchoes', handleOpponentEchoes);
-        socket.on('replayPhase', handleReplayPhase);
+                  socket.on('playerLeft', handlePlayerLeft);
+          socket.on('roomClosed', handleRoomClosed);
+          socket.on('gameAction', handleGameAction);
+          socket.on('playerSubmitted', handlePlayerSubmitted);
+          socket.on('gameStateUpdate', handleGameStateUpdate);
+          socket.on('opponentEchoes', handleOpponentEchoes);
+          socket.on('replayPhase', handleReplayPhase);
+          socket.on('matchStarted', handleMatchStarted);
 
         return () => {
           socket.off('playerLeft', handlePlayerLeft);
@@ -999,6 +748,7 @@ const GamePage: React.FC = () => {
           socket.off('gameStateUpdate', handleGameStateUpdate);
           socket.off('opponentEchoes', handleOpponentEchoes);
           socket.off('replayPhase', handleReplayPhase);
+          socket.off('matchStarted', handleMatchStarted);
         };
       }
     }
@@ -1214,7 +964,7 @@ const GamePage: React.FC = () => {
   };
 
   // Replay phase logic
-  const [replayStates, setReplayStates] = useState<{ echoes: Echo[]; projectiles: SimProjectile[]; tick: number; destroyed: { echoId: string; by: PlayerId|null; position: { row: number; col: number }; playerId: PlayerId }[]; destroyedProjectiles: { id: string; type: 'projectile' | 'mine'; position: { row: number; col: number } }[]; collisions: { row: number; col: number }[]; shieldBlocks: { row: number; col: number; projectileDirection: Direction }[] }[]>([]);
+  const [replayStates, setReplayStates] = useState<ReplayState[]>([]);
   const [replayTick, setReplayTick] = useState(0);
   const replayTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const currentTickRef = useRef(0);
@@ -1658,22 +1408,19 @@ const GamePage: React.FC = () => {
               </div>
             </div>
             
-            {/* Reset button - centered */}
+            {/* Reset button - top right */}
             {import.meta.env.DEV && (gameMode !== 'multiplayer' || state.phase === 'replay') && (
-              <div style={{ 
-                textAlign: 'center', 
-                marginTop: isMobile && gameMode === 'multiplayer' && typeof window !== 'undefined' && window.innerWidth === 320 && state.phase === 'replay' ? '-18px' : (isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '0.25rem' : (isMobile && gameMode === 'multiplayer' && state.phase === 'replay' ? '0.1rem' : '1rem')), 
-                marginBottom: isMobile && (gameMode === 'hotseat' || gameMode === 'ai') ? '0.5rem' : (isMobile && gameMode === 'multiplayer' && state.phase === 'replay' ? '0.3rem' : '1rem') 
-              }}>
               <button 
                 onClick={() => { playClickSound(); handleReset(); }}
                 style={{
-                  position: 'relative',
+                  position: 'absolute',
+                  top: 20,
+                  right: 20,
                   background: 'linear-gradient(145deg, #f4433620, #f4433640)',
                   color: 'white',
                   border: '2px solid #f44336',
-                  padding: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? '4px 8px' : (isMobile ? '6px 12px' : '10px 20px'),
-                  fontSize: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? '0.7rem' : (isMobile ? '0.8rem' : '1rem'),
+                  padding: isMobile ? '6px 12px' : '10px 20px',
+                  fontSize: isMobile ? '0.8rem' : '1rem',
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontWeight: 'bold',
@@ -1683,8 +1430,6 @@ const GamePage: React.FC = () => {
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
                   zIndex: 1000,
-                  minHeight: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? 0 : undefined,
-                  minWidth: isMobile && typeof window !== 'undefined' && window.innerWidth === 320 ? 0 : undefined,
                 }}
                 onMouseEnter={(e) => {
                   playGlassImpact();
@@ -1698,7 +1443,6 @@ const GamePage: React.FC = () => {
               >
                   🔄 Reset
               </button>
-              </div>
             )}
             
             {/* Replay and Next buttons - always visible */}

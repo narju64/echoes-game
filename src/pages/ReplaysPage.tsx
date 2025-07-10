@@ -3,7 +3,11 @@ import { Link } from 'react-router-dom';
 import { playClickSound } from '../assets/sounds/playSound';
 import Board from '../components/Board';
 import type { Echo, TurnHistoryEntry } from '../types/gameTypes';
+import { simulateReplay, type ReplayState } from '../simulation/ReplaySimulator';
 import './ReplaysPage.css';
+
+// API base URL is controlled by VITE_API_BASE_URL in your .env file. Example:
+// VITE_API_BASE_URL=https://echoesbackend.narju.net
 
 interface Match {
   matchId: string;
@@ -33,41 +37,91 @@ const ReplaysPage: React.FC = () => {
   
   // Replay viewer state
   const [currentReplayTurn, setCurrentReplayTurn] = useState(0);
+  const [currentReplayTick, setCurrentReplayTick] = useState(0);
+  const [replayStates, setReplayStates] = useState<ReplayState[]>([]);
   const [reconstructedEchoes, setReconstructedEchoes] = useState<Echo[]>([]);
   const [replayProjectiles, setReplayProjectiles] = useState<any[]>([]);
   const [replayCollisions, setReplayCollisions] = useState<{ row: number; col: number }[]>([]);
   const [replayShieldBlocks, setReplayShieldBlocks] = useState<{ row: number; col: number; projectileDirection: any }[]>([]);
 
+  // Add state for play/pause
+  const [isPlaying, setIsPlaying] = useState(false);
+  const playIntervalRef = React.useRef<number | null>(null);
+
+  // Add backend status state
+  const [backendStatus, setBackendStatus] = useState<'online' | 'offline' | 'checking'>('checking');
+
+  // Backend status check on mount
+  useEffect(() => {
+    const checkBackend = async () => {
+      try {
+        const API_BASE = import.meta.env.VITE_API_BASE_URL;
+        const resp = await fetch(`${API_BASE}/api/matches`, { method: 'GET' });
+        if (resp.ok) {
+          setBackendStatus('online');
+        } else {
+          setBackendStatus('offline');
+        }
+      } catch {
+        setBackendStatus('offline');
+      }
+    };
+    checkBackend();
+  }, []);
+
   useEffect(() => {
     fetchMatches();
   }, []);
 
+  // Effect to handle play/pause
+  useEffect(() => {
+    if (isPlaying) {
+      playIntervalRef.current = window.setInterval(() => {
+        // If at last tick of turn
+        if (currentReplayTick >= replayStates.length - 1) {
+          // If at last turn, pause
+          if (
+            !selectedMatch?.finalState?.turnHistory ||
+            currentReplayTurn >= selectedMatch.finalState.turnHistory.length - 1
+          ) {
+            setIsPlaying(false);
+            return;
+          }
+          // Otherwise, go to next turn
+          handleNextTurn();
+        } else {
+          handleNextTick();
+        }
+      }, 600);
+    } else if (playIntervalRef.current) {
+      clearInterval(playIntervalRef.current);
+      playIntervalRef.current = null;
+    }
+    return () => {
+      if (playIntervalRef.current) {
+        clearInterval(playIntervalRef.current);
+        playIntervalRef.current = null;
+      }
+    };
+  }, [isPlaying, currentReplayTick, replayStates.length, currentReplayTurn, selectedMatch]);
+
   const fetchMatches = async () => {
     try {
       setLoading(true);
-      const API_BASE = import.meta.env.DEV 
-        ? 'http://localhost:3000' 
-        : 'https://echoesbackend.narju.net';
-      
+      // Use environment variable for API base URL
+      const API_BASE = import.meta.env.VITE_API_BASE_URL;
       const response = await fetch(`${API_BASE}/api/matches`);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
       const data = await response.json();
       console.log('Fetched matches:', data);
-      
-      // Handle different response formats
-      const matchesData = data.matches || data;
-      console.log('Processed matches data:', matchesData);
-      
-      // Log the first match to see what fields are available
-      if (matchesData && matchesData.length > 0) {
-        console.log('First match fields:', Object.keys(matchesData[0]));
-        console.log('First match data:', matchesData[0]);
+      if (data.matches && Array.isArray(data.matches)) {
+        setMatches(data.matches);
+      } else {
+        console.error('Invalid matches data format:', data);
+        setError('Invalid data format received from server');
       }
-      
-      setMatches(matchesData);
     } catch (err) {
       console.error('Failed to fetch matches:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch matches');
@@ -83,10 +137,8 @@ const ReplaysPage: React.FC = () => {
 
     // Fetch full match details
     try {
-      const API_BASE = import.meta.env.DEV 
-        ? 'http://localhost:3000' 
-        : 'https://echoesbackend.narju.net';
-      
+      // Use environment variable for API base URL
+      const API_BASE = import.meta.env.VITE_API_BASE_URL;
       const response = await fetch(`${API_BASE}/api/matches/${match.matchId}`);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -110,11 +162,65 @@ const ReplaysPage: React.FC = () => {
       
       // Initialize replay viewer with first turn
       setCurrentReplayTurn(0);
-      reconstructGameStateForTurn(fullMatchData, 0);
+      setCurrentReplayTick(0);
+      initializeReplayForTurn(fullMatchData, 0);
     } catch (err) {
       console.error('Failed to fetch match details:', err);
       // Continue with basic match data if detailed fetch fails
     }
+  };
+
+  const initializeReplayForTurn = (match: Match, turnIndex: number) => {
+    if (!match.finalState?.turnHistory || turnIndex >= match.finalState.turnHistory.length) {
+      return;
+    }
+
+    const turnHistory = match.finalState.turnHistory as TurnHistoryEntry[];
+    const turnData = turnHistory[turnIndex];
+    
+    // Combine player1 and player2 echoes and add startingPosition
+    const allEchoes = [...turnData.player1Echoes, ...turnData.player2Echoes].map(echo => ({
+      ...echo,
+      startingPosition: { ...echo.position }
+    }));
+    
+    console.log('Initializing replay for turn', turnIndex, 'with echoes:', allEchoes);
+    
+    // Simulate the replay for this turn
+    const sim = simulateReplay(allEchoes);
+    console.log('Replay simulation result:', sim);
+    
+    setReplayStates(sim);
+    setCurrentReplayTick(0);
+    
+    // Update the board with the first tick state
+    if (sim.length > 0) {
+      const firstState = sim[0];
+      setReconstructedEchoes(firstState.echoes);
+      setReplayProjectiles(firstState.projectiles.map(p => ({
+        row: p.position.row,
+        col: p.position.col,
+        type: p.type,
+        direction: p.direction
+      })));
+      setReplayCollisions(firstState.collisions);
+      setReplayShieldBlocks(firstState.shieldBlocks);
+    }
+  };
+
+  const updateReplayDisplay = (tickIndex: number) => {
+    if (tickIndex >= replayStates.length) return;
+    
+    const state = replayStates[tickIndex];
+    setReconstructedEchoes(state.echoes);
+    setReplayProjectiles(state.projectiles.map(p => ({
+      row: p.position.row,
+      col: p.position.col,
+      type: p.type,
+      direction: p.direction
+    })));
+    setReplayCollisions(state.collisions);
+    setReplayShieldBlocks(state.shieldBlocks);
   };
 
   const formatDate = (timestamp: number) => {
@@ -143,32 +249,12 @@ const ReplaysPage: React.FC = () => {
     }
   };
 
-  const reconstructGameStateForTurn = (match: Match, turnIndex: number) => {
-    if (!match.finalState?.turnHistory || turnIndex >= match.finalState.turnHistory.length) {
-      return;
-    }
-
-    const turnHistory = match.finalState.turnHistory as TurnHistoryEntry[];
-    const turnData = turnHistory[turnIndex];
-    
-    // Combine player1 and player2 echoes
-    const allEchoes = [...turnData.player1Echoes, ...turnData.player2Echoes];
-    
-    // Convert collisions and shield blocks to the format expected by Board component
-    const collisions = turnData.collisions || [];
-    const shieldBlocks = turnData.shieldBlocks || [];
-    
-    setReconstructedEchoes(allEchoes);
-    setReplayProjectiles([]); // Projectiles aren't stored in turn history, so empty for now
-    setReplayCollisions(collisions);
-    setReplayShieldBlocks(shieldBlocks);
-  };
-
   const handlePreviousTurn = () => {
     if (!selectedMatch || currentReplayTurn <= 0) return;
     const newTurn = currentReplayTurn - 1;
     setCurrentReplayTurn(newTurn);
-    reconstructGameStateForTurn(selectedMatch, newTurn);
+    setCurrentReplayTick(0);
+    initializeReplayForTurn(selectedMatch, newTurn);
   };
 
   const handleNextTurn = () => {
@@ -176,20 +262,50 @@ const ReplaysPage: React.FC = () => {
         currentReplayTurn >= selectedMatch.finalState.turnHistory.length - 1) return;
     const newTurn = currentReplayTurn + 1;
     setCurrentReplayTurn(newTurn);
-    reconstructGameStateForTurn(selectedMatch, newTurn);
+    setCurrentReplayTick(0);
+    initializeReplayForTurn(selectedMatch, newTurn);
   };
 
   const handleFirstTurn = () => {
     if (!selectedMatch) return;
     setCurrentReplayTurn(0);
-    reconstructGameStateForTurn(selectedMatch, 0);
+    setCurrentReplayTick(0);
+    initializeReplayForTurn(selectedMatch, 0);
   };
 
   const handleLastTurn = () => {
     if (!selectedMatch || !selectedMatch.finalState?.turnHistory) return;
     const lastTurn = selectedMatch.finalState.turnHistory.length - 1;
     setCurrentReplayTurn(lastTurn);
-    reconstructGameStateForTurn(selectedMatch, lastTurn);
+    setCurrentReplayTick(0);
+    initializeReplayForTurn(selectedMatch, lastTurn);
+  };
+
+  const handlePreviousTick = () => {
+    if (currentReplayTick > 0) {
+      const newTick = currentReplayTick - 1;
+      setCurrentReplayTick(newTick);
+      updateReplayDisplay(newTick);
+    }
+  };
+
+  const handleNextTick = () => {
+    if (currentReplayTick < replayStates.length - 1) {
+      const newTick = currentReplayTick + 1;
+      setCurrentReplayTick(newTick);
+      updateReplayDisplay(newTick);
+    }
+  };
+
+  const handleFirstTick = () => {
+    setCurrentReplayTick(0);
+    updateReplayDisplay(0);
+  };
+
+  const handleLastTick = () => {
+    const lastTick = replayStates.length - 1;
+    setCurrentReplayTick(lastTick);
+    updateReplayDisplay(lastTick);
   };
 
   if (loading) {
@@ -216,8 +332,26 @@ const ReplaysPage: React.FC = () => {
 
   return (
     <div className="replays-page">
-      <div className="replays-header">
-        <h1>Match Replays</h1>
+      <div className="replays-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <h1>Match Replays</h1>
+          {/* Backend status indicator */}
+          <span style={{
+            display: 'inline-block',
+            padding: '4px 12px',
+            borderRadius: '8px',
+            fontWeight: 'bold',
+            fontSize: '0.95rem',
+            background: backendStatus === 'online' ? '#1e4620' : (backendStatus === 'offline' ? '#4a1e1e' : '#333'),
+            color: backendStatus === 'online' ? '#4caf50' : (backendStatus === 'offline' ? '#f44336' : '#ccc'),
+            border: backendStatus === 'online' ? '2px solid #4caf50' : (backendStatus === 'offline' ? '2px solid #f44336' : '2px solid #888'),
+            marginLeft: '8px',
+            letterSpacing: '1px',
+            transition: 'all 0.2s',
+          }}>
+            Backend: {backendStatus === 'checking' ? 'Checking...' : backendStatus === 'online' ? 'Online' : 'Offline'}
+          </span>
+        </div>
         <Link to="/" className="back-button" onClick={playClickSound}>
           ← Back to Menu
         </Link>
@@ -281,67 +415,112 @@ const ReplaysPage: React.FC = () => {
 
         {/* Right Panel - Replay Viewer */}
         <div className="replay-panel">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-            <h2>Replay Viewer</h2>
-            {selectedMatch && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <div style={{
-                  display: 'inline-block',
-                  padding: '6px 12px',
-                  fontSize: '0.8rem',
-                  background: 'linear-gradient(145deg, #555, #666)',
-                  color: '#ccc',
-                  border: '2px solid #777',
-                  borderRadius: '12px',
-                  fontFamily: 'Orbitron, monospace',
-                  fontWeight: 'bold',
-                  textTransform: 'uppercase',
-                  letterSpacing: '1px',
-                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
-                  cursor: 'default',
-                  marginRight: '5px',
-                  marginBottom: '5px',
-                  lineHeight: '1',
-                  verticalAlign: 'middle'
-                }}>
-                  Turn {currentReplayTurn + 1} of {selectedMatch.finalState?.turnHistory?.length || 0}
-                </div>
-                <button 
-                  className="control-btn" 
-                  onClick={handleFirstTurn}
-                  disabled={currentReplayTurn <= 0}
-                >
-                  ⏮ First
-                </button>
-                <button 
-                  className="control-btn" 
-                  onClick={handlePreviousTurn}
-                  disabled={currentReplayTurn <= 0}
-                >
-                  ⏭ Previous
-                </button>
-                <button 
-                  className="control-btn" 
-                  onClick={handleNextTurn}
-                  disabled={!selectedMatch.finalState?.turnHistory || 
-                           currentReplayTurn >= (selectedMatch.finalState.turnHistory.length - 1)}
-                >
-                  ⏭ Next
-                </button>
-                <button 
-                  className="control-btn" 
-                  onClick={handleLastTurn}
-                  disabled={!selectedMatch.finalState?.turnHistory || 
-                           currentReplayTurn >= (selectedMatch.finalState.turnHistory.length - 1)}
-                >
-                  ⏭ Last
-                </button>
-              </div>
-            )}
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
+            {/* Turn display */}
+            <div style={{
+              display: 'inline-block',
+              padding: '6px 12px',
+              fontSize: '0.8rem',
+              background: 'linear-gradient(145deg, #555, #666)',
+              color: '#ccc',
+              border: '2px solid #777',
+              borderRadius: '12px',
+              fontFamily: 'Orbitron, monospace',
+              fontWeight: 'bold',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+              cursor: 'default',
+              marginRight: '2px',
+              lineHeight: '1',
+              verticalAlign: 'middle'
+            }}>
+              Turn {currentReplayTurn + 1} of {selectedMatch?.finalState?.turnHistory?.length || 0}
+            </div>
+            {/* Tick display */}
+            <div style={{
+              display: 'inline-block',
+              padding: '6px 12px',
+              fontSize: '0.8rem',
+              background: 'linear-gradient(145deg, #555, #666)',
+              color: '#ccc',
+              border: '2px solid #777',
+              borderRadius: '12px',
+              fontFamily: 'Orbitron, monospace',
+              fontWeight: 'bold',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+              cursor: 'default',
+              marginRight: '8px',
+              lineHeight: '1',
+              verticalAlign: 'middle'
+            }}>
+              Tick {currentReplayTick + 1} of {replayStates.length}
+            </div>
+            {/* Previous Turn */}
+            <button className="control-btn" style={{ minWidth: 70 }}
+              onClick={handlePreviousTurn}
+              disabled={currentReplayTurn <= 0}
+            >
+              ⏮ Turn
+            </button>
+            {/* Previous Tick */}
+            <button className="control-btn" style={{ minWidth: 70 }}
+              onClick={handlePreviousTick}
+              disabled={currentReplayTick <= 0}
+            >
+              ◀ Tick
+            </button>
+            {/* Play/Pause */}
+            <button className="control-btn" style={{ minWidth: 70 }}
+              onClick={() => setIsPlaying(p => !p)}
+              disabled={replayStates.length <= 1}
+            >
+              {isPlaying ? '⏸ Pause' : '▶ Play'}
+            </button>
+            {/* Next Tick */}
+            <button className="control-btn" style={{ minWidth: 70 }}
+              onClick={handleNextTick}
+              disabled={currentReplayTick >= replayStates.length - 1}
+            >
+              Tick ▶
+            </button>
+            {/* Next Turn */}
+            <button className="control-btn" style={{ minWidth: 70 }}
+              onClick={handleNextTurn}
+              disabled={!selectedMatch?.finalState?.turnHistory || currentReplayTurn >= (selectedMatch.finalState.turnHistory.length - 1)}
+            >
+              Turn ⏭
+            </button>
           </div>
+          
           {selectedMatch ? (
             <div className="replay-content">
               <div className="game-board-placeholder">
+                {/* Score bar inside the board placeholder, above the board */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  maxWidth: 480,
+                  margin: '0 auto 10px auto',
+                  padding: '8px 16px',
+                  background: '#181818',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 8px #0006',
+                  fontFamily: 'Orbitron, monospace',
+                  fontWeight: 'bold',
+                  fontSize: '1.1rem',
+                  letterSpacing: '1px',
+                }}>
+                  <div style={{ color: '#ff9800', textShadow: '0 0 1px #fff' }}>
+                    {(selectedMatch.players && selectedMatch.players[0]) ? selectedMatch.players[0] : 'Player 1'}: <b>{selectedMatch.finalState?.turnHistory?.[currentReplayTurn]?.scores?.player1 ?? 0}</b>
+                  </div>
+                  <div style={{ color: 'blue', textShadow: '0 0 1px #fff' }}>
+                    {(selectedMatch.players && selectedMatch.players[1]) ? selectedMatch.players[1] : 'Player 2'}: <b>{selectedMatch.finalState?.turnHistory?.[currentReplayTurn]?.scores?.player2 ?? 0}</b>
+                  </div>
+                </div>
                 <Board
                   echoes={reconstructedEchoes}
                   projectiles={replayProjectiles}

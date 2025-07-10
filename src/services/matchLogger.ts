@@ -138,6 +138,11 @@ class MatchLogger {
       const result = await response.json();
       console.log('Match logged successfully:', result);
       
+      // Handle duplicate response from backend
+      if (result.duplicate) {
+        console.log('Match was already logged (duplicate submission handled gracefully)');
+      }
+      
       this.currentMatch = null;
     } catch (error) {
       console.error('Failed to send match log:', error);
