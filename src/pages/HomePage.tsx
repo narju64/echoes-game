@@ -61,7 +61,7 @@ const HomePage: React.FC = () => {
   const SPEED = 0.00008; // Slower speed for menu
   const [echoes, _setEchoes] = useState(() => generateEchoes());
   const [foregroundEchoes, _setForegroundEchoes] = useState(() => generateEchoes(FOREGROUND_ECHO_COUNT, 1.2));
-  const [menuState, setMenuState] = useState<'main' | 'aiTraining' | 'multiplayer'>('main');
+  const [menuState, setMenuState] = useState<'main' | 'devTools' | 'multiplayer'>('main');
   const [musicStarted, setMusicStarted] = useState(false);
   const navigate = useNavigate();
 
@@ -288,7 +288,7 @@ const HomePage: React.FC = () => {
           {menuState === 'main' && (
             <>
               {isDevelopment && (
-                <button className="menu-button" onClick={() => { playClickSound(); setMenuState('aiTraining'); }} onMouseEnter={handleMenuButtonHover}>AI Training</button>
+                <button className="menu-button" onClick={() => { playClickSound(); setMenuState('devTools'); }} onMouseEnter={handleMenuButtonHover}>DEV TOOLS</button>
               )}
               {isDevelopment && (
                 <Link to="/game?mode=ai" className="menu-button" onClick={() => { playClickSound(); }} onMouseEnter={handleMenuButtonHover}>Single Player</Link>
@@ -298,10 +298,11 @@ const HomePage: React.FC = () => {
               <Link to="/leaderboard" className="menu-button" onClick={() => { playClickSound(); }} onMouseEnter={handleMenuButtonHover}>Leaderboard</Link>
             </>
           )}
-          {menuState === 'aiTraining' && (
+          {menuState === 'devTools' && (
             <>
-              <Link to="/ai-training" className="menu-button" onClick={() => { playClickSound(); }} onMouseEnter={handleMenuButtonHover}>Training</Link>
+              <Link to="/ai-training" className="menu-button" onClick={() => { playClickSound(); }} onMouseEnter={handleMenuButtonHover}>AI Training</Link>
               <Link to="/ai-tournament" className="menu-button" onClick={() => { playClickSound(); }} onMouseEnter={handleMenuButtonHover}>Tournament</Link>
+              <Link to="/replays" className="menu-button" onClick={() => { playClickSound(); }} onMouseEnter={handleMenuButtonHover}>Replays</Link>
               <button className="menu-button" onClick={() => { playClickSound(); setMenuState('main'); }} onMouseEnter={handleMenuButtonHover}>Back</button>
             </>
           )}

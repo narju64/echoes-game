@@ -29,6 +29,7 @@ import LeaderboardPage from './pages/LeaderboardPage';
 import HostPage from './pages/HostPage';
 import JoinPage from './pages/JoinPage';
 import LobbyPage from './pages/LobbyPage';
+import ReplaysPage from './pages/ReplaysPage';
 
 import './index.css';
 
@@ -72,6 +73,10 @@ const router = createBrowserRouter([
   {
     path: '/lobby',
     element: <LobbyPage />,
+  },
+  {
+    path: '/replays',
+    element: <ReplaysPage />,
   },
 ]);
 
