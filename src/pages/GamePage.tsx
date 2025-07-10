@@ -496,6 +496,9 @@ const GamePage: React.FC = () => {
   // For multiplayer: store opponent echoes separately until replay phase
   const pendingOpponentEchoesRef = useRef<Echo[]>([]);
   
+  // Track if match log has been sent to prevent duplicates
+  const [matchLogSent, setMatchLogSent] = useState(false);
+  
   // For multiplayer: use assigned gamePlayerId, for other modes: use state.currentPlayer
   const currentPlayer: PlayerId = gameMode === 'multiplayer' && gamePlayerId ? gamePlayerId : state.currentPlayer;
   const homeRow = getHomeRow(currentPlayer);
@@ -522,6 +525,8 @@ const GamePage: React.FC = () => {
       // Generate match ID locally
       const finalMatchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       matchLogger.startMatch(finalMatchId, gameMode, ['player1', 'player2'], state);
+      // Reset match log sent flag for new match
+      setMatchLogSent(false);
     }
   }, [state.echoes.length, gameMode, isHost]);
 
@@ -1539,13 +1544,14 @@ const GamePage: React.FC = () => {
     const player2Echoes = state.echoes.filter(e => e.playerId === 'player2' && e.alive);
     
     // End match logging when game is over
-    if (winner && matchLogger.isActive()) {
+    if (winner && matchLogger.isActive() && !matchLogSent) {
       // For single-player: always log
       // For multiplayer: only log if host
       const shouldLog = gameMode !== 'multiplayer' || isHost;
       if (shouldLog) {
         const winCondition = determineWinCondition(winner, finalScores, player1Echoes, player2Echoes);
         matchLogger.endMatch(winner, winCondition, finalScores, state);
+        setMatchLogSent(true);
       }
     }
     
