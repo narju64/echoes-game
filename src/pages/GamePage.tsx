@@ -510,18 +510,16 @@ const GamePage: React.FC = () => {
     };
   }, [gameMode, roomId]);
 
-  // State to store the backend-generated match ID
-  const [matchId, setMatchId] = useState<string | null>(null);
 
-  // Start match logging when game begins (now using backend-generated match ID)
+
+  // Start match logging when game begins
   useEffect(() => {
     if (state.echoes.length > 0 && !matchLogger.isActive()) {
-      // For multiplayer, use backend-generated match ID
-      // For single-player, generate locally as fallback
-      const finalMatchId = matchId || `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Generate match ID locally
+      const finalMatchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       matchLogger.startMatch(finalMatchId, gameMode, ['player1', 'player2'], state);
     }
-  }, [state.echoes.length, gameMode, state, matchId]);
+  }, [state.echoes.length, gameMode, state]);
 
   // Debug logging for multiplayer
   useEffect(() => {
@@ -612,18 +610,14 @@ const GamePage: React.FC = () => {
       const socket = socketService.getSocket();
       
       if (socket) {
-        // Listen for match started event from backend
+        // Listen for match started event from backend (for future use)
         const handleMatchStarted = (data: any) => {
           console.log('Match started event received:', data);
-          if (data.matchId) {
-            setMatchId(data.matchId);
-            console.log('Backend-generated match ID:', data.matchId);
-          }
         };
 
-        // Trigger game start to get match ID from backend (only once)
-        if (roomId && playerId && playerName && !matchId) {
-          console.log('Triggering game start to get match ID from backend');
+        // Trigger game start (for future backend integration)
+        if (roomId && playerId && playerName) {
+          console.log('Triggering game start');
           socketService.startGame(roomId, playerId, playerName);
         }
 

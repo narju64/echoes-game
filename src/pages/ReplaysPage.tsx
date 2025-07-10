@@ -266,20 +266,7 @@ const ReplaysPage: React.FC = () => {
     initializeReplayForTurn(selectedMatch, newTurn);
   };
 
-  const handleFirstTurn = () => {
-    if (!selectedMatch) return;
-    setCurrentReplayTurn(0);
-    setCurrentReplayTick(0);
-    initializeReplayForTurn(selectedMatch, 0);
-  };
 
-  const handleLastTurn = () => {
-    if (!selectedMatch || !selectedMatch.finalState?.turnHistory) return;
-    const lastTurn = selectedMatch.finalState.turnHistory.length - 1;
-    setCurrentReplayTurn(lastTurn);
-    setCurrentReplayTick(0);
-    initializeReplayForTurn(selectedMatch, lastTurn);
-  };
 
   const handlePreviousTick = () => {
     if (currentReplayTick > 0) {
@@ -297,16 +284,7 @@ const ReplaysPage: React.FC = () => {
     }
   };
 
-  const handleFirstTick = () => {
-    setCurrentReplayTick(0);
-    updateReplayDisplay(0);
-  };
 
-  const handleLastTick = () => {
-    const lastTick = replayStates.length - 1;
-    setCurrentReplayTick(lastTick);
-    updateReplayDisplay(lastTick);
-  };
 
   if (loading) {
     return (
