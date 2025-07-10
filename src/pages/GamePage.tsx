@@ -514,12 +514,16 @@ const GamePage: React.FC = () => {
 
   // Start match logging when game begins
   useEffect(() => {
-    if (state.echoes.length > 0 && !matchLogger.isActive()) {
+    // For single-player: always log
+    // For multiplayer: only log if host
+    const shouldLog = gameMode !== 'multiplayer' || isHost;
+    
+    if (state.echoes.length > 0 && !matchLogger.isActive() && shouldLog) {
       // Generate match ID locally
       const finalMatchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       matchLogger.startMatch(finalMatchId, gameMode, ['player1', 'player2'], state);
     }
-  }, [state.echoes.length, gameMode, state]);
+  }, [state.echoes.length, gameMode, state, isHost]);
 
   // Debug logging for multiplayer
   useEffect(() => {
@@ -1536,8 +1540,13 @@ const GamePage: React.FC = () => {
     
     // End match logging when game is over
     if (winner && matchLogger.isActive()) {
-      const winCondition = determineWinCondition(winner, finalScores, player1Echoes, player2Echoes);
-      matchLogger.endMatch(winner, winCondition, finalScores, state);
+      // For single-player: always log
+      // For multiplayer: only log if host
+      const shouldLog = gameMode !== 'multiplayer' || isHost;
+      if (shouldLog) {
+        const winCondition = determineWinCondition(winner, finalScores, player1Echoes, player2Echoes);
+        matchLogger.endMatch(winner, winCondition, finalScores, state);
+      }
     }
     
     return (
