@@ -119,8 +119,13 @@ class MatchLogger {
     try {
       console.log('Sending match log to backend:', this.currentMatch.matchId);
       
+      // Use the same API base as other services
+      const API_BASE = import.meta.env.DEV 
+        ? 'http://localhost:3000' 
+        : 'https://echoesbackend.narju.net';
+      
       // Send to backend API
-      const response = await fetch('/api/matches', {
+      const response = await fetch(`${API_BASE}/api/matches`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(this.currentMatch)
