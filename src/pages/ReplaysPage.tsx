@@ -249,6 +249,55 @@ const ReplaysPage: React.FC = () => {
     }
   };
 
+  const clearAllMatches = async () => {
+    // Show confirmation dialog
+    if (!window.confirm('Are you sure you want to delete ALL matches? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      // Make DELETE request to backend
+      const API_BASE = import.meta.env.VITE_API_BASE_URL;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      
+      // Include admin key as required by backend
+      const adminKey = import.meta.env.VITE_ADMIN_KEY;
+      if (adminKey) {
+        headers['x-admin-key'] = adminKey;
+        console.log('Admin key found and included in headers');
+      } else {
+        throw new Error('Admin key not configured. Please set VITE_ADMIN_KEY in your .env file.');
+      }
+      
+      console.log('Request headers:', headers);
+      console.log('Making DELETE request to:', `${API_BASE}/api/matches`);
+      
+      const response = await fetch(`${API_BASE}/api/matches`, {
+        method: 'DELETE',
+        headers
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Show success message
+      alert(`✅ Successfully cleared ${data.deletedCount} matches!`);
+      
+      // Refresh the matches list
+      fetchMatches();
+      
+    } catch (error) {
+      console.error('Error clearing matches:', error);
+      alert(`❌ Error clearing matches: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
   const handlePreviousTurn = () => {
     if (!selectedMatch || currentReplayTurn <= 0) return;
     const newTurn = currentReplayTurn - 1;
@@ -330,9 +379,17 @@ const ReplaysPage: React.FC = () => {
             Backend: {backendStatus === 'checking' ? 'Checking...' : backendStatus === 'online' ? 'Online' : 'Offline'}
           </span>
         </div>
-        <Link to="/" className="back-button" onClick={playClickSound}>
-          ← Back to Menu
-        </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <button 
+            onClick={clearAllMatches}
+            className="clear-all-button"
+          >
+            🗑️ Clear All Matches
+          </button>
+          <Link to="/" className="back-button" onClick={playClickSound}>
+            ← Back to Menu
+          </Link>
+        </div>
       </div>
 
       <div className="replays-layout">
