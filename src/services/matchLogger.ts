@@ -50,7 +50,14 @@ class MatchLogger {
   }
 
   logTickStart(tick: number, gameState: GameState): void {
-    this.logEvent('tick_start', { tick, gameState: JSON.parse(JSON.stringify(gameState)) });
+    // Only store essential data, not the full game state
+    const essentialData = {
+      tick,
+      echoCount: gameState.echoes.length,
+      aliveEchoes: gameState.echoes.filter(e => e.alive).length,
+      scores: gameState.scores
+    };
+    this.logEvent('tick_start', essentialData);
   }
 
   logAction(player: PlayerId, echoId: string, action: Action, position: Position, direction?: Direction): void {
@@ -81,7 +88,14 @@ class MatchLogger {
   }
 
   logTickEnd(tick: number, gameState: GameState): void {
-    this.logEvent('tick_end', { tick, gameState: JSON.parse(JSON.stringify(gameState)) });
+    // Only store essential data, not the full game state
+    const essentialData = {
+      tick,
+      echoCount: gameState.echoes.length,
+      aliveEchoes: gameState.echoes.filter(e => e.alive).length,
+      scores: gameState.scores
+    };
+    this.logEvent('tick_end', essentialData);
   }
 
   endMatch(winner: PlayerId, winCondition: string, finalScore: { [key in PlayerId]: number }, finalState: GameState): void {
@@ -127,6 +141,27 @@ class MatchLogger {
     try {
       console.log('Sending match log to backend:', this.currentMatch.matchId);
       
+      // Debug: Log the size and structure of the match log
+      const matchLogString = JSON.stringify(this.currentMatch);
+      console.log('Match log size:', matchLogString.length, 'bytes');
+      console.log('Match log structure:', {
+        matchId: this.currentMatch.matchId,
+        eventCount: this.currentMatch.events.length,
+        hasInitialState: !!this.currentMatch.initialState,
+        hasFinalState: !!this.currentMatch.finalState,
+        playerNames: this.currentMatch.playerNames
+      });
+      
+      // Analyze what's taking up space
+      if (this.currentMatch.events.length > 0) {
+        const sampleEvent = this.currentMatch.events[0];
+        console.log('Sample event size:', JSON.stringify(sampleEvent).length, 'bytes');
+        console.log('Sample event type:', sampleEvent.type);
+        if (sampleEvent.data.gameState) {
+          console.log('Game state in event size:', JSON.stringify(sampleEvent.data.gameState).length, 'bytes');
+        }
+      }
+      
       // Use the same API base as other services
       const API_BASE = import.meta.env.DEV 
         ? 'http://localhost:3000' 
@@ -136,7 +171,7 @@ class MatchLogger {
       const response = await fetch(`${API_BASE}/api/matches`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(this.currentMatch)
+        body: matchLogString
       });
       
       if (!response.ok) {
