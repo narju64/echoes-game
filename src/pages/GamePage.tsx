@@ -499,6 +499,9 @@ const GamePage: React.FC = () => {
   // Track if match log has been sent to prevent duplicates
   const [matchLogSent, setMatchLogSent] = useState(false);
   
+  // Track if match logging has been started for this game session
+  const matchLogStartedRef = useRef(false);
+  
   // For multiplayer: use assigned gamePlayerId, for other modes: use state.currentPlayer
   const currentPlayer: PlayerId = gameMode === 'multiplayer' && gamePlayerId ? gamePlayerId : state.currentPlayer;
   const homeRow = getHomeRow(currentPlayer);
@@ -515,29 +518,45 @@ const GamePage: React.FC = () => {
 
 
 
-  // Start match logging when game begins
-  useEffect(() => {
+  // Start match logging when host joins the room (one-time event)
+  const startMatchLogging = useCallback(() => {
     // For single-player: always log
     // For multiplayer: only log if host
     const shouldLog = gameMode !== 'multiplayer' || isHost;
     
-    console.log('Match logging useEffect triggered:', {
+    console.log('startMatchLogging called:', {
       isActive: matchLogger.isActive(),
       shouldLog,
       gameMode,
       isHost,
-      turnNumber: state.turnNumber
+      matchLogStarted: matchLogStartedRef.current
     });
     
-    if (!matchLogger.isActive() && shouldLog) {
+    if (!matchLogger.isActive() && !matchLogStartedRef.current && shouldLog) {
       // Generate match ID locally
       const finalMatchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       console.log('Starting new match logging session:', finalMatchId);
       matchLogger.startMatch(finalMatchId, gameMode, ['player1', 'player2'], state);
       // Reset match log sent flag for new match
       setMatchLogSent(false);
+      matchLogStartedRef.current = true;
+    } else {
+      console.log('Match logging skipped:', {
+        reason: !shouldLog ? 'not host' : (!matchLogger.isActive() ? 'already started' : 'already active'),
+        isActive: matchLogger.isActive(),
+        shouldLog,
+        matchLogStarted: matchLogStartedRef.current
+      });
     }
-  }, [gameMode, isHost, state.turnNumber]); // Include turnNumber to detect game resets
+  }, [gameMode, isHost, state]);
+
+  // Reset match logging flags when game is reset
+  useEffect(() => {
+    if (state.turnNumber === 1) {
+      matchLogStartedRef.current = false;
+      setMatchLogSent(false);
+    }
+  }, [state.turnNumber]);
 
   // Debug logging for multiplayer
   useEffect(() => {
@@ -637,6 +656,11 @@ const GamePage: React.FC = () => {
         if (roomId && playerId && playerName) {
           console.log('Triggering game start');
           socketService.startGame(roomId, playerId, playerName);
+          
+          // Start match logging when host joins the room
+          if (isHost) {
+            startMatchLogging();
+          }
         }
 
         const handlePlayerLeft = (data: any) => {

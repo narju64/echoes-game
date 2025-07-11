@@ -26,6 +26,7 @@ class MatchLogger {
   private isLogging = false;
 
   startMatch(matchId: string, gameMode: string, players: PlayerId[], initialState: GameState): void {
+    console.log('MatchLogger.startMatch called:', matchId, 'isLogging was:', this.isLogging);
     this.currentMatch = {
       matchId,
       startTime: Date.now(),
@@ -35,6 +36,7 @@ class MatchLogger {
       initialState: JSON.parse(JSON.stringify(initialState)) // Deep copy
     };
     this.isLogging = true;
+    console.log('MatchLogger.startMatch completed, isLogging now:', this.isLogging);
 
     this.logEvent('match_start', {
       matchId,
@@ -82,6 +84,8 @@ class MatchLogger {
   endMatch(winner: PlayerId, winCondition: string, finalScore: { [key in PlayerId]: number }, finalState: GameState): void {
     if (!this.currentMatch) return;
 
+    console.log('MatchLogger.endMatch called:', this.currentMatch.matchId, 'isLogging was:', this.isLogging);
+
     this.currentMatch.endTime = Date.now();
     this.currentMatch.winner = winner;
     this.currentMatch.winCondition = winCondition;
@@ -99,6 +103,7 @@ class MatchLogger {
 
     this.sendMatchLog();
     this.isLogging = false;
+    console.log('MatchLogger.endMatch completed, isLogging now:', this.isLogging);
   }
 
   private logEvent(type: MatchEvent['type'], data: any): void {
@@ -155,6 +160,7 @@ class MatchLogger {
   }
 
   isActive(): boolean {
+    console.log('MatchLogger.isActive called, returning:', this.isLogging);
     return this.isLogging;
   }
 }
