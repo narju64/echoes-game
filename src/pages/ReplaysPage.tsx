@@ -15,6 +15,7 @@ interface Match {
   endTime?: number;
   gameMode: string;
   players: string[];
+  playerNames?: { [key: string]: string };
   winner?: string;
   winCondition?: string;
   duration?: number;
@@ -425,7 +426,12 @@ const ReplaysPage: React.FC = () => {
                         {fullMatchData[match.matchId]?.gameMode || match.gameMode || 'Unknown'}
                       </span>
                     </td>
-                    <td>{match.players?.join(' vs ') || 'Unknown'}</td>
+                    <td>
+                      {match.playerNames ? 
+                        `${match.playerNames.player1 || 'Player 1'} vs ${match.playerNames.player2 || 'Player 2'}` : 
+                        match.players?.join(' vs ') || 'Unknown'
+                      }
+                    </td>
                     <td>{formatDuration(match.duration)}</td>
                     <td>
                       {match.winner ? (
@@ -550,10 +556,10 @@ const ReplaysPage: React.FC = () => {
                   letterSpacing: '1px',
                 }}>
                   <div style={{ color: '#ff9800', textShadow: '0 0 1px #fff' }}>
-                    {(selectedMatch.players && selectedMatch.players[0]) ? selectedMatch.players[0] : 'Player 1'}: <b>{selectedMatch.finalState?.turnHistory?.[currentReplayTurn]?.scores?.player1 ?? 0}</b>
+                    {selectedMatch.playerNames?.player1 || 'Player 1'}: <b>{selectedMatch.finalState?.turnHistory?.[currentReplayTurn]?.scores?.player1 ?? 0}</b>
                   </div>
                   <div style={{ color: 'blue', textShadow: '0 0 1px #fff' }}>
-                    {(selectedMatch.players && selectedMatch.players[1]) ? selectedMatch.players[1] : 'Player 2'}: <b>{selectedMatch.finalState?.turnHistory?.[currentReplayTurn]?.scores?.player2 ?? 0}</b>
+                    {selectedMatch.playerNames?.player2 || 'Player 2'}: <b>{selectedMatch.finalState?.turnHistory?.[currentReplayTurn]?.scores?.player2 ?? 0}</b>
                   </div>
                 </div>
                 <Board
