@@ -12,6 +12,7 @@ export interface MatchLog {
   endTime?: number;
   gameMode: string;
   players: PlayerId[];
+  playerNames?: { [key in PlayerId]: string };
   events: MatchEvent[];
   initialState: GameState;
   finalState?: GameState;
@@ -25,13 +26,14 @@ class MatchLogger {
   private currentMatch: MatchLog | null = null;
   private isLogging = false;
 
-  startMatch(matchId: string, gameMode: string, players: PlayerId[], initialState: GameState): void {
+  startMatch(matchId: string, gameMode: string, players: PlayerId[], initialState: GameState, playerNames?: { [key in PlayerId]: string }): void {
     console.log('MatchLogger.startMatch called:', matchId, 'isLogging was:', this.isLogging);
     this.currentMatch = {
       matchId,
       startTime: Date.now(),
       gameMode,
       players,
+      playerNames,
       events: [],
       initialState: JSON.parse(JSON.stringify(initialState)) // Deep copy
     };
@@ -42,6 +44,7 @@ class MatchLogger {
       matchId,
       gameMode,
       players,
+      playerNames,
       initialState: this.currentMatch.initialState
     });
   }

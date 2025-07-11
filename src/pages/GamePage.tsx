@@ -470,14 +470,26 @@ const GamePage: React.FC = () => {
       // Try to get both player names from sessionStorage (set in Lobby/Host/Join)
       const p1 = sessionStorage.getItem(`room_${roomId}_player1_name`);
       const p2 = sessionStorage.getItem(`room_${roomId}_player2_name`);
+      console.log('Setting player names from sessionStorage:', { p1, p2, roomId });
       if (p1 && p2) {
         setPlayerNames({ player1: p1, player2: p2 });
+        // Start match logging here with correct player names
+        if (isHost && !matchLogStartedRef.current) {
+          startMatchLoggingWithNames({ player1: p1, player2: p2 });
+        }
       } else if (playerName && gamePlayerId) {
         // Fallback: set local player name, keep default for opponent
-        setPlayerNames(prev => ({ ...prev, [gamePlayerId]: playerName }));
+        console.log('Using fallback player names:', { playerName, gamePlayerId });
+        const fallbackNames = { player1: 'Player 1', player2: 'Player 2' };
+        fallbackNames[gamePlayerId] = playerName;
+        setPlayerNames(fallbackNames);
+        // Start match logging here with fallback names
+        if (isHost && !matchLogStartedRef.current) {
+          startMatchLoggingWithNames(fallbackNames);
+        }
       }
     }
-  }, [gameMode, roomId, playerName, gamePlayerId]);
+  }, [gameMode, roomId, playerName, gamePlayerId, isHost]);
   
   const [state, dispatch] = useReducer(gameReducer, initialGameState) as [GameState, React.Dispatch<GameAction>];
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('choosing');
@@ -518,25 +530,28 @@ const GamePage: React.FC = () => {
 
 
 
-  // Start match logging when host joins the room (one-time event)
-  const startMatchLogging = useCallback(() => {
+
+
+  // Start match logging with specific player names (for multiplayer)
+  const startMatchLoggingWithNames = useCallback((names: { player1: string; player2: string }) => {
     // For single-player: always log
     // For multiplayer: only log if host
     const shouldLog = gameMode !== 'multiplayer' || isHost;
     
-    console.log('startMatchLogging called:', {
+    console.log('startMatchLoggingWithNames called:', {
       isActive: matchLogger.isActive(),
       shouldLog,
       gameMode,
       isHost,
-      matchLogStarted: matchLogStartedRef.current
+      matchLogStarted: matchLogStartedRef.current,
+      names
     });
     
     if (!matchLogger.isActive() && !matchLogStartedRef.current && shouldLog) {
       // Generate match ID locally
       const finalMatchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      console.log('Starting new match logging session:', finalMatchId);
-      matchLogger.startMatch(finalMatchId, gameMode, ['player1', 'player2'], state);
+      console.log('Starting new match logging session:', finalMatchId, 'with playerNames:', names);
+      matchLogger.startMatch(finalMatchId, gameMode, ['player1', 'player2'], state, names);
       // Reset match log sent flag for new match
       setMatchLogSent(false);
       matchLogStartedRef.current = true;
@@ -656,11 +671,6 @@ const GamePage: React.FC = () => {
         if (roomId && playerId && playerName) {
           console.log('Triggering game start');
           socketService.startGame(roomId, playerId, playerName);
-          
-          // Start match logging when host joins the room
-          if (isHost) {
-            startMatchLogging();
-          }
         }
 
         const handlePlayerLeft = (data: any) => {
